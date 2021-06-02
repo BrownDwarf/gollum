@@ -1,0 +1,31 @@
+name: volum_dev
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.7
+  - numpy
+  - scipy
+  - matplotlib
+  - astropy
+  - astroquery
+  - specutils # Manually install the dev version from GitHub
+  - tqdm
+  - pandas
+  - bokeh
+  - jupyter
+  - ipython
+  - seaborn
+  - scikit-learn
+  - pytest
+  - sphinx # for documentation and testing
+  - nbsphinx # for documentation and testing
+  - numpydoc # for documentation and testing
+  - sphinx-automodapi # for documentation and testing
+  - black
+  - isort
+  - tox
+  - pip
+  - pip:
+      - sphinx-material
+      - twine
