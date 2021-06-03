@@ -106,6 +106,40 @@ class PHOENIXSpectrum(Spectrum1D):
 
         return self.divide(median_flux, handle_meta="first_found")
 
+    def rotationally_broaden(self, vsini, u1=0.0, u2=0.0):
+        """Rotationally broaden the spectrum for a given vsini
+        Implementation inspired by https://github.com/HajimeKawahara/exojax 
+
+        Known limitation: If the wavelength sampling changes with wavelength, 
+          the convolution becomes inaccurate.  It may be better to FFT,
+          following Starfish.
+
+        Args:
+            vsini: V sini for rotation 
+            u1: Limb-darkening coefficient 1
+            u2: Limb-darkening coefficient 2
+            
+        Returns
+        -------
+        broadened_spec : (PHOENIXSpectrum)
+            Rotationally Broadened Spectrum
+        """
+        lam0 = np.median(self.wavelength.value)
+        velocity_grid = 299792.458 * (self.wavelength.value - lam0) / lam0
+        x = velocity_grid / vsini
+        x2 = x * x
+        kernel = np.where(
+            x2 < 1.0,
+            np.pi / 2.0 * u1 * (1.0 - x2)
+            - 2.0 / 3.0 * np.sqrt(1.0 - x2) * (-3.0 + 3.0 * u1 + u2 * 2.0 * u2 * x2),
+            0.0,
+        )
+        kernel = kernel / np.sum(kernel, axis=0)
+        kernel = kernel[kernel > 0]
+
+        convolved_flux = np.convolve(self.flux, kernel, mode="same")
+        return PHOENIXSpectrum(spectral_axis=self.wavelength, flux=convolved_flux)
+
     def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"
 
