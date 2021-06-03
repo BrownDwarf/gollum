@@ -1,0 +1,9 @@
+sphinx>=3.2.1
+numpy
+astropy>=4.0
+specutils
+sphinx-material
+scipy
+pandas
+nbsphinx
+matplotlib
