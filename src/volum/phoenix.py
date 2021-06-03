@@ -53,14 +53,7 @@ class PHOENIXSpectrum(Spectrum1D):
         """
 
     def __init__(
-        self,
-        *args,
-        teff=None,
-        logg=None,
-        path=None,
-        wl_lo=8038,
-        wl_hi=12849,
-        **kwargs
+        self, *args, teff=None, logg=None, path=None, wl_lo=8038, wl_hi=12849, **kwargs
     ):
 
         if (teff is not None) & (logg is not None):
@@ -93,8 +86,8 @@ class PHOENIXSpectrum(Spectrum1D):
             flux = hdus[1].data[order].astype(np.float64) * u.ct
 
             super().__init__(
-                spectral_axis=wl_out*u.AA,
-                flux=flux_native*u.erg/u.s/u.cm^2/u.cm,
+                spectral_axis=wl_out * u.AA,
+                flux=flux_native * u.erg / u.s / u.cm ^ 2 / u.cm,
                 **kwargs
             )
 
@@ -112,8 +105,6 @@ class PHOENIXSpectrum(Spectrum1D):
         median_flux = np.median(self.flux)
 
         return self.divide(median_flux, handle_meta="first_found")
-
-
 
     def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"
