@@ -1,9 +1,9 @@
-name: gollum_dev
+name: gollum
 channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.7
+  - python=3.8
   - numpy
   - scipy
   - matplotlib
@@ -16,7 +16,6 @@ dependencies:
   - jupyter
   - ipython
   - seaborn
-  - scikit-learn
   - pytest
   - sphinx # for documentation and testing
   - nbsphinx # for documentation and testing
@@ -25,7 +24,7 @@ dependencies:
   - black
   - isort
   - tox
+  - twine
   - pip
   - pip:
       - sphinx-material
-      - twine

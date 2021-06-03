@@ -1,7 +1,7 @@
 # from astropy.nddata.ccddata import _uncertainty_unit_equivalent_to_parent
 import pytest
 import time
-from volum.phoenix import PHOENIXSpectrum
+from gollum.phoenix import PHOENIXSpectrum
 from specutils import Spectrum1D
 
 # from astropy.nddata.nduncertainty import StdDevUncertainty
