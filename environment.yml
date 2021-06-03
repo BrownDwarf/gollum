@@ -1,4 +1,4 @@
-name: volum_dev
+name: gollum_dev
 channels:
   - defaults
   - conda-forge
