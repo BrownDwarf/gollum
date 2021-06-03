@@ -56,6 +56,9 @@ class PHOENIXSpectrum(Spectrum1D):
         self, *args, teff=None, logg=None, path=None, wl_lo=8038, wl_hi=12849, **kwargs
     ):
 
+        if path is None:
+            path = "~/libraries/raw/PHOENIX/"
+
         if (teff is not None) & (logg is not None):
             base_path = os.path.expanduser(path)
             assert os.path.exists(
@@ -82,12 +85,9 @@ class PHOENIXSpectrum(Spectrum1D):
             # Units: erg/s/cm^2/cm
             flux_native = flux_orig[mask]
 
-            lamb = hdus[7].data[order].astype(np.float64) * u.AA
-            flux = hdus[1].data[order].astype(np.float64) * u.ct
-
             super().__init__(
                 spectral_axis=wl_out * u.AA,
-                flux=flux_native * u.erg / u.s / u.cm ^ 2 / u.cm,
+                flux=flux_native * u.erg / u.s / u.cm ** 2 / u.cm,
                 **kwargs
             )
 
@@ -131,7 +131,7 @@ class PHOENIXSpectrum(Spectrum1D):
         if ax is None:
             fig, ax = plt.subplots(1, figsize=figsize)
             ax.set_ylim(ylo, yhi)
-            ax.set_xlabel("$\lambda \;(\AA)$")
+            ax.set_xlabel(r"$\lambda \;(\AA)$")
             ax.set_ylabel("Flux")
             ax.step(self.wavelength, self.flux, **kwargs)
         else:
