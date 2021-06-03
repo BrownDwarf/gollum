@@ -2,7 +2,7 @@ r"""
 PHOENIX Spectrum
 -----------------
 
-A container for a Phoenix spectrum of :math:`N=?` total total spectral values with vectors for wavelength and flux :math:`F(\lambda)`.
+A container for a single Phoenix grid-point spectrum of wavelength and flux :math:`F(\lambda)`.
 
 PHOENIXSpectrum
 ###############
@@ -14,14 +14,12 @@ import numpy as np
 import astropy
 from astropy.io import fits
 from astropy import units as u
-from scipy.stats import median_abs_deviation
 
 import matplotlib.pyplot as plt
 import os
 import copy
 
-from specutils.spectra.spectral_region import SpectralRegion
-from specutils.analysis import equivalent_width
+from scipy.ndimage import gaussian_filter1d
 
 
 log = logging.getLogger(__name__)
@@ -88,7 +86,7 @@ class PHOENIXSpectrum(Spectrum1D):
             super().__init__(
                 spectral_axis=wl_out * u.AA,
                 flux=flux_native * u.erg / u.s / u.cm ** 2 / u.cm,
-                **kwargs
+                **kwargs,
             )
 
         else:
@@ -139,6 +137,45 @@ class PHOENIXSpectrum(Spectrum1D):
 
         convolved_flux = np.convolve(self.flux, kernel, mode="same")
         return PHOENIXSpectrum(spectral_axis=self.wavelength, flux=convolved_flux)
+
+    def instrumental_broaden(self, resolving_power=55_000):
+        """Instrumentally broaden the spectrum for a given instrumental resolution, R
+
+        Known limitation: If the wavelength sampling changes with wavelength, 
+          the convolution becomes inaccurate.  It may be better to FFT,
+          following Starfish.
+
+        Args:
+            resolving_power: Instrumental resolving power :math:`R\equiv \frac{\lambda}{\delta \lambda}` 
+            
+        Returns
+        -------
+        broadened_spec : (PHOENIXSpectrum)
+            Instrumentally Broadened Spectrum
+        """
+        angstroms_per_pixel = np.median(np.diff(self.wavelength.value))
+        lam0 = np.median(self.wavelength.value)
+        delta_lam = lam0 / resolving_power
+
+        scale_factor = 2.355  # Todo is this sigma or FWHM?
+        sigma = delta_lam * scale_factor / angstroms_per_pixel
+
+        convolved_flux = gaussian_filter1d(self.flux.value, sigma) * self.flux.unit
+        return PHOENIXSpectrum(spectral_axis=self.wavelength, flux=convolved_flux)
+
+    def rv_shift(self, rv=0):
+        """Shift the spectrum by a radial velocity, in units of km/s
+
+        Args:
+            rv: Radial velocity in units of km/s
+            
+        Returns
+        -------
+        shifted_spec : (PHOENIXSpectrum)
+            RV Shifted Spectrum
+        """
+        self.radial_velocity = rv * u.km / u.s
+        return self
 
     def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"
