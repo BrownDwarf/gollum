@@ -27,3 +27,13 @@ def test_basic():
 
     ax = new_spec.plot(label="demo", color="r")
     assert ax is not None
+
+    new_spec = (
+        spec.rotationally_broaden(28.8).rv_shift(10.1).instrumental_broaden(55_000)
+    )
+
+    assert new_spec is not None
+    assert isinstance(new_spec, Spectrum1D)
+    assert isinstance(new_spec.flux, np.ndarray)
+    assert len(new_spec.flux) == len(new_spec.wavelength)
+    assert len(new_spec.flux) == len(spec.wavelength)
