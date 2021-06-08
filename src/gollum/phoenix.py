@@ -137,8 +137,8 @@ class PHOENIXSpectrum(Spectrum1D):
         kernel = kernel / np.sum(kernel, axis=0)
         kernel = kernel[kernel > 0]
 
-        convolved_flux = np.convolve(self.flux, kernel, mode="same")
-        return PHOENIXSpectrum(spectral_axis=self.wavelength, flux=convolved_flux)
+        convolved_flux = np.convolve(self.flux, kernel, mode="same") * self.flux.unit
+        return self._copy(flux=convolved_flux)
 
     def instrumental_broaden(self, resolving_power=55_000):
         r"""Instrumentally broaden the spectrum for a given instrumental resolution, R
@@ -163,7 +163,7 @@ class PHOENIXSpectrum(Spectrum1D):
         sigma = delta_lam * scale_factor / angstroms_per_pixel
 
         convolved_flux = gaussian_filter1d(self.flux.value, sigma) * self.flux.unit
-        return PHOENIXSpectrum(spectral_axis=self.wavelength, flux=convolved_flux)
+        return self._copy(flux=convolved_flux)
 
     def rv_shift(self, rv):
         """Shift the spectrum by a radial velocity, in units of km/s
@@ -200,7 +200,9 @@ class PHOENIXSpectrum(Spectrum1D):
         """
         fluxc_resample = LinearInterpolatedResampler()
         output = fluxc_resample(self, target_spectrum.wavelength)
-        return PHOENIXSpectrum(spectral_axis=output.wavelength, flux=output.flux)
+        log.warn("Resampling may have unexpected effects if applied after an RV shift")
+
+        return self._copy(spectral_axis=output.wavelength, flux=output.flux)
 
     def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"
