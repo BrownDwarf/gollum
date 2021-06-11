@@ -178,6 +178,13 @@ class SonoraGrid(SpectrumCollection):
                 grid_points.append(grid_point)
         flux_out = np.array(fluxes) * fluxes[0].unit
         wave_out = np.array(wavelengths) * wavelengths[0].unit
+
+        # Make a quick-access dictionary
+        n_spectra = len(grid_points)
+        self.n_spectra = n_spectra
+        lookup_dict = {grid_points[i]: i for i in range(n_spectra)}
+        self.lookup_dict = lookup_dict
+
         super().__init__(
             flux=flux_out, spectral_axis=wave_out, meta={"grid_points": grid_points}
         )
@@ -215,11 +222,188 @@ class SonoraGrid(SpectrumCollection):
         """What is the provenance of each spectrum?"""
         return self.meta["grid_points"]
 
+    def get_index(self, grid_point):
+        """Get the spectrum index associated with a given grid point
+        """
+        return self.lookup_dict[grid_point]
+
     def find_nearest_teff(self, value):
         idx = (np.abs(self.teff_points - value)).argmin()
         return self.teff_points[idx]
 
-    def show_dashboard():
-        """Show an interactive dashboard for interacting with the models"""
+    def create_interact_ui(self, doc):
 
+        # Make the spectrum source
+        scalar_norm = np.percentile(self[0].flux.value, 95)
+        spec_source = ColumnDataSource(
+            data=dict(
+                wavelength=self[0].wavelength,
+                flux=self[0].flux.value / scalar_norm,
+                native_flux=self[0].flux.value / scalar_norm,
+                native_wavelength=self[0].wavelength.value,
+            )
+        )
+
+        fig = figure(
+            title="Sonora Bobcat in Bokeh",
+            plot_height=340,
+            plot_width=600,
+            tools="pan,wheel_zoom,box_zoom,tap,reset",
+            toolbar_location="below",
+            border_fill_color="whitesmoke",
+        )
+        fig.title.offset = -10
+        fig.yaxis.axis_label = "Flux "
+        fig.xaxis.axis_label = "Wavelength (micron)"
+        fig.y_range = Range1d(start=0, end=1.5)
+        xmin, xmax = (
+            self.wavelength[0].value.min() * 0.995,
+            self.wavelength[0].value.max() * 1.005,
+        )
+        fig.x_range = Range1d(start=xmin, end=xmax)
+
+        fig.step(
+            "wavelength",
+            "flux",
+            line_width=1,
+            color="gray",
+            source=spec_source,
+            nonselection_line_color="gray",
+            nonselection_line_alpha=1.0,
+        )
+
+        # Slider to decimate the data
+        smoothing_slider = Slider(
+            start=0.1,
+            end=40,
+            value=0.1,
+            step=0.1,
+            title="Spectral resolution kernel",
+            width=490,
+        )
+
+        vz_slider = Slider(
+            start=-0.009,
+            end=0.009,
+            value=0.00,
+            step=0.0005,
+            title="Radial Velocity",
+            width=490,
+            format="0.000f",
+        )
+
+        teff_slider = Slider(
+            start=min(self.teff_points),
+            end=max(self.teff_points),
+            value=1000,
+            step=25,
+            title="Teff",
+            width=490,
+        )
+        teff_message = Div(
+            text="Closest grid point: {}".format(1000), width=100, height=10
+        )
+        logg_slider = Slider(
+            start=min(self.logg_points),
+            end=max(self.logg_points),
+            value=5.0,
+            step=0.25,
+            title="logg",
+            width=490,
+        )
+        r_button = Button(label=">", button_type="default", width=30)
+        l_button = Button(label="<", button_type="default", width=30)
+
+        def update_upon_smooth(attr, old, new):
+            """Callback to take action when smoothing slider changes"""
+            # spec_source.data["wavelength"] = df_nir.wavelength.values[::new]
+            spec_source.data["flux"] = gaussian_filter1d(
+                spec_source.data["native_flux"], new
+            )
+
+        def update_upon_vz(attr, old, new):
+            """Callback to take action when vz slider changes"""
+            spec_source.data["wavelength"] = (
+                spec_source.data["native_wavelength"] - new * 10_000
+            )
+            # spec_source.data["flux"] = gaussian_filter1d(df_nir.flux.values, new)
+
+        def update_upon_teff_selection(attr, old, new):
+            """Callback to take action when teff slider changes"""
+            teff = self.find_nearest_teff(new)
+            if teff != old:
+                teff_message.text = "Closest grid point: {}".format(teff)
+                logg = logg_slider.value
+                grid_point = (teff, logg)
+                index = self.get_index(grid_point)
+                spec = self[index]
+                scalar_norm = np.percentile(spec.flux.value, 95)
+                spec_source.data["native_wavelength"] = spec.wavelength.value
+                spec_source.data["native_flux"] = spec.flux.value / scalar_norm
+                spec_source.data["wavelength"] = spec.wavelength.value - vz_slider.value
+                spec_source.data["flux"] = gaussian_filter1d(
+                    spec.flux.value / scalar_norm, smoothing_slider.value
+                )
+
+            else:
+                pass
+
+        def update_upon_logg_selection(attr, old, new):
+            """Callback to take action when logg slider changes"""
+            teff = self.find_nearest_teff(teff_slider.value)
+
+            logg = logg_slider.value
+            grid_point = (teff, new)
+            index = self.get_index(grid_point)
+            spec = self[index]
+
+            scalar_norm = np.percentile(spec.flux.value, 95)
+            spec_source.data["native_wavelength"] = spec.wavelength.value
+            spec_source.data["native_flux"] = spec.flux.value / scalar_norm
+            spec_source.data["wavelength"] = spec.wavelength.value - vz_slider.value
+            spec_source.data["flux"] = gaussian_filter1d(
+                spec.flux.value / scalar_norm, smoothing_slider.value
+            )
+
+        def go_right_by_one():
+            """Step forward in time by a single cadence"""
+            current_index = np.abs(self.teff_points - teff_slider.value).argmin()
+            new_index = current_index + 1
+            if new_index <= (len(self.teff_points) - 1):
+                teff_slider.value = self.teff_points[new_index]
+
+        def go_left_by_one():
+            """Step back in time by a single cadence"""
+            current_index = np.abs(self.teff_points - teff_slider.value).argmin()
+            new_index = current_index - 1
+            if new_index >= 0:
+                teff_slider.value = self.teff_points[new_index]
+
+        r_button.on_click(go_right_by_one)
+        l_button.on_click(go_left_by_one)
+        smoothing_slider.on_change("value", update_upon_smooth)
+        vz_slider.on_change("value", update_upon_vz)
+        teff_slider.on_change("value", update_upon_teff_selection)
+        logg_slider.on_change("value", update_upon_logg_selection)
+
+        sp1, sp2, sp3, sp4 = (
+            Spacer(width=5),
+            Spacer(width=10),
+            Spacer(width=20),
+            Spacer(width=100),
+        )
+
+        widgets_and_figures = layout(
+            [fig],
+            [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
+            [sp4, logg_slider],
+            [sp4, smoothing_slider],
+            [sp4, vz_slider],
+        )
+        doc.add_root(widgets_and_figures)
+
+    def show_dashboard(self):
+        """Show an interactive dashboard for interacting with the models"""
+        output_notebook(verbose=False, hide_banner=True)
+        show(self.create_interact_ui)
         pass
