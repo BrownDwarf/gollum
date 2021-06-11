@@ -130,3 +130,6 @@ dmypy.json
 
 # direnv.net
 .envrc
+
+# notebooks are temporary for development
+notebooks/
