@@ -63,7 +63,7 @@ def test_grid():
     """Do the basic methods work?"""
 
     grid = SonoraGrid(
-        teff_range=(850, 1200),
+        teff_range=(950, 1020),
         logg_range=(4.25, 4.75),
         path="../../intuition/models/spectra/",
     )
@@ -74,3 +74,13 @@ def test_grid():
 
     assert isinstance(grid[2], SonoraSpectrum)
     assert hasattr(grid[3], "rotationally_broaden")
+    assert hasattr(grid, "teff_points")
+    assert hasattr(grid, "grid_labels")
+    assert hasattr(grid, "grid_points")
+
+    teff_point = grid.find_nearest_teff(1001.5)
+    assert teff_point == 1000
+    teff_point = grid.find_nearest_teff(0)
+    assert teff_point == grid.teff_points.min()
+    teff_point = grid.find_nearest_teff(1e6)
+    assert teff_point == grid.teff_points.max()

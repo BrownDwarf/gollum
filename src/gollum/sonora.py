@@ -19,6 +19,15 @@ from specutils import SpectrumCollection
 import os
 from tqdm import tqdm
 
+from bokeh.io import show, output_notebook, push_notebook
+from bokeh.plotting import figure, ColumnDataSource
+from bokeh.models import Slider, Span, Range1d, Dropdown
+from bokeh.layouts import layout, Spacer
+from bokeh.models.widgets import Button, Div
+
+from scipy.ndimage import gaussian_filter1d
+from collections import OrderedDict
+
 log = logging.getLogger(__name__)
 
 #  See Issue: https://github.com/astropy/specutils/issues/779
@@ -140,14 +149,19 @@ class SonoraGrid(SpectrumCollection):
         logg_points = np.arange(4.0, 5.51, 0.25)
 
         if teff_range is not None:
-            subset = (teff_points > teff_range[0]) & (teff_points < teff_range[1])
+            subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
             teff_points = teff_points[subset]
 
         if logg_range is not None:
-            subset = (logg_points > logg_range[0]) & (logg_points < logg_range[1])
+            subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
             logg_points = logg_points[subset]
 
+        self.teff_points = teff_points
+        self.logg_points = logg_points
+        self.grid_labels = ("T_eff", "log(g)")
+
         wavelengths, fluxes = [], []
+        grid_points = []
 
         pbar = tqdm(teff_points)
         for teff in pbar:
@@ -155,14 +169,18 @@ class SonoraGrid(SpectrumCollection):
                 pbar.set_description(
                     "Processing Teff={} K, logg={:0.2f}".format(teff, logg)
                 )
+                grid_point = (teff, logg)
                 spec = SonoraSpectrum(
                     teff=teff, logg=logg, path=path, wl_lo=wl_lo, wl_hi=wl_hi
                 )
                 wavelengths.append(spec.wavelength)
                 fluxes.append(spec.flux)
+                grid_points.append(grid_point)
         flux_out = np.array(fluxes) * fluxes[0].unit
         wave_out = np.array(wavelengths) * wavelengths[0].unit
-        super().__init__(flux=flux_out, spectral_axis=wave_out)
+        super().__init__(
+            flux=flux_out, spectral_axis=wave_out, meta={"grid_points": grid_points}
+        )
 
     def __getitem__(self, key):
         flux = self.flux[key]
@@ -192,3 +210,16 @@ class SonoraGrid(SpectrumCollection):
             meta=meta,
         )
 
+    @property
+    def grid_points(self):
+        """What is the provenance of each spectrum?"""
+        return self.meta["grid_points"]
+
+    def find_nearest_teff(self, value):
+        idx = (np.abs(self.teff_points - value)).argmin()
+        return self.teff_points[idx]
+
+    def show_dashboard():
+        """Show an interactive dashboard for interacting with the models"""
+
+        pass
