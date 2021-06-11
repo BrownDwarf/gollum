@@ -7,3 +7,5 @@ scipy
 pandas
 nbsphinx
 matplotlib
+tqdm
+bokeh
