@@ -5,7 +5,7 @@
 <a href="https://gollum-astro.readthedocs.io/en/latest/"><img src="https://img.shields.io/badge/Read-the%20docs-blue"></a>
 <a href="https://pypi.org/project/gollum/"><img src="https://img.shields.io/badge/pip_install-gollum-yellow"></a>
 <a href="https://ui.adsabs.harvard.edu/abs/2013A%26A...553A...6H/abstract"><img src="https://img.shields.io/badge/Works_with-PHOENIX-brightgreen"></a>
-<a href="https://zenodo.org/record/1309035#.YL_SQoRKiV4"><img src="https://img.shields.io/badge/Coming_soon-Sonora_Bobcat-red"></a>
+<a href="https://zenodo.org/record/1309035#.YL_SQoRKiV4"><img src="https://img.shields.io/badge/Works_with-Sonora_Bobcat-brightgreen"></a>
 
 A microservice for programmatic access to precomputed synthetic spectral model grids in astronomy.
 
