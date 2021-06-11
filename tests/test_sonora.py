@@ -1,8 +1,9 @@
 from gollum.precomputed_spectrum import PrecomputedSpectrum
-from gollum.sonora import SonoraSpectrum
+from gollum.sonora import SonoraGrid, SonoraSpectrum
 from specutils import Spectrum1D
 import numpy as np
 import astropy.units as u
+from specutils.spectra.spectrum_collection import SpectrumCollection
 
 
 def test_basic():
@@ -56,3 +57,20 @@ def test_resample():
     assert isinstance(resampled_spec.flux, np.ndarray)
     assert len(resampled_spec.flux) == len(target.wavelength)
     assert isinstance(spec, SonoraSpectrum)
+
+
+def test_grid():
+    """Do the basic methods work?"""
+
+    grid = SonoraGrid(
+        teff_range=(850, 1200),
+        logg_range=(4.25, 4.75),
+        path="../../intuition/models/spectra/",
+    )
+
+    assert grid is not None
+    assert isinstance(grid, SpectrumCollection)
+    assert grid.nspectral > 0
+
+    assert isinstance(grid[2], SonoraSpectrum)
+    assert hasattr(grid[3], "rotationally_broaden")
