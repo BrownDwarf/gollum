@@ -17,6 +17,7 @@ import pandas as pd
 from astropy import units as u
 from specutils import SpectrumCollection
 import os
+from tqdm import tqdm
 
 log = logging.getLogger(__name__)
 
@@ -147,7 +148,10 @@ class SonoraGrid(SpectrumCollection):
             logg_points = logg_points[subset]
 
         wavelengths, fluxes = [], []
-        for teff in teff_points:
+
+        pbar = tqdm(teff_points)
+        for teff in pbar:
+            pbar.set_description("Processing Teff={} K".format(teff))
             for logg in logg_points:
                 spec = SonoraSpectrum(
                     teff=teff, logg=logg, path=path, wl_lo=wl_lo, wl_hi=wl_hi
