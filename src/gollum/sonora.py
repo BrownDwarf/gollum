@@ -151,8 +151,10 @@ class SonoraGrid(SpectrumCollection):
 
         pbar = tqdm(teff_points)
         for teff in pbar:
-            pbar.set_description("Processing Teff={} K".format(teff))
             for logg in logg_points:
+                pbar.set_description(
+                    "Processing Teff={} K, logg={:0.2f}".format(teff, logg)
+                )
                 spec = SonoraSpectrum(
                     teff=teff, logg=logg, path=path, wl_lo=wl_lo, wl_hi=wl_hi
                 )
