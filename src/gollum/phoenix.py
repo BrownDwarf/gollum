@@ -15,15 +15,7 @@ import numpy as np
 import astropy
 from astropy.io import fits
 from astropy import units as u
-import specutils
-
-import matplotlib.pyplot as plt
 import os
-import copy
-
-from scipy.ndimage import gaussian_filter1d
-from specutils.manipulation import LinearInterpolatedResampler
-
 
 log = logging.getLogger(__name__)
 
@@ -33,11 +25,6 @@ warnings.filterwarnings(
 )
 # See Issue: https://github.com/astropy/specutils/issues/800
 warnings.filterwarnings("ignore", category=RuntimeWarning)
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore")
-    from specutils import Spectrum1D
-    from specutils import SpectrumList
 
 
 class PHOENIXSpectrum(PrecomputedSpectrum):
