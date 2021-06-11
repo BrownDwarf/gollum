@@ -10,6 +10,7 @@ PHOENIXSpectrum
 
 import warnings
 import logging
+from gollum.precomputed_spectrum import PrecomputedSpectrum
 import numpy as np
 import astropy
 from astropy.io import fits
@@ -39,7 +40,7 @@ with warnings.catch_warnings():
     from specutils import SpectrumList
 
 
-class PHOENIXSpectrum(Spectrum1D):
+class PHOENIXSpectrum(PrecomputedSpectrum):
     r"""
     A container for PHOENIX spectra
 
