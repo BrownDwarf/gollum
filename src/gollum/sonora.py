@@ -25,9 +25,6 @@ from bokeh.models import Slider, Span, Range1d, Dropdown
 from bokeh.layouts import layout, Spacer
 from bokeh.models.widgets import Button, Div
 
-from scipy.ndimage import gaussian_filter1d
-from collections import OrderedDict
-
 log = logging.getLogger(__name__)
 
 #  See Issue: https://github.com/astropy/specutils/issues/779
