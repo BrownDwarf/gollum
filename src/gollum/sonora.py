@@ -219,7 +219,7 @@ class SonoraGrid(SpectrumCollection):
 
     @property
     def grid_points(self):
-        """What is the provenance of each spectrum?"""
+        """What are the grid points of the spectrum?"""
         return self.meta["grid_points"]
 
     def get_index(self, grid_point):
@@ -245,7 +245,7 @@ class SonoraGrid(SpectrumCollection):
         )
 
         fig = figure(
-            title="Sonora Bobcat in Bokeh",
+            title="Sonora Bobcat Interactive Dashboard",
             plot_height=340,
             plot_width=600,
             tools="pan,wheel_zoom,box_zoom,tap,reset",
@@ -340,7 +340,9 @@ class SonoraGrid(SpectrumCollection):
                 scalar_norm = np.percentile(spec.flux.value, 95)
                 spec_source.data["native_wavelength"] = spec.wavelength.value
                 spec_source.data["native_flux"] = spec.flux.value / scalar_norm
-                spec_source.data["wavelength"] = spec.wavelength.value - vz_slider.value
+                spec_source.data["wavelength"] = (
+                    spec.wavelength.value - vz_slider.value * 10_000
+                )
                 spec_source.data["flux"] = gaussian_filter1d(
                     spec.flux.value / scalar_norm, smoothing_slider.value
                 )
@@ -352,18 +354,25 @@ class SonoraGrid(SpectrumCollection):
             """Callback to take action when logg slider changes"""
             teff = self.find_nearest_teff(teff_slider.value)
 
-            logg = logg_slider.value
             grid_point = (teff, new)
             index = self.get_index(grid_point)
             spec = self[index]
 
             scalar_norm = np.percentile(spec.flux.value, 95)
-            spec_source.data["native_wavelength"] = spec.wavelength.value
-            spec_source.data["native_flux"] = spec.flux.value / scalar_norm
-            spec_source.data["wavelength"] = spec.wavelength.value - vz_slider.value
-            spec_source.data["flux"] = gaussian_filter1d(
-                spec.flux.value / scalar_norm, smoothing_slider.value
-            )
+            spec_source.data = {
+                "native_wavelength": spec.wavelength.value,
+                "native_flux": spec.flux.value / scalar_norm,
+                "wavelength": spec.wavelength.value - vz_slider.value * 10_000,
+                "flux": gaussian_filter1d(
+                    spec.flux.value / scalar_norm, smoothing_slider.value
+                ),
+            }
+            # spec_source.data["native_wavelength"] = spec.wavelength.value
+            # spec_source.data["native_flux"] = spec.flux.value / scalar_norm
+            # spec_source.data["wavelength"] = spec.wavelength.value - vz_slider.value
+            # spec_source.data["flux"] = gaussian_filter1d(
+            #    spec.flux.value / scalar_norm, smoothing_slider.value
+            # )
 
         def go_right_by_one():
             """Step forward in time by a single cadence"""
