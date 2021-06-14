@@ -49,11 +49,22 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         """
 
     def __init__(
-        self, *args, teff=None, logg=None, path=None, wl_lo=8038, wl_hi=12849, **kwargs
+        self,
+        *args,
+        teff=None,
+        logg=None,
+        metallicity=None,
+        path=None,
+        wl_lo=8038,
+        wl_hi=12849,
+        **kwargs,
     ):
 
         if path is None:
             path = "~/libraries/raw/PHOENIX/"
+
+        if metallicity is None:
+            metallicity = 0.0  # solar by default
 
         if (teff is not None) & (logg is not None):
             base_path = os.path.expanduser(path)
@@ -71,10 +82,15 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
             wl_out = wl_orig[mask]
 
+            # Deal with metallicity
+            metallicity_string = "{:+0.1f}".format(metallicity)
+            if metallicity == 0.0:
+                metallicity_string = "-0.0"
+
             fn = (
                 base_path
-                + "/Z-0.0/lte{:05d}-{:0.2f}-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
-            ).format(teff, logg)
+                + "/Z{}/lte{:05d}-{:0.2f}{}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
+            ).format(metallicity_string, teff, logg, metallicity_string)
             assert os.path.exists(fn), "Double check that the file {} exists".format(fn)
 
             flux_orig = fits.open(fn)[0].data.astype(np.float64)
@@ -106,13 +122,21 @@ class PHOENIXGrid(SpectrumCollection):
         """
 
     def __init__(
-        self, teff_range=None, logg_range=None, path=None, wl_lo=8038, wl_hi=12849,
+        self,
+        teff_range=None,
+        logg_range=None,
+        metallicity_range=None,
+        path=None,
+        wl_lo=8038,
+        wl_hi=12849,
     ):
         teff_points = np.hstack(
             (np.arange(2300, 7000, 100), np.arange(7000, 12_001, 200))
         )
         # Todo: some T_eff ranges go to log(g) = 0.0, consider adding these
         logg_points = np.arange(2.0, 6.01, 0.5)
+
+        metallicity_points = np.array([-4, -3, -2, -1.5, -1, -0.5, 0, 0.5, 1])
 
         if teff_range is not None:
             subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
@@ -122,9 +146,16 @@ class PHOENIXGrid(SpectrumCollection):
             subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
             logg_points = logg_points[subset]
 
+        if metallicity_range is not None:
+            subset = (metallicity_points >= metallicity_range[0]) & (
+                metallicity_points <= metallicity_range[1]
+            )
+            metallicity_points = metallicity_points[subset]
+
         self.teff_points = teff_points
         self.logg_points = logg_points
-        self.grid_labels = ("T_eff", "log(g)")
+        self.metallicity_points = metallicity_points
+        self.grid_labels = ("T_eff", "log(g)", "Z")
 
         wavelengths, fluxes = [], []
         grid_points = []
@@ -132,16 +163,24 @@ class PHOENIXGrid(SpectrumCollection):
         pbar = tqdm(teff_points)
         for teff in pbar:
             for logg in logg_points:
-                pbar.set_description(
-                    "Processing Teff={} K, logg={:0.2f}".format(teff, logg)
-                )
-                grid_point = (teff, logg)
-                spec = PHOENIXSpectrum(
-                    teff=teff, logg=logg, path=path, wl_lo=wl_lo, wl_hi=wl_hi
-                )
-                wavelengths.append(spec.wavelength)
-                fluxes.append(spec.flux)
-                grid_points.append(grid_point)
+                for metallicity in metallicity_points:
+                    pbar.set_description(
+                        "Processing Teff={} K, logg={:0.2f}, Z={:+0.1f}".format(
+                            teff, logg, metallicity
+                        )
+                    )
+                    grid_point = (teff, logg, metallicity)
+                    spec = PHOENIXSpectrum(
+                        teff=teff,
+                        logg=logg,
+                        metallicity=metallicity,
+                        path=path,
+                        wl_lo=wl_lo,
+                        wl_hi=wl_hi,
+                    )
+                    wavelengths.append(spec.wavelength)
+                    fluxes.append(spec.flux)
+                    grid_points.append(grid_point)
         flux_out = np.array(fluxes) * fluxes[0].unit
         wave_out = np.array(wavelengths) * wavelengths[0].unit
 
@@ -196,6 +235,10 @@ class PHOENIXGrid(SpectrumCollection):
     def find_nearest_teff(self, value):
         idx = (np.abs(self.teff_points - value)).argmin()
         return self.teff_points[idx]
+
+    def find_nearest_metallicity(self, value):
+        idx = (np.abs(self.metallicity_points - value)).argmin()
+        return self.metallicity_points[idx]
 
     def create_interact_ui(self, doc):
 
@@ -277,6 +320,16 @@ class PHOENIXGrid(SpectrumCollection):
             title="Surface Gravity: log(g) [cm/s^2]",
             width=490,
         )
+
+        metallicity_slider = Slider(
+            start=min(self.metallicity_points),
+            end=max(self.metallicity_points),
+            value=0.0,
+            step=0.50,
+            title="Metallicity: Z",
+            width=490,
+        )
+
         r_button = Button(label=">", button_type="default", width=30)
         l_button = Button(label="<", button_type="default", width=30)
 
@@ -302,7 +355,32 @@ class PHOENIXGrid(SpectrumCollection):
             if teff != old:
                 teff_message.text = "Closest grid point: {}".format(teff)
                 logg = logg_slider.value
-                grid_point = (teff, logg)
+                metallicity = metallicity_slider.value
+                grid_point = (teff, logg, metallicity)
+                index = self.get_index(grid_point)
+
+                native_spec = self[index].normalize(percentile=95)
+                new_spec = native_spec.rotationally_broaden(
+                    smoothing_slider.value
+                ).rv_shift(vz_slider.value)
+
+                spec_source.data = {
+                    "native_wavelength": native_spec.wavelength.value,
+                    "native_flux": native_spec.flux.value,
+                    "wavelength": new_spec.wavelength.value,
+                    "flux": new_spec.flux.value,
+                }
+
+            else:
+                pass
+
+        def update_upon_metallicity_selection(attr, old, new):
+            """Callback to take action when teff slider changes"""
+            metallicity = self.find_nearest_metallicity(new)
+            if metallicity != old:
+                teff = self.find_nearest_teff(teff_slider.value)
+                logg = logg_slider.value
+                grid_point = (teff, logg, metallicity)
                 index = self.get_index(grid_point)
 
                 native_spec = self[index].normalize(percentile=95)
@@ -323,8 +401,8 @@ class PHOENIXGrid(SpectrumCollection):
         def update_upon_logg_selection(attr, old, new):
             """Callback to take action when logg slider changes"""
             teff = self.find_nearest_teff(teff_slider.value)
-
-            grid_point = (teff, new)
+            metallicity = self.find_nearest_metallicity(metallicity_slider.value)
+            grid_point = (teff, new, metallicity)
             index = self.get_index(grid_point)
 
             native_spec = self[index].normalize(percentile=95)
@@ -359,6 +437,7 @@ class PHOENIXGrid(SpectrumCollection):
         vz_slider.on_change("value", update_upon_vz)
         teff_slider.on_change("value", update_upon_teff_selection)
         logg_slider.on_change("value", update_upon_logg_selection)
+        metallicity_slider.on_change("value", update_upon_metallicity_selection)
 
         sp1, sp2, sp3, sp4 = (
             Spacer(width=5),
@@ -371,6 +450,7 @@ class PHOENIXGrid(SpectrumCollection):
             [fig],
             [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
             [sp4, logg_slider],
+            [sp4, metallicity_slider],
             [sp4, smoothing_slider],
             [sp4, vz_slider],
         )
