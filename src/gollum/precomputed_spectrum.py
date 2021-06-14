@@ -51,17 +51,24 @@ class PrecomputedSpectrum(Spectrum1D):
 
         super().__init__(*args, **kwargs)
 
-    def normalize(self):
+    def normalize(self, percentile=None):
         """Normalize spectrum by its median value
+
+        Args:
+            percentile: The percentile to which the spectrum will be normalized
+                (default: 50th percentile)
 
         Returns
         -------
         normalized_spec : (PHOENIXSpectrum)
             Normalized Spectrum
         """
-        median_flux = np.median(self.flux)
+        if percentile is None:
+            scalar_flux = np.median(self.flux)
+        else:
+            scalar_flux = np.percentile(self.flux, percentile)
 
-        return self.divide(median_flux, handle_meta="first_found")
+        return self.divide(scalar_flux, handle_meta="first_found")
 
     def rotationally_broaden(self, vsini, u1=0.0, u2=0.0):
         r"""Rotationally broaden the spectrum for a given :math:`v\sin{i}`
@@ -92,10 +99,15 @@ class PrecomputedSpectrum(Spectrum1D):
             0.0,
         )
         kernel = kernel / np.sum(kernel, axis=0)
-        kernel = kernel[kernel > 0]
-
-        convolved_flux = np.convolve(self.flux, kernel, mode="same") * self.flux.unit
-        return self._copy(flux=convolved_flux)
+        positive_elements = kernel > 0
+        if positive_elements.any():
+            kernel = kernel[positive_elements]
+            convolved_flux = (
+                np.convolve(self.flux.value, kernel, mode="same") * self.flux.unit
+            )
+            return self._copy(flux=convolved_flux)
+        else:
+            return self
 
     def instrumental_broaden(self, resolving_power=55_000):
         r"""Instrumentally broaden the spectrum for a given instrumental resolution, R

@@ -278,16 +278,16 @@ class SonoraGrid(SpectrumCollection):
             end=40,
             value=0.1,
             step=0.1,
-            title="Spectral resolution kernel",
+            title="Rotational Broadening: v sin(i) [km/s]",
             width=490,
         )
 
         vz_slider = Slider(
-            start=-0.009,
-            end=0.009,
+            start=-200,
+            end=200,
             value=0.00,
-            step=0.0005,
-            title="Radial Velocity",
+            step=0.05,
+            title="Radial Velocity: RV [km/s]",
             width=490,
             format="0.000f",
         )
@@ -297,7 +297,7 @@ class SonoraGrid(SpectrumCollection):
             end=max(self.teff_points),
             value=1000,
             step=25,
-            title="Teff",
+            title="Effective Temperature: T_eff [Kelvin]",
             width=490,
         )
         teff_message = Div(
@@ -308,7 +308,7 @@ class SonoraGrid(SpectrumCollection):
             end=max(self.logg_points),
             value=5.0,
             step=0.25,
-            title="logg",
+            title="Surface Gravity: log(g) [cm/s^2]",
             width=490,
         )
         r_button = Button(label=">", button_type="default", width=30)
@@ -316,17 +316,19 @@ class SonoraGrid(SpectrumCollection):
 
         def update_upon_smooth(attr, old, new):
             """Callback to take action when smoothing slider changes"""
-            # spec_source.data["wavelength"] = df_nir.wavelength.values[::new]
-            spec_source.data["flux"] = gaussian_filter1d(
-                spec_source.data["native_flux"], new
-            )
+            new_spec = SonoraSpectrum(
+                spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
+                flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+            ).rotationally_broaden(new)
+            spec_source.data["flux"] = new_spec.flux.value
 
         def update_upon_vz(attr, old, new):
             """Callback to take action when vz slider changes"""
-            spec_source.data["wavelength"] = (
-                spec_source.data["native_wavelength"] - new * 10_000
-            )
-            # spec_source.data["flux"] = gaussian_filter1d(df_nir.flux.values, new)
+            new_spec = SonoraSpectrum(
+                spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
+                flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+            ).rv_shift(new)
+            spec_source.data["wavelength"] = new_spec.wavelength.value
 
         def update_upon_teff_selection(attr, old, new):
             """Callback to take action when teff slider changes"""
@@ -336,16 +338,18 @@ class SonoraGrid(SpectrumCollection):
                 logg = logg_slider.value
                 grid_point = (teff, logg)
                 index = self.get_index(grid_point)
-                spec = self[index]
-                scalar_norm = np.percentile(spec.flux.value, 95)
-                spec_source.data["native_wavelength"] = spec.wavelength.value
-                spec_source.data["native_flux"] = spec.flux.value / scalar_norm
-                spec_source.data["wavelength"] = (
-                    spec.wavelength.value - vz_slider.value * 10_000
-                )
-                spec_source.data["flux"] = gaussian_filter1d(
-                    spec.flux.value / scalar_norm, smoothing_slider.value
-                )
+
+                native_spec = self[index].normalize(percentile=95)
+                new_spec = native_spec.rotationally_broaden(
+                    smoothing_slider.value
+                ).rv_shift(vz_slider.value)
+
+                spec_source.data = {
+                    "native_wavelength": native_spec.wavelength.value,
+                    "native_flux": native_spec.flux.value,
+                    "wavelength": new_spec.wavelength.value,
+                    "flux": new_spec.flux.value,
+                }
 
             else:
                 pass
@@ -356,23 +360,18 @@ class SonoraGrid(SpectrumCollection):
 
             grid_point = (teff, new)
             index = self.get_index(grid_point)
-            spec = self[index]
 
-            scalar_norm = np.percentile(spec.flux.value, 95)
+            native_spec = self[index].normalize(percentile=95)
+            new_spec = native_spec.rotationally_broaden(
+                smoothing_slider.value
+            ).rv_shift(vz_slider.value)
+
             spec_source.data = {
-                "native_wavelength": spec.wavelength.value,
-                "native_flux": spec.flux.value / scalar_norm,
-                "wavelength": spec.wavelength.value - vz_slider.value * 10_000,
-                "flux": gaussian_filter1d(
-                    spec.flux.value / scalar_norm, smoothing_slider.value
-                ),
+                "native_wavelength": native_spec.wavelength.value,
+                "native_flux": native_spec.flux.value,
+                "wavelength": new_spec.wavelength.value,
+                "flux": new_spec.flux.value,
             }
-            # spec_source.data["native_wavelength"] = spec.wavelength.value
-            # spec_source.data["native_flux"] = spec.flux.value / scalar_norm
-            # spec_source.data["wavelength"] = spec.wavelength.value - vz_slider.value
-            # spec_source.data["flux"] = gaussian_filter1d(
-            #    spec.flux.value / scalar_norm, smoothing_slider.value
-            # )
 
         def go_right_by_one():
             """Step forward in time by a single cadence"""
