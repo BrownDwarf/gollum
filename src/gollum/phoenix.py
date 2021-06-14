@@ -15,7 +15,15 @@ import numpy as np
 import astropy
 from astropy.io import fits
 from astropy import units as u
+from specutils import SpectrumCollection
+from tqdm import tqdm
 import os
+
+from bokeh.io import show, output_notebook, push_notebook
+from bokeh.plotting import figure, ColumnDataSource
+from bokeh.models import Slider, Span, Range1d, Dropdown
+from bokeh.layouts import layout, Spacer
+from bokeh.models.widgets import Button, Div
 
 log = logging.getLogger(__name__)
 
@@ -81,3 +89,295 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
 
         else:
             super().__init__(*args, **kwargs)
+
+
+class PHOENIXGrid(SpectrumCollection):
+    r"""
+    A container for a grid of PHOENIX precomputed synthetic spectra of stars.  
+
+    Args:
+        Teff_range (tuple): The Teff limits of the grid model to read in.
+        logg (tuple): The logg limits of the grid model to read in.
+        path (str): The path to your local PHOENIX grid library.  
+            You must have the PHOENIX grid downloaded locally.  
+            Default: "~/libraries/raw/PHOENIX/"
+        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
+        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
+        """
+
+    def __init__(
+        self, teff_range=None, logg_range=None, path=None, wl_lo=8038, wl_hi=12849,
+    ):
+        teff_points = np.hstack(
+            (np.arange(2300, 7000, 100), np.arange(7000, 12_001, 200))
+        )
+        # Todo: some T_eff ranges go to log(g) = 0.0, consider adding these
+        logg_points = np.arange(2.0, 6.01, 0.5)
+
+        if teff_range is not None:
+            subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
+            teff_points = teff_points[subset]
+
+        if logg_range is not None:
+            subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
+            logg_points = logg_points[subset]
+
+        self.teff_points = teff_points
+        self.logg_points = logg_points
+        self.grid_labels = ("T_eff", "log(g)")
+
+        wavelengths, fluxes = [], []
+        grid_points = []
+
+        pbar = tqdm(teff_points)
+        for teff in pbar:
+            for logg in logg_points:
+                pbar.set_description(
+                    "Processing Teff={} K, logg={:0.2f}".format(teff, logg)
+                )
+                grid_point = (teff, logg)
+                spec = PHOENIXSpectrum(
+                    teff=teff, logg=logg, path=path, wl_lo=wl_lo, wl_hi=wl_hi
+                )
+                wavelengths.append(spec.wavelength)
+                fluxes.append(spec.flux)
+                grid_points.append(grid_point)
+        flux_out = np.array(fluxes) * fluxes[0].unit
+        wave_out = np.array(wavelengths) * wavelengths[0].unit
+
+        # Make a quick-access dictionary
+        n_spectra = len(grid_points)
+        self.n_spectra = n_spectra
+        lookup_dict = {grid_points[i]: i for i in range(n_spectra)}
+        self.lookup_dict = lookup_dict
+
+        super().__init__(
+            flux=flux_out, spectral_axis=wave_out, meta={"grid_points": grid_points}
+        )
+
+    def __getitem__(self, key):
+        flux = self.flux[key]
+        if flux.ndim != 1:
+            raise ValueError(
+                "Currently only 1D data structures may be "
+                "returned from slice operations."
+            )
+        spectral_axis = self.spectral_axis[key]
+        uncertainty = None if self.uncertainty is None else self.uncertainty[key]
+        wcs = None if self.wcs is None else self.wcs[key]
+        mask = None if self.mask is None else self.mask[key]
+        if self.meta is None:
+            meta = None
+        else:
+            try:
+                meta = self.meta[key]
+            except KeyError:
+                meta = self.meta
+
+        return PHOENIXSpectrum(
+            flux=flux,
+            spectral_axis=spectral_axis,
+            uncertainty=uncertainty,
+            wcs=wcs,
+            mask=mask,
+            meta=meta,
+        )
+
+    @property
+    def grid_points(self):
+        """What are the grid points of the spectrum?"""
+        return self.meta["grid_points"]
+
+    def get_index(self, grid_point):
+        """Get the spectrum index associated with a given grid point
+        """
+        return self.lookup_dict[grid_point]
+
+    def find_nearest_teff(self, value):
+        idx = (np.abs(self.teff_points - value)).argmin()
+        return self.teff_points[idx]
+
+    def create_interact_ui(self, doc):
+
+        # Make the spectrum source
+        scalar_norm = np.percentile(self[0].flux.value, 95)
+        spec_source = ColumnDataSource(
+            data=dict(
+                wavelength=self[0].wavelength,
+                flux=self[0].flux.value / scalar_norm,
+                native_flux=self[0].flux.value / scalar_norm,
+                native_wavelength=self[0].wavelength.value,
+            )
+        )
+
+        fig = figure(
+            title="PHOENIX Interactive Dashboard",
+            plot_height=340,
+            plot_width=600,
+            tools="pan,wheel_zoom,box_zoom,tap,reset",
+            toolbar_location="below",
+            border_fill_color="whitesmoke",
+        )
+        fig.title.offset = -10
+        fig.yaxis.axis_label = "Flux "
+        fig.xaxis.axis_label = "Wavelength (micron)"
+        fig.y_range = Range1d(start=0, end=1.5)
+        xmin, xmax = (
+            self.wavelength[0].value.min() * 0.995,
+            self.wavelength[0].value.max() * 1.005,
+        )
+        fig.x_range = Range1d(start=xmin, end=xmax)
+
+        fig.step(
+            "wavelength",
+            "flux",
+            line_width=1,
+            color="gray",
+            source=spec_source,
+            nonselection_line_color="gray",
+            nonselection_line_alpha=1.0,
+        )
+
+        # Slider to decimate the data
+        smoothing_slider = Slider(
+            start=0.1,
+            end=40,
+            value=0.1,
+            step=0.1,
+            title="Rotational Broadening: v sin(i) [km/s]",
+            width=490,
+        )
+
+        vz_slider = Slider(
+            start=-200,
+            end=200,
+            value=0.00,
+            step=0.05,
+            title="Radial Velocity: RV [km/s]",
+            width=490,
+            format="0.000f",
+        )
+
+        teff_slider = Slider(
+            start=min(self.teff_points),
+            end=max(self.teff_points),
+            value=self.teff_points[1],
+            step=100,
+            title="Effective Temperature: T_eff [Kelvin]",
+            width=490,
+        )
+        teff_message = Div(
+            text="Closest grid point: {}".format(1000), width=100, height=10
+        )
+        logg_slider = Slider(
+            start=min(self.logg_points),
+            end=max(self.logg_points),
+            value=5.0,
+            step=0.50,
+            title="Surface Gravity: log(g) [cm/s^2]",
+            width=490,
+        )
+        r_button = Button(label=">", button_type="default", width=30)
+        l_button = Button(label="<", button_type="default", width=30)
+
+        def update_upon_smooth(attr, old, new):
+            """Callback to take action when smoothing slider changes"""
+            new_spec = PHOENIXSpectrum(
+                spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
+                flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+            ).rotationally_broaden(new)
+            spec_source.data["flux"] = new_spec.flux.value
+
+        def update_upon_vz(attr, old, new):
+            """Callback to take action when vz slider changes"""
+            new_spec = PHOENIXSpectrum(
+                spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
+                flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+            ).rv_shift(new)
+            spec_source.data["wavelength"] = new_spec.wavelength.value
+
+        def update_upon_teff_selection(attr, old, new):
+            """Callback to take action when teff slider changes"""
+            teff = self.find_nearest_teff(new)
+            if teff != old:
+                teff_message.text = "Closest grid point: {}".format(teff)
+                logg = logg_slider.value
+                grid_point = (teff, logg)
+                index = self.get_index(grid_point)
+
+                native_spec = self[index].normalize(percentile=95)
+                new_spec = native_spec.rotationally_broaden(
+                    smoothing_slider.value
+                ).rv_shift(vz_slider.value)
+
+                spec_source.data = {
+                    "native_wavelength": native_spec.wavelength.value,
+                    "native_flux": native_spec.flux.value,
+                    "wavelength": new_spec.wavelength.value,
+                    "flux": new_spec.flux.value,
+                }
+
+            else:
+                pass
+
+        def update_upon_logg_selection(attr, old, new):
+            """Callback to take action when logg slider changes"""
+            teff = self.find_nearest_teff(teff_slider.value)
+
+            grid_point = (teff, new)
+            index = self.get_index(grid_point)
+
+            native_spec = self[index].normalize(percentile=95)
+            new_spec = native_spec.rotationally_broaden(
+                smoothing_slider.value
+            ).rv_shift(vz_slider.value)
+
+            spec_source.data = {
+                "native_wavelength": native_spec.wavelength.value,
+                "native_flux": native_spec.flux.value,
+                "wavelength": new_spec.wavelength.value,
+                "flux": new_spec.flux.value,
+            }
+
+        def go_right_by_one():
+            """Step forward in time by a single cadence"""
+            current_index = np.abs(self.teff_points - teff_slider.value).argmin()
+            new_index = current_index + 1
+            if new_index <= (len(self.teff_points) - 1):
+                teff_slider.value = self.teff_points[new_index]
+
+        def go_left_by_one():
+            """Step back in time by a single cadence"""
+            current_index = np.abs(self.teff_points - teff_slider.value).argmin()
+            new_index = current_index - 1
+            if new_index >= 0:
+                teff_slider.value = self.teff_points[new_index]
+
+        r_button.on_click(go_right_by_one)
+        l_button.on_click(go_left_by_one)
+        smoothing_slider.on_change("value", update_upon_smooth)
+        vz_slider.on_change("value", update_upon_vz)
+        teff_slider.on_change("value", update_upon_teff_selection)
+        logg_slider.on_change("value", update_upon_logg_selection)
+
+        sp1, sp2, sp3, sp4 = (
+            Spacer(width=5),
+            Spacer(width=10),
+            Spacer(width=20),
+            Spacer(width=100),
+        )
+
+        widgets_and_figures = layout(
+            [fig],
+            [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
+            [sp4, logg_slider],
+            [sp4, smoothing_slider],
+            [sp4, vz_slider],
+        )
+        doc.add_root(widgets_and_figures)
+
+    def show_dashboard(self):
+        """Show an interactive dashboard for interacting with the models"""
+        output_notebook(verbose=False, hide_banner=True)
+        show(self.create_interact_ui)
+        pass
