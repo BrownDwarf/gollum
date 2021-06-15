@@ -17,6 +17,7 @@ import pandas as pd
 from astropy import units as u
 from specutils import SpectrumCollection
 import os
+from specutils.spectra.spectrum1d import Spectrum1D
 from tqdm import tqdm
 
 from bokeh.io import show, output_notebook, push_notebook
@@ -228,112 +229,176 @@ class SonoraGrid(SpectrumCollection):
         idx = (np.abs(self.teff_points - value)).argmin()
         return self.teff_points[idx]
 
-    def create_interact_ui(self, doc):
+    def show_dashboard(self, data=None, notebook_url="localhost:8888"):
+        """Show an interactive dashboard for interacting with the Sonora grid
+        Heavily inspired by the lightkurve .interact() method.
 
-        # Make the spectrum source
-        scalar_norm = np.percentile(self[0].flux.value, 95)
-        spec_source = ColumnDataSource(
-            data=dict(
-                wavelength=self[0].wavelength,
-                flux=self[0].flux.value / scalar_norm,
-                native_flux=self[0].flux.value / scalar_norm,
-                native_wavelength=self[0].wavelength.value,
+        Parameters
+        ----------
+        data: Spectrum1D-like
+            A normalized data spectrum over which to plot the models
+        notebook_url: str
+            Location of the Jupyter notebook page (default: "localhost:8888")
+            When showing Bokeh applications, the Bokeh server must be
+            explicitly configured to allow connections originating from
+            different URLs. This parameter defaults to the standard notebook
+            host and port. If you are running on a different location, you
+            will need to supply this value for the application to display
+            properly. If no protocol is supplied in the URL, e.g. if it is
+            of the form "localhost:8888", then "http" will be used.
+        
+        """
+
+        def create_interact_ui(doc):
+
+            # Make the spectrum source
+            scalar_norm = np.percentile(self[0].flux.value, 95)
+            spec_source = ColumnDataSource(
+                data=dict(
+                    wavelength=self[0].wavelength,
+                    flux=self[0].flux.value / scalar_norm,
+                    native_flux=self[0].flux.value / scalar_norm,
+                    native_wavelength=self[0].wavelength.value,
+                )
             )
-        )
 
-        fig = figure(
-            title="Sonora Bobcat Interactive Dashboard",
-            plot_height=340,
-            plot_width=600,
-            tools="pan,wheel_zoom,box_zoom,tap,reset",
-            toolbar_location="below",
-            border_fill_color="whitesmoke",
-        )
-        fig.title.offset = -10
-        fig.yaxis.axis_label = "Flux "
-        fig.xaxis.axis_label = "Wavelength (micron)"
-        fig.y_range = Range1d(start=0, end=1.5)
-        xmin, xmax = (
-            self.wavelength[0].value.min() * 0.995,
-            self.wavelength[0].value.max() * 1.005,
-        )
-        fig.x_range = Range1d(start=xmin, end=xmax)
+            fig = figure(
+                title="Sonora Bobcat Interactive Dashboard",
+                plot_height=340,
+                plot_width=600,
+                tools="pan,wheel_zoom,box_zoom,tap,reset",
+                toolbar_location="below",
+                border_fill_color="whitesmoke",
+            )
+            fig.title.offset = -10
+            fig.yaxis.axis_label = "Flux "
+            fig.xaxis.axis_label = "Wavelength (micron)"
+            fig.y_range = Range1d(start=0, end=1.5)
 
-        fig.step(
-            "wavelength",
-            "flux",
-            line_width=1,
-            color="gray",
-            source=spec_source,
-            nonselection_line_color="gray",
-            nonselection_line_alpha=1.0,
-        )
+            fig.step(
+                "wavelength",
+                "flux",
+                line_width=1,
+                color="gray",
+                source=spec_source,
+                nonselection_line_color="gray",
+                nonselection_line_alpha=1.0,
+            )
 
-        # Slider to decimate the data
-        smoothing_slider = Slider(
-            start=0.1,
-            end=40,
-            value=0.1,
-            step=0.1,
-            title="Rotational Broadening: v sin(i) [km/s]",
-            width=490,
-        )
+            wl_lo, wl_hi = (
+                self[0].wavelength.value.min(),
+                self[0].wavelength.value.max(),
+            )
 
-        vz_slider = Slider(
-            start=-200,
-            end=200,
-            value=0.00,
-            step=0.05,
-            title="Radial Velocity: RV [km/s]",
-            width=490,
-            format="0.000f",
-        )
+            if data is not None:
+                assert isinstance(
+                    data, Spectrum1D
+                ), "The data spectrum must be Spectrum1D-like"
+                new_lo, new_hi = (
+                    data.wavelength.value.min(),
+                    data.wavelength.value.max(),
+                )
+                assert (new_lo < wl_hi) & (
+                    new_hi > wl_lo
+                ), "Data should overlap the models, double check your wavelength limits."
+                wl_lo, wl_hi = new_lo, new_hi
 
-        teff_slider = Slider(
-            start=min(self.teff_points),
-            end=max(self.teff_points),
-            value=1000,
-            step=25,
-            title="Effective Temperature: T_eff [Kelvin]",
-            width=490,
-        )
-        teff_message = Div(
-            text="Closest grid point: {}".format(1000), width=100, height=10
-        )
-        logg_slider = Slider(
-            start=min(self.logg_points),
-            end=max(self.logg_points),
-            value=5.0,
-            step=0.25,
-            title="Surface Gravity: log(g) [cm/s^2]",
-            width=490,
-        )
-        r_button = Button(label=">", button_type="default", width=30)
-        l_button = Button(label="<", button_type="default", width=30)
+                data_source = ColumnDataSource(
+                    data=dict(wavelength=data.wavelength.value, flux=data.flux.value,)
+                )
+                fig.step(
+                    "wavelength", "flux", line_width=1, color="blue", source=data_source
+                )
 
-        def update_upon_smooth(attr, old, new):
-            """Callback to take action when smoothing slider changes"""
-            new_spec = SonoraSpectrum(
-                spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
-                flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
-            ).rotationally_broaden(new)
-            spec_source.data["flux"] = new_spec.flux.value
+            fig.x_range = Range1d(start=wl_lo, end=wl_hi)
 
-        def update_upon_vz(attr, old, new):
-            """Callback to take action when vz slider changes"""
-            new_spec = SonoraSpectrum(
-                spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
-                flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
-            ).rv_shift(new)
-            spec_source.data["wavelength"] = new_spec.wavelength.value
+            # Slider to decimate the data
+            smoothing_slider = Slider(
+                start=0.1,
+                end=40,
+                value=0.1,
+                step=0.1,
+                title="Rotational Broadening: v sin(i) [km/s]",
+                width=490,
+            )
 
-        def update_upon_teff_selection(attr, old, new):
-            """Callback to take action when teff slider changes"""
-            teff = self.find_nearest_teff(new)
-            if teff != old:
-                teff_message.text = "Closest grid point: {}".format(teff)
-                logg = logg_slider.value
-                grid_point = (teff, logg)
+            vz_slider = Slider(
+                start=-200,
+                end=200,
+                value=0.00,
+                step=0.05,
+                title="Radial Velocity: RV [km/s]",
+                width=490,
+                format="0.000f",
+            )
+
+            teff_slider = Slider(
+                start=min(self.teff_points),
+                end=max(self.teff_points),
+                value=1000,
+                step=25,
+                title="Effective Temperature: T_eff [Kelvin]",
+                width=490,
+            )
+            teff_message = Div(
+                text="Closest grid point: {}".format(1000), width=100, height=10
+            )
+            logg_slider = Slider(
+                start=min(self.logg_points),
+                end=max(self.logg_points),
+                value=5.0,
+                step=0.25,
+                title="Surface Gravity: log(g) [cm/s^2]",
+                width=490,
+            )
+            r_button = Button(label=">", button_type="default", width=30)
+            l_button = Button(label="<", button_type="default", width=30)
+
+            def update_upon_smooth(attr, old, new):
+                """Callback to take action when smoothing slider changes"""
+                new_spec = SonoraSpectrum(
+                    spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
+                    flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                ).rotationally_broaden(new)
+                spec_source.data["flux"] = new_spec.flux.value
+
+            def update_upon_vz(attr, old, new):
+                """Callback to take action when vz slider changes"""
+                new_spec = SonoraSpectrum(
+                    spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
+                    flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                ).rv_shift(new)
+                spec_source.data["wavelength"] = new_spec.wavelength.value
+
+            def update_upon_teff_selection(attr, old, new):
+                """Callback to take action when teff slider changes"""
+                teff = self.find_nearest_teff(new)
+                if teff != old:
+                    teff_message.text = "Closest grid point: {}".format(teff)
+                    logg = logg_slider.value
+                    grid_point = (teff, logg)
+                    index = self.get_index(grid_point)
+
+                    native_spec = self[index].normalize(percentile=95)
+                    new_spec = native_spec.rotationally_broaden(
+                        smoothing_slider.value
+                    ).rv_shift(vz_slider.value)
+
+                    spec_source.data = {
+                        "native_wavelength": native_spec.wavelength.value,
+                        "native_flux": native_spec.flux.value,
+                        "wavelength": new_spec.wavelength.value,
+                        "flux": new_spec.flux.value,
+                    }
+
+                else:
+                    pass
+
+            def update_upon_logg_selection(attr, old, new):
+                """Callback to take action when logg slider changes"""
+                teff = self.find_nearest_teff(teff_slider.value)
+
+                grid_point = (teff, new)
                 index = self.get_index(grid_point)
 
                 native_spec = self[index].normalize(percentile=95)
@@ -348,67 +413,42 @@ class SonoraGrid(SpectrumCollection):
                     "flux": new_spec.flux.value,
                 }
 
-            else:
-                pass
+            def go_right_by_one():
+                """Step forward in time by a single cadence"""
+                current_index = np.abs(self.teff_points - teff_slider.value).argmin()
+                new_index = current_index + 1
+                if new_index <= (len(self.teff_points) - 1):
+                    teff_slider.value = self.teff_points[new_index]
 
-        def update_upon_logg_selection(attr, old, new):
-            """Callback to take action when logg slider changes"""
-            teff = self.find_nearest_teff(teff_slider.value)
+            def go_left_by_one():
+                """Step back in time by a single cadence"""
+                current_index = np.abs(self.teff_points - teff_slider.value).argmin()
+                new_index = current_index - 1
+                if new_index >= 0:
+                    teff_slider.value = self.teff_points[new_index]
 
-            grid_point = (teff, new)
-            index = self.get_index(grid_point)
+            r_button.on_click(go_right_by_one)
+            l_button.on_click(go_left_by_one)
+            smoothing_slider.on_change("value", update_upon_smooth)
+            vz_slider.on_change("value", update_upon_vz)
+            teff_slider.on_change("value", update_upon_teff_selection)
+            logg_slider.on_change("value", update_upon_logg_selection)
 
-            native_spec = self[index].normalize(percentile=95)
-            new_spec = native_spec.rotationally_broaden(
-                smoothing_slider.value
-            ).rv_shift(vz_slider.value)
+            sp1, sp2, sp3, sp4 = (
+                Spacer(width=5),
+                Spacer(width=10),
+                Spacer(width=20),
+                Spacer(width=100),
+            )
 
-            spec_source.data = {
-                "native_wavelength": native_spec.wavelength.value,
-                "native_flux": native_spec.flux.value,
-                "wavelength": new_spec.wavelength.value,
-                "flux": new_spec.flux.value,
-            }
+            widgets_and_figures = layout(
+                [fig],
+                [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
+                [sp4, logg_slider],
+                [sp4, smoothing_slider],
+                [sp4, vz_slider],
+            )
+            doc.add_root(widgets_and_figures)
 
-        def go_right_by_one():
-            """Step forward in time by a single cadence"""
-            current_index = np.abs(self.teff_points - teff_slider.value).argmin()
-            new_index = current_index + 1
-            if new_index <= (len(self.teff_points) - 1):
-                teff_slider.value = self.teff_points[new_index]
-
-        def go_left_by_one():
-            """Step back in time by a single cadence"""
-            current_index = np.abs(self.teff_points - teff_slider.value).argmin()
-            new_index = current_index - 1
-            if new_index >= 0:
-                teff_slider.value = self.teff_points[new_index]
-
-        r_button.on_click(go_right_by_one)
-        l_button.on_click(go_left_by_one)
-        smoothing_slider.on_change("value", update_upon_smooth)
-        vz_slider.on_change("value", update_upon_vz)
-        teff_slider.on_change("value", update_upon_teff_selection)
-        logg_slider.on_change("value", update_upon_logg_selection)
-
-        sp1, sp2, sp3, sp4 = (
-            Spacer(width=5),
-            Spacer(width=10),
-            Spacer(width=20),
-            Spacer(width=100),
-        )
-
-        widgets_and_figures = layout(
-            [fig],
-            [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
-            [sp4, logg_slider],
-            [sp4, smoothing_slider],
-            [sp4, vz_slider],
-        )
-        doc.add_root(widgets_and_figures)
-
-    def show_dashboard(self):
-        """Show an interactive dashboard for interacting with the models"""
         output_notebook(verbose=False, hide_banner=True)
-        show(self.create_interact_ui)
-        pass
+        show(create_interact_ui)
