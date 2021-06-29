@@ -74,6 +74,8 @@ class SonoraSpectrum(PrecomputedSpectrum):
             5.5: "3160",
         }
 
+        # TODO: add metallicity and C/O dimensions
+
         if path is None:
             path = "~/libraries/raw/Sonora/"
 
