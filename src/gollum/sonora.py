@@ -11,6 +11,7 @@ SonoraSpectrum
 import warnings
 import logging
 from gollum.precomputed_spectrum import PrecomputedSpectrum
+from gollum.telluric import TelluricSpectrum
 import numpy as np
 import astropy
 import pandas as pd
@@ -229,7 +230,9 @@ class SonoraGrid(SpectrumCollection):
         idx = (np.abs(self.teff_points - value)).argmin()
         return self.teff_points[idx]
 
-    def show_dashboard(self, data=None, notebook_url="localhost:8888"):
+    def show_dashboard(
+        self, data=None, notebook_url="localhost:8888", show_telluric=True
+    ):
         """Show an interactive dashboard for interacting with the Sonora grid
         Heavily inspired by the lightkurve .interact() method.
 
@@ -275,16 +278,6 @@ class SonoraGrid(SpectrumCollection):
             fig.xaxis.axis_label = "Wavelength (micron)"
             fig.y_range = Range1d(start=0, end=1.5)
 
-            fig.step(
-                "wavelength",
-                "flux",
-                line_width=1,
-                color="gray",
-                source=spec_source,
-                nonselection_line_color="gray",
-                nonselection_line_alpha=1.0,
-            )
-
             wl_lo, wl_hi = (
                 self[0].wavelength.value.min(),
                 self[0].wavelength.value.max(),
@@ -307,10 +300,51 @@ class SonoraGrid(SpectrumCollection):
                     data=dict(wavelength=data.wavelength.value, flux=data.flux.value,)
                 )
                 fig.step(
-                    "wavelength", "flux", line_width=1, color="blue", source=data_source
+                    "wavelength",
+                    "flux",
+                    line_width=2,
+                    legend_label="data",
+                    source=data_source,
                 )
+                if hasattr(data, "instrumental_resolution"):
+                    instrumental_resolution = data.instrumental_resolution
+                else:
+                    instrumental_resolution = 20_000
 
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
+
+            if show_telluric:
+                tell_spec = TelluricSpectrum(
+                    path="default", wl_lo=wl_lo, wl_hi=wl_hi
+                ).instrumental_broaden(instrumental_resolution * 2)
+                tell_source = ColumnDataSource(
+                    data=dict(
+                        wavelength=tell_spec.wavelength.value,
+                        flux=tell_spec.flux.value,
+                    )
+                )
+                out_glyph = fig.step(
+                    "wavelength",
+                    "flux",
+                    line_width=2,
+                    color="#bdc3c7",
+                    legend_label="Telluric",
+                    source=tell_source,
+                )
+                out_glyph.level = "underlay"
+
+            fig.step(
+                "wavelength",
+                "flux",
+                line_width=2,
+                color="darkslateblue",
+                source=spec_source,
+                legend_label="Sonora Model",
+                nonselection_line_color="darkslateblue",
+                nonselection_line_alpha=1.0,
+            )
+
+            fig.legend.location = "top_left"
 
             # Slider to decimate the data
             smoothing_slider = Slider(
