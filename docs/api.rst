@@ -9,3 +9,6 @@ The API is under active development.  Feedback is welcomed.
 
 .. automodule:: gollum.sonora
     :members:
+
+.. automodule:: gollum.telluric
+    :members:
