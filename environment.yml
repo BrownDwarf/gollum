@@ -9,7 +9,7 @@ dependencies:
   - matplotlib
   - astropy
   - astroquery
-  - specutils # Manually install the dev version from GitHub
+  - specutils=1.3 # Manually install the dev version from GitHub
   - tqdm
   - pandas
   - bokeh

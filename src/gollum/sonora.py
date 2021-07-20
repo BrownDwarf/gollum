@@ -283,6 +283,7 @@ class SonoraGrid(SpectrumCollection):
                 self[0].wavelength.value.max(),
             )
 
+            instrumental_resolution = 100_000
             if data is not None:
                 assert isinstance(
                     data, Spectrum1D
@@ -308,8 +309,6 @@ class SonoraGrid(SpectrumCollection):
                 )
                 if hasattr(data, "instrumental_resolution"):
                     instrumental_resolution = data.instrumental_resolution
-                else:
-                    instrumental_resolution = 20_000
 
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
 
@@ -385,15 +384,43 @@ class SonoraGrid(SpectrumCollection):
                 title="Surface Gravity: log(g) [cm/s^2]",
                 width=490,
             )
+            scale_slider = Slider(
+                start=0.1,
+                end=2.0,
+                value=1.0,
+                step=0.005,
+                title="Normalization Scalar",
+                width=490,
+            )
             r_button = Button(label=">", button_type="default", width=30)
             l_button = Button(label="<", button_type="default", width=30)
 
+            def update_upon_scale(attr, old, new):
+                """Callback to take action when smoothing slider changes"""
+                new_spec = (
+                    SonoraSpectrum(
+                        spectral_axis=spec_source.data["native_wavelength"]
+                        * u.Angstrom,
+                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                    )
+                    .rotationally_broaden(smoothing_slider.value)
+                    .rv_shift(vz_slider.value)
+                    * new
+                )
+                spec_source.data["flux"] = new_spec.flux.value
+
             def update_upon_smooth(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
-                new_spec = SonoraSpectrum(
-                    spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
-                    flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
-                ).rotationally_broaden(new)
+                new_spec = (
+                    SonoraSpectrum(
+                        spectral_axis=spec_source.data["native_wavelength"]
+                        * u.Angstrom,
+                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                    )
+                    .rotationally_broaden(new)
+                    .rv_shift(vz_slider.value)
+                    * scale_slider.value
+                )
                 spec_source.data["flux"] = new_spec.flux.value
 
             def update_upon_vz(attr, old, new):
@@ -414,9 +441,12 @@ class SonoraGrid(SpectrumCollection):
                     index = self.get_index(grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
-                    new_spec = native_spec.rotationally_broaden(
-                        smoothing_slider.value
-                    ).rv_shift(vz_slider.value)
+                    new_spec = (
+                        native_spec.rotationally_broaden(
+                            smoothing_slider.value
+                        ).rv_shift(vz_slider.value)
+                        * scale_slider.value
+                    )
 
                     spec_source.data = {
                         "native_wavelength": native_spec.wavelength.value,
@@ -436,9 +466,12 @@ class SonoraGrid(SpectrumCollection):
                 index = self.get_index(grid_point)
 
                 native_spec = self[index].normalize(percentile=95)
-                new_spec = native_spec.rotationally_broaden(
-                    smoothing_slider.value
-                ).rv_shift(vz_slider.value)
+                new_spec = (
+                    native_spec.rotationally_broaden(smoothing_slider.value).rv_shift(
+                        vz_slider.value
+                    )
+                    * scale_slider.value
+                )
 
                 spec_source.data = {
                     "native_wavelength": native_spec.wavelength.value,
@@ -467,6 +500,7 @@ class SonoraGrid(SpectrumCollection):
             vz_slider.on_change("value", update_upon_vz)
             teff_slider.on_change("value", update_upon_teff_selection)
             logg_slider.on_change("value", update_upon_logg_selection)
+            scale_slider.on_change("value", update_upon_scale)
 
             sp1, sp2, sp3, sp4 = (
                 Spacer(width=5),
@@ -481,6 +515,7 @@ class SonoraGrid(SpectrumCollection):
                 [sp4, logg_slider],
                 [sp4, smoothing_slider],
                 [sp4, vz_slider],
+                [sp4, scale_slider],
             )
             doc.add_root(widgets_and_figures)
 
