@@ -404,8 +404,8 @@ class SonoraGrid(SpectrumCollection):
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                     )
                     .rotationally_broaden(smoothing_slider.value)
+                    .multiply(new * u.dimensionless_unscaled)
                     .rv_shift(vz_slider.value)
-                    * new
                 )
                 spec_source.data["flux"] = new_spec.flux.value
 
@@ -418,8 +418,8 @@ class SonoraGrid(SpectrumCollection):
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                     )
                     .rotationally_broaden(new)
+                    .multiply(scale_slider.value * u.dimensionless_unscaled)
                     .rv_shift(vz_slider.value)
-                    * scale_slider.value
                 )
                 spec_source.data["flux"] = new_spec.flux.value
 
@@ -442,10 +442,9 @@ class SonoraGrid(SpectrumCollection):
 
                     native_spec = self[index].normalize(percentile=95)
                     new_spec = (
-                        native_spec.rotationally_broaden(
-                            smoothing_slider.value
-                        ).rv_shift(vz_slider.value)
-                        * scale_slider.value
+                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        .multiply(scale_slider.value * u.dimensionless_unscaled)
+                        .rv_shift(vz_slider.value)
                     )
 
                     spec_source.data = {
@@ -467,10 +466,9 @@ class SonoraGrid(SpectrumCollection):
 
                 native_spec = self[index].normalize(percentile=95)
                 new_spec = (
-                    native_spec.rotationally_broaden(smoothing_slider.value).rv_shift(
-                        vz_slider.value
-                    )
-                    * scale_slider.value
+                    native_spec.rotationally_broaden(smoothing_slider.value)
+                    .multiply(scale_slider.value * u.dimensionless_unscaled)
+                    .rv_shift(vz_slider.value)
                 )
 
                 spec_source.data = {
