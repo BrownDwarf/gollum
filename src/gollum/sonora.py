@@ -275,7 +275,7 @@ class SonoraGrid(SpectrumCollection):
             )
             fig.title.offset = -10
             fig.yaxis.axis_label = "Flux "
-            fig.xaxis.axis_label = "Wavelength (micron)"
+            fig.xaxis.axis_label = "Wavelength (Angstrom)"
             fig.y_range = Range1d(start=0, end=1.9)
 
             wl_lo, wl_hi = (
