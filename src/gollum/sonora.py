@@ -269,14 +269,14 @@ class SonoraGrid(SpectrumCollection):
                 title="Sonora Bobcat Interactive Dashboard",
                 plot_height=340,
                 plot_width=600,
-                tools="pan,wheel_zoom,box_zoom,tap,reset",
+                tools="pan,wheel_zoom,box_zoom,reset,save",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
             )
             fig.title.offset = -10
             fig.yaxis.axis_label = "Flux "
             fig.xaxis.axis_label = "Wavelength (micron)"
-            fig.y_range = Range1d(start=0, end=1.5)
+            fig.y_range = Range1d(start=0, end=1.9)
 
             wl_lo, wl_hi = (
                 self[0].wavelength.value.min(),
@@ -344,6 +344,7 @@ class SonoraGrid(SpectrumCollection):
             )
 
             fig.legend.location = "top_left"
+            fig.legend.orientation = "horizontal"
 
             # Slider to decimate the data
             smoothing_slider = Slider(
