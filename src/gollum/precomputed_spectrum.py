@@ -60,7 +60,7 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Returns
         -------
-        normalized_spec : (PHOENIXSpectrum)
+        normalized_spec : (PrecomputedSpectrum)
             Normalized Spectrum
         """
         if percentile is None:
@@ -85,7 +85,7 @@ class PrecomputedSpectrum(Spectrum1D):
             
         Returns
         -------
-        broadened_spec : (PHOENIXSpectrum)
+        broadened_spec : (PrecomputedSpectrum)
             Rotationally Broadened Spectrum
         """
         lam0 = np.median(self.wavelength.value)
@@ -121,15 +121,16 @@ class PrecomputedSpectrum(Spectrum1D):
             
         Returns
         -------
-        broadened_spec : (PHOENIXSpectrum)
+        broadened_spec : (PrecomputedSpectrum)
             Instrumentally Broadened Spectrum
         """
+        # TODO: I think we want the Nadarya-Watson estimator here instead
         angstroms_per_pixel = np.median(np.diff(self.wavelength.value))
         lam0 = np.median(self.wavelength.value)
         delta_lam = lam0 / resolving_power
 
-        scale_factor = 2.355  # Todo is this sigma or FWHM?
-        sigma = delta_lam * scale_factor / angstroms_per_pixel
+        scale_factor = 2.355
+        sigma = delta_lam / scale_factor / angstroms_per_pixel
 
         convolved_flux = gaussian_filter1d(self.flux.value, sigma) * self.flux.unit
         return self._copy(flux=convolved_flux)
@@ -142,7 +143,7 @@ class PrecomputedSpectrum(Spectrum1D):
             
         Returns
         -------
-        shifted_spec : (PHOENIXSpectrum)
+        shifted_spec : (PrecomputedSpectrum)
             RV Shifted Spectrum
         """
         try:
@@ -164,7 +165,7 @@ class PrecomputedSpectrum(Spectrum1D):
             
         Returns
         -------
-        resampled_spec : (PHOENIXSpectrum)
+        resampled_spec : (PrecomputedSpectrum)
             Resampled spectrum
         """
         fluxc_resample = LinearInterpolatedResampler()
