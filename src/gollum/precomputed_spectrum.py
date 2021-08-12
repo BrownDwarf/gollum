@@ -148,6 +148,9 @@ class PrecomputedSpectrum(Spectrum1D):
         """
         try:
             self.radial_velocity = rv * u.km / u.s
+            return self._copy(
+                spectral_axis=self.wavelength.value * self.wavelength.unit
+            )
         except:
             log.error(
                 "rv shift requires specutils version >= 1.2, you have: {}".format(
@@ -155,7 +158,6 @@ class PrecomputedSpectrum(Spectrum1D):
                 )
             )
             raise
-        return self
 
     def resample(self, target_spectrum):
         """Resample spectrum at the wavelength points of the other spectrum
