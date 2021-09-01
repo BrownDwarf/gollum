@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
     name="gollum",
-    version="0.0.1",
+    version="0.1.0",
     author="gully",
     author_email="igully@gmail.com",
     description="A Python package for working with precomputed synthetic spectral models",
@@ -13,6 +13,10 @@ setuptools.setup(
     install_requires=["numpy", "scipy", "astropy", "specutils", "pandas", "matplotlib"],
     packages=setuptools.find_packages(where="src"),
     package_dir={"": "src"},
+    package_data={
+        # If any package contains *.csv files, include them:
+        "": ["*.csv"]
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
