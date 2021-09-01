@@ -133,3 +133,4 @@ dmypy.json
 
 # notebooks are temporary for development
 notebooks/
+.DS_Store
