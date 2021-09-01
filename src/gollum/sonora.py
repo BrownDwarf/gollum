@@ -336,10 +336,10 @@ class SonoraGrid(SpectrumCollection):
                 "wavelength",
                 "flux",
                 line_width=2,
-                color="darkslateblue",
+                color="Red",
                 source=spec_source,
                 legend_label="Sonora Model",
-                nonselection_line_color="darkslateblue",
+                nonselection_line_color="DarkOrange",
                 nonselection_line_alpha=1.0,
             )
 
