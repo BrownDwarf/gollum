@@ -147,9 +147,10 @@ class PrecomputedSpectrum(Spectrum1D):
             RV Shifted Spectrum
         """
         try:
-            self.radial_velocity = rv * u.km / u.s
+            output = copy.copy(self)
+            output.radial_velocity = rv * u.km / u.s
             return self._copy(
-                spectral_axis=self.wavelength.value * self.wavelength.unit
+                spectral_axis=output.wavelength.value * self.wavelength.unit
             )
         except:
             log.error(
