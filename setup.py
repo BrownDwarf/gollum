@@ -15,6 +15,7 @@ setuptools.setup(
         "scipy",
         "astropy>=4.1",
         "specutils>=1.2",
+        "importlib_resources",
         "pandas",
         "matplotlib",
     ],
