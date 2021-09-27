@@ -3,14 +3,21 @@ import setuptools
 
 setuptools.setup(
     name="gollum",
-    version="0.1.0",
+    version="0.1.1",
     author="gully",
     author_email="igully@gmail.com",
     description="A Python package for working with precomputed synthetic spectral models",
     long_description="A Python package for working with precomputed synthetic spectral models such as PHOENIX and Sonora-Bobcat",
     long_description_content_type="text/markdown",
     url="https://github.com/BrownDwarf/gollum",
-    install_requires=["numpy", "scipy", "astropy", "specutils", "pandas", "matplotlib"],
+    install_requires=[
+        "numpy",
+        "scipy",
+        "astropy>=4.1",
+        "specutils>=1.2",
+        "pandas",
+        "matplotlib",
+    ],
     packages=setuptools.find_packages(where="src"),
     package_dir={"": "src"},
     package_data={

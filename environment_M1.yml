@@ -1,7 +1,7 @@
 name: gollum_dev
 channels:
-  - defaults
   - conda-forge
+  - nodefaults
 dependencies:
   - python=3.8
   - numpy
