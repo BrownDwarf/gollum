@@ -147,10 +147,10 @@ class PrecomputedSpectrum(Spectrum1D):
             RV Shifted Spectrum
         """
         try:
-            output = copy.copy(self)
+            output = copy.deepcopy(self)
             output.radial_velocity = rv * u.km / u.s
             return self._copy(
-                spectral_axis=output.wavelength.value * self.wavelength.unit
+                spectral_axis=output.wavelength.value * output.wavelength.unit, wcs=None
             )
         except:
             log.error(
@@ -174,7 +174,11 @@ class PrecomputedSpectrum(Spectrum1D):
         fluxc_resample = LinearInterpolatedResampler()
         output = fluxc_resample(self, target_spectrum.wavelength)
 
-        return self._copy(spectral_axis=output.wavelength, flux=output.flux)
+        return self._copy(
+            spectral_axis=output.wavelength.value * output.wavelength.unit,
+            flux=output.flux,
+            wcs=None,
+        )
 
     def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"

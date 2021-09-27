@@ -84,35 +84,35 @@ class TelFitSpectrum(PrecomputedSpectrum):
         wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
         """
 
-    def __init__(self, *args, path=None, wl_lo=8038, wl_hi=12849, **kwargs):
-
-        if path == "default":
-            path = "https://gist.githubusercontent.com/gully/b93a04ede17f617d36b2a8ffc32a60e6/raw/01c603ee201509b79b1a464093e6200ae2032198/demo_skycalc_telluric_transmission_spectrum.txt"
+    def __init__(self, *args, path=None, **kwargs):
 
         if path is not None:
 
-            # Units: nm, transmittance
-            df_native = (
-                pd.read_csv(
-                    path,
-                    delim_whitespace=True,
-                    names=["wavelength_nm", "transmittance"],
-                )
-                .sort_values("wavelength_nm")
-                .reset_index(drop=True)
+            names = ["wavelength_nm", "transmission", "continuum", "err"]
+            df_native = pd.read_csv(
+                path, delim_whitespace=True, names=names, usecols=names[0:2]
             )
 
+            # Units: nm, transmittance
             # convert to Angstrom
             df_native["wavelength"] = df_native["wavelength_nm"] * 10.0
-            mask = (df_native.wavelength > wl_lo) & (df_native.wavelength < wl_hi)
-            df_trimmed = df_native[mask].reset_index(drop=True)
 
             super().__init__(
-                spectral_axis=df_trimmed.wavelength.values * u.Angstrom,
-                flux=df_trimmed.transmittance.values * u.dimensionless_unscaled,
+                spectral_axis=df_native.wavelength.values * u.Angstrom,
+                flux=df_native.transmission.values * u.dimensionless_unscaled,
                 **kwargs,
             )
 
         else:
             super().__init__(*args, **kwargs)
+
+    def air_to_vacuum(self):
+        """Converts a spectrum from air to vacuum  
+
+        Based on Morton, D. C. 1991, ApJS, 77, 119
+        """
+        wave_A = self.wavelength.to(u.Angstrom).value
+        n_air = 1.0 + 2.735182e-4 + 131.4182 / wave_A ** 2 + 2.76249e8 / wave_A ** 4
+        vacuum_wavelengths = self.wavelength * n_air
+        return self._copy(spectral_axis=vacuum_wavelengths, wcs=None)
 
