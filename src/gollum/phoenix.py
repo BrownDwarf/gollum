@@ -326,7 +326,7 @@ class PHOENIXGrid(SpectrumCollection):
             # Slider to decimate the data
             smoothing_slider = Slider(
                 start=0.1,
-                end=40,
+                end=200,
                 value=0.1,
                 step=0.1,
                 title="Rotational Broadening: v sin(i) [km/s]",

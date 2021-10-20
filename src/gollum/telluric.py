@@ -90,16 +90,28 @@ class TelFitSpectrum(PrecomputedSpectrum):
 
             names = ["wavelength_nm", "transmission", "continuum", "err"]
             df_native = pd.read_csv(
-                path, delim_whitespace=True, names=names, usecols=names[0:2]
+                path,
+                delim_whitespace=True,
+                names=names,
+                usecols=names[0:2],
+                encoding="unicode_escape",  # or UTF-8?
+                low_memory=False,
             )
 
             # Units: nm, transmittance
             # convert to Angstrom
-            df_native["wavelength"] = df_native["wavelength_nm"] * 10.0
+            df_native["wavelength"] = (
+                pd.to_numeric(df_native["wavelength_nm"], errors="coerce") * 10.0
+            )
+            flux_out = pd.to_numeric(df_native["transmission"], errors="coerce")
+
+            good_mask = (df_native.wavelength.values == df_native.wavelength.values) & (
+                flux_out.values == flux_out.values
+            )
 
             super().__init__(
-                spectral_axis=df_native.wavelength.values * u.Angstrom,
-                flux=df_native.transmission.values * u.dimensionless_unscaled,
+                spectral_axis=df_native.wavelength.values[good_mask] * u.Angstrom,
+                flux=flux_out.values[good_mask] * u.dimensionless_unscaled,
                 **kwargs,
             )
 

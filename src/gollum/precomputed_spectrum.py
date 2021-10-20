@@ -207,8 +207,8 @@ class PrecomputedSpectrum(Spectrum1D):
             ax.set_ylim(ylo, yhi)
             ax.set_xlabel(r"$\lambda \;(\AA)$")
             ax.set_ylabel("Flux")
-            ax.step(self.wavelength, self.flux, **kwargs)
+            ax.step(self.wavelength, self.flux, where="mid", **kwargs)
         else:
-            ax.step(self.wavelength, self.flux, **kwargs)
+            ax.step(self.wavelength, self.flux, where="mid", **kwargs)
 
         return ax
