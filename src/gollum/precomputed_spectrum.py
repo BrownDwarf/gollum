@@ -21,6 +21,7 @@ import os
 import copy
 
 from scipy.ndimage import gaussian_filter1d
+from specutils import spectra
 from specutils.manipulation import LinearInterpolatedResampler
 
 
@@ -63,18 +64,21 @@ class PrecomputedSpectrum(Spectrum1D):
         normalized_spec : (PrecomputedSpectrum)
             Normalized Spectrum
         """
+        spec = self._copy(
+            spectral_axis=self.wavelength.value * self.wavelength.unit, wcs=None
+        )
         if percentile is None:
-            scalar_flux = np.median(self.flux)
+            scalar_flux = np.nanmedian(spec.flux.value) * spec.flux.unit
         else:
-            scalar_flux = np.percentile(self.flux, percentile)
+            scalar_flux = np.nanpercentile(spec.flux.value, percentile) * spec.flux.unit
 
-        return self.divide(scalar_flux, handle_meta="first_found")
+        return spec.divide(scalar_flux, handle_meta="first_found")
 
     def rotationally_broaden(self, vsini, u1=0.0, u2=0.0):
         r"""Rotationally broaden the spectrum for a given :math:`v\sin{i}`
-        Implementation inspired by https://github.com/HajimeKawahara/exojax 
+        Implementation inspired by https://github.com/HajimeKawahara/exojax
 
-        Known limitation: If the wavelength sampling changes with wavelength, 
+        Known limitation: If the wavelength sampling changes with wavelength,
           the convolution becomes inaccurate.  It may be better to FFT,
           following Starfish.
 
@@ -82,7 +86,7 @@ class PrecomputedSpectrum(Spectrum1D):
             vsini: :math:`v\sin{i}` in units of km/s
             u1: Limb-darkening coefficient 1
             u2: Limb-darkening coefficient 2
-            
+
         Returns
         -------
         broadened_spec : (PrecomputedSpectrum)
@@ -112,13 +116,13 @@ class PrecomputedSpectrum(Spectrum1D):
     def instrumental_broaden(self, resolving_power=55_000):
         r"""Instrumentally broaden the spectrum for a given instrumental resolution, R
 
-        Known limitation: If the wavelength sampling changes with wavelength, 
+        Known limitation: If the wavelength sampling changes with wavelength,
           the convolution becomes inaccurate.  It may be better to FFT,
           following Starfish.
 
         Args:
-            resolving_power: Instrumental resolving power :math:`R = \frac{\lambda}{\delta \lambda}` 
-            
+            resolving_power: Instrumental resolving power :math:`R = \frac{\lambda}{\delta \lambda}`
+
         Returns
         -------
         broadened_spec : (PrecomputedSpectrum)
@@ -140,7 +144,7 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Args:
             rv: Radial velocity in units of km/s
-            
+
         Returns
         -------
         shifted_spec : (PrecomputedSpectrum)
@@ -165,7 +169,7 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Args:
             target_spectrum: A Spectrum1D spectrum whose wavelength grid you seek to match
-            
+
         Returns
         -------
         resampled_spec : (PrecomputedSpectrum)
