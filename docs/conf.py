@@ -104,3 +104,4 @@ html_use_index = True
 html_domain_indices = True
 
 nbsphinx_kernel_name = "python"
+nbsphinx_execute = "never"
