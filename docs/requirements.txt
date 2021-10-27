@@ -10,3 +10,4 @@ matplotlib
 tqdm
 bokeh
 importlib_resources
+ipykernel
