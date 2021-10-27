@@ -22,7 +22,7 @@ copyright = "2021, gully"
 author = "gully"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = "0.1.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -70,7 +70,7 @@ html_static_path = ["_static"]
 # Set link name generated in the top bar.
 html_title = "Home"
 
-nbsphinx_codecell_lexer = "python3"
+nbsphinx_codecell_lexer = "python"
 
 # Material theme options (see theme.conf for more information)
 html_theme_options = {
@@ -103,4 +103,4 @@ html_sidebars = {
 html_use_index = True
 html_domain_indices = True
 
-nbsphinx_kernel_name = "python3"
+nbsphinx_kernel_name = "python"
