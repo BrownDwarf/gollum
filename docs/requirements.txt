@@ -1,7 +1,7 @@
 sphinx>=3.2.1
 numpy
-astropy>=4.0
-specutils
+astropy>=4.1
+specutils>=1.2
 sphinx-material
 scipy
 pandas
@@ -9,3 +9,4 @@ nbsphinx
 matplotlib
 tqdm
 bokeh
+importlib_resources
