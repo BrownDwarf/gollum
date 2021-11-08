@@ -12,8 +12,8 @@ import warnings
 import logging
 import numpy as np
 import astropy
-from astropy.io import fits
 from astropy import units as u
+from astropy.modeling.physical_models import BlackBody
 import specutils
 
 import matplotlib.pyplot as plt
@@ -184,6 +184,60 @@ class PrecomputedSpectrum(Spectrum1D):
             flux=output.flux,
             wcs=None,
         )
+
+    def get_blackbody_spectrum(self, teff=None):
+        """Get the blackbody spectrum associated with the input model"""
+        if teff is None:
+            # Try to look for a teff attribute
+            if hasattr(self, "teff"):
+                if self.teff is not None:
+                    teff = self.teff
+                else:
+                    raise NotImplementedError(
+                        "Your subclass may not have implemented the teff attribute yet."
+                    )
+
+        blackbody_model = BlackBody(temperature=teff * u.Kelvin)
+        blackbody_flux_per_sr = blackbody_model(self.wavelength)
+
+        blackbody_flux_per_Hz = blackbody_flux_per_sr * np.pi * u.steradian
+
+        flux_unit = self.flux.unit
+        normalize = False
+        if flux_unit == u.dimensionless_unscaled:
+            if "native_flux_unit" in self.meta.keys():
+                flux_unit = self.meta["native_flux_unit"]
+                normalize = True
+            else:
+                raise NotImplementedError(
+                    "We do not yet support inferring units for this subclass"
+                )
+
+        blackbody_flux = blackbody_flux_per_Hz.to(
+            flux_unit, equivalencies=u.spectral_density(self.wavelength)
+        )
+
+        output = PrecomputedSpectrum(flux=blackbody_flux, spectral_axis=self.wavelength)
+        if normalize:
+            return output.normalize()
+        else:
+            return output
+
+    def divide_by_blackbody(self, teff=None):
+        """Divide the spectrum by a blackbody
+
+        Args:
+            target_spectrum: Spectrum1D
+                A Spectrum1D spectrum whose flux tilt you seek to match
+            return_model: (bool)
+                Whether or not to return the model
+
+        Returns
+        -------
+        tilted_spec : (PrecomputedSpectrum)
+            Tilted spectrum
+        """
+        return self.divide(self.get_blackbody_spectrum(teff=teff), handle_meta="ff")
 
     def tilt_to_data(self, target_spectrum, return_model=False):
         """Tilt the template towards a data spectrum by fitting and dividing by a low-order polynomial

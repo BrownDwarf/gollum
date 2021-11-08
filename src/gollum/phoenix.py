@@ -98,11 +98,18 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             # Units: erg/s/cm^2/cm
             flux_native = flux_orig[mask]
 
-            meta_dict = {"teff": teff, "logg": logg, "metallicity": metallicity}
+            native_flux_units = u.erg / u.s / u.cm ** 2 / u.cm
+
+            meta_dict = {
+                "teff": teff,
+                "logg": logg,
+                "metallicity": metallicity,
+                "native_flux_unit": native_flux_units,
+            }
 
             super().__init__(
                 spectral_axis=wl_out * u.AA,
-                flux=flux_native * u.erg / u.s / u.cm ** 2 / u.cm,
+                flux=flux_native * native_flux_units,
                 meta=meta_dict,
                 **kwargs,
             )
