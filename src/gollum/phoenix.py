@@ -47,7 +47,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             grid downloaded locally.  Default: "~/libraries/raw/PHOENIX/"
         wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
         wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
-        """
+    """
 
     def __init__(
         self,
@@ -98,29 +98,56 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             # Units: erg/s/cm^2/cm
             flux_native = flux_orig[mask]
 
+            meta_dict = {"teff": teff, "logg": logg, "metallicity": metallicity}
+
             super().__init__(
                 spectral_axis=wl_out * u.AA,
                 flux=flux_native * u.erg / u.s / u.cm ** 2 / u.cm,
+                meta=meta_dict,
                 **kwargs,
             )
 
         else:
             super().__init__(*args, **kwargs)
 
+    @property
+    def teff(self):
+        """The input Teff associated with this model"""
+        if "teff" in self.meta.keys():
+            return self.meta["teff"]
+        else:
+            return None
+
+    @property
+    def logg(self):
+        """The input Teff associated with this model"""
+        if "logg" in self.meta.keys():
+            return self.meta["logg"]
+        else:
+            return None
+
+    @property
+    def metallicity(self):
+        """The input Teff associated with this model"""
+        if "metallicity" in self.meta.keys():
+            return self.meta["metallicity"]
+        else:
+            return None
+
 
 class PHOENIXGrid(SpectrumCollection):
     r"""
-    A container for a grid of PHOENIX precomputed synthetic spectra of stars.  
+    A container for a grid of PHOENIX precomputed synthetic spectra of stars.
 
     Args:
         Teff_range (tuple): The Teff limits of the grid model to read in.
         logg (tuple): The logg limits of the grid model to read in.
-        path (str): The path to your local PHOENIX grid library.  
-            You must have the PHOENIX grid downloaded locally.  
+        path (str): The path to your local PHOENIX grid library.
+            You must have the PHOENIX grid downloaded locally.
             Default: "~/libraries/raw/PHOENIX/"
         wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
         wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
-        """
+    """
 
     def __init__(
         self,
@@ -229,8 +256,7 @@ class PHOENIXGrid(SpectrumCollection):
         return self.meta["grid_points"]
 
     def get_index(self, grid_point):
-        """Get the spectrum index associated with a given grid point
-        """
+        """Get the spectrum index associated with a given grid point"""
         return self.lookup_dict[grid_point]
 
     def find_nearest_teff(self, value):
@@ -258,7 +284,7 @@ class PHOENIXGrid(SpectrumCollection):
             will need to supply this value for the application to display
             properly. If no protocol is supplied in the URL, e.g. if it is
             of the form "localhost:8888", then "http" will be used.
-        
+
         """
 
         def create_interact_ui(doc):
@@ -315,7 +341,10 @@ class PHOENIXGrid(SpectrumCollection):
                 wl_lo, wl_hi = new_lo, new_hi
 
                 data_source = ColumnDataSource(
-                    data=dict(wavelength=data.wavelength.value, flux=data.flux.value,)
+                    data=dict(
+                        wavelength=data.wavelength.value,
+                        flux=data.flux.value,
+                    )
                 )
                 fig.step(
                     "wavelength", "flux", line_width=1, color="blue", source=data_source
