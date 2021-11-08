@@ -112,7 +112,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
 
     @property
     def teff(self):
-        """The input Teff associated with this model"""
+        """The input Effective Temperature associated with this model"""
         if "teff" in self.meta.keys():
             return self.meta["teff"]
         else:
@@ -120,7 +120,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
 
     @property
     def logg(self):
-        """The input Teff associated with this model"""
+        """The input surface gravity associated with this model"""
         if "logg" in self.meta.keys():
             return self.meta["logg"]
         else:
@@ -128,7 +128,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
 
     @property
     def metallicity(self):
-        """The input Teff associated with this model"""
+        """The input metallicity associated with this model"""
         if "metallicity" in self.meta.keys():
             return self.meta["metallicity"]
         else:
