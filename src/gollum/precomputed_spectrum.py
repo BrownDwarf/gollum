@@ -23,6 +23,7 @@ import copy
 from scipy.ndimage import gaussian_filter1d
 from specutils import spectra
 from specutils.manipulation import LinearInterpolatedResampler
+from specutils.fitting import fit_generic_continuum
 
 
 log = logging.getLogger(__name__)
@@ -183,6 +184,32 @@ class PrecomputedSpectrum(Spectrum1D):
             flux=output.flux,
             wcs=None,
         )
+
+    def tilt_to_data(self, target_spectrum, return_model=False):
+        """Tilt the template towards a data spectrum by fitting and dividing by a low-order polynomial
+
+        Args:
+            target_spectrum: Spectrum1D
+                A Spectrum1D spectrum whose flux tilt you seek to match
+            return_model: (bool)
+                Whether or not to return the model
+
+        Returns
+        -------
+        tilted_spec : (PrecomputedSpectrum)
+            Tilted spectrum
+        """
+        ## Assume the template is resampled exactly to the data...
+        ratio = target_spectrum.divide(self, handle_meta="ff")
+        g1_fit = fit_generic_continuum(ratio)
+        y_continuum_fitted = g1_fit(target_spectrum.wavelength)
+
+        tilted_spectrum = self.multiply(y_continuum_fitted)
+
+        if return_model:
+            return (tilted_spectrum, g1_fit)
+        else:
+            return tilted_spectrum
 
     def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"
