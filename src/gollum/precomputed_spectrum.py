@@ -17,11 +17,11 @@ from astropy.modeling.physical_models import BlackBody
 import specutils
 
 import matplotlib.pyplot as plt
-import os
 import copy
 
 from scipy.ndimage import gaussian_filter1d
-from specutils import spectra
+from scipy.interpolate import UnivariateSpline, interp1d
+from scipy.signal import savgol_filter
 from specutils.manipulation import LinearInterpolatedResampler
 from specutils.fitting import fit_generic_continuum
 
@@ -264,6 +264,135 @@ class PrecomputedSpectrum(Spectrum1D):
             return (tilted_spectrum, g1_fit)
         else:
             return tilted_spectrum
+
+    def flatten(
+        self,
+        window_length=101,
+        polyorder=2,
+        return_trend=False,
+        break_tolerance=5,
+        niters=3,
+        sigma=3,
+        mask=None,
+        **kwargs,
+    ):
+        """Removes the low frequency trend using scipy's Savitzky-Golay filter.
+        This method wraps `scipy.signal.savgol_filter`.  Abridged from the
+        `lightkurve` method with the same name for flux time series, and mirrored
+        from the `muler` method with the same name.
+
+        Parameters
+        ----------
+        window_length : int
+            The length of the filter window (i.e. the number of coefficients).
+            ``window_length`` must be a positive odd integer.
+        polyorder : int
+            The order of the polynomial used to fit the samples. ``polyorder``
+            must be less than window_length.
+        return_trend : bool
+            If `True`, the method will return a tuple of two elements
+            (flattened_spec, trend_spec) where trend_spec is the removed trend.
+        break_tolerance : int
+            If there are large gaps in wavelength, flatten will split the flux into
+            several sub-spectra and apply `savgol_filter` to each
+            individually. A gap is defined as a region in wavelength larger than
+            `break_tolerance` times the median gap.  To disable this feature,
+            set `break_tolerance` to None.
+        niters : int
+            Number of iterations to iteratively sigma clip and flatten. If more than one, will
+            perform the flatten several times, removing outliers each time.
+        sigma : int
+            Number of sigma above which to remove outliers from the flatten
+        mask : boolean array with length of self.wavelength
+            Boolean array to mask data with before flattening. Flux values where
+            mask is True will not be used to flatten the data. An interpolated
+            result will be provided for these points. Use this mask to remove
+            data you want to preserve, e.g. spectral regions of interest.
+        **kwargs : dict
+            Dictionary of arguments to be passed to `scipy.signal.savgol_filter`.
+        Returns
+        -------
+        flatten_spec : `EchelleSpectrum`
+            New light curve object with long-term trends removed.
+        If ``return_trend`` is set to ``True``, this method will also return:
+        trend_spec : `EchelleSpectrum`
+            New light curve object containing the trend that was removed.
+        """
+        if mask is None:
+            mask = np.ones(len(self.wavelength), dtype=bool)
+        else:
+            # Deep copy ensures we don't change the original.
+            mask = copy.deepcopy(~mask)
+        # No NaNs
+        mask &= np.isfinite(self.flux)
+        # No outliers
+        mask &= np.nan_to_num(np.abs(self.flux - np.nanmedian(self.flux))) <= (
+            np.nanstd(self.flux) * sigma
+        )
+        for iter in np.arange(0, niters):
+            if break_tolerance is None:
+                break_tolerance = np.nan
+            if polyorder >= window_length:
+                polyorder = window_length - 1
+                log.warning(
+                    "polyorder must be smaller than window_length, "
+                    "using polyorder={}.".format(polyorder)
+                )
+            # Split the lightcurve into segments by finding large gaps in time
+            dlam = self.wavelength.value[mask][1:] - self.wavelength.value[mask][0:-1]
+            with warnings.catch_warnings():  # Ignore warnings due to NaNs
+                warnings.simplefilter("ignore", RuntimeWarning)
+                cut = np.where(dlam > break_tolerance * np.nanmedian(dlam))[0] + 1
+            low = np.append([0], cut)
+            high = np.append(cut, len(self.wavelength[mask]))
+            # Then, apply the savgol_filter to each segment separately
+            trend_signal = u.Quantity(
+                np.zeros(len(self.wavelength[mask])), unit=self.flux.unit
+            )
+            for l, h in zip(low, high):
+                # Reduce `window_length` and `polyorder` for short segments;
+                # this prevents `savgol_filter` from raising an exception
+                # If the segment is too short, just take the median
+                if np.any([window_length > (h - l), (h - l) < break_tolerance]):
+                    trend_signal[l:h] = np.nanmedian(self.flux[mask][l:h])
+                else:
+                    # Scipy outputs a warning here that is not useful, will be fixed in version 1.2
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", FutureWarning)
+                        trsig = savgol_filter(
+                            x=self.flux.value[mask][l:h],
+                            window_length=window_length,
+                            polyorder=polyorder,
+                            **kwargs,
+                        )
+                        trend_signal[l:h] = u.Quantity(trsig, trend_signal.unit)
+            # Ignore outliers;
+            # Note that it's possible numerical noise can cause outliers...
+            # If this happens you can add `1e-14` below to avoid detecting
+            # outliers which are merely caused by numerical noise.
+            mask1 = np.nan_to_num(np.abs(self.flux[mask] - trend_signal)) < (
+                np.nanstd(self.flux[mask] - trend_signal)
+                * sigma
+                # + Quantity(1e-14, self.flux.unit)
+            )
+            f = interp1d(
+                self.wavelength.value[mask][mask1],
+                trend_signal[mask1],
+                fill_value="extrapolate",
+            )
+            trend_signal = u.Quantity(f(self.wavelength.value), self.flux.unit)
+            mask[mask] &= mask1
+
+        flatten_spec = copy.deepcopy(self)
+        trend_spec = self._copy(flux=trend_signal)
+        with warnings.catch_warnings():
+            # ignore invalid division warnings
+            warnings.simplefilter("ignore", RuntimeWarning)
+            flatten_spec = flatten_spec.divide(trend_spec, handle_meta="ff")
+        if return_trend:
+            return flatten_spec, trend_spec
+        else:
+            return flatten_spec
 
     def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"
