@@ -39,7 +39,7 @@ def test_basic():
     assert len(new_spec.flux) == len(spec.wavelength)
     assert isinstance(spec, PrecomputedSpectrum)
 
-    new_spec = new_spec.flatten()
+    new_spec = new_spec.fit_continuum(pixel_distance=91)
 
     assert new_spec is not None
     assert isinstance(new_spec, Spectrum1D)
