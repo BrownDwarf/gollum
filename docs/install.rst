@@ -26,7 +26,12 @@ Currently we recommend installing the developer version from source to help us w
 
 Eventually you can run the tests in the `tests/` directory to double-check that everything installed correctly.  Currently we are evaluating the best way to specify paths to voluminous libraries to make testing robust and quick across machines.  Stay tuned! ::
 
-    py.test -vs
+    py.test -vs test_precomputed.py  # should work for everyone
+    py.test -vs test_phoenix.py # requires local PHOENIX models
+    py.test -vs test_sonora.py # requires local Sonora models
+
+
+
 
 
 
