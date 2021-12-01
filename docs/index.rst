@@ -19,6 +19,7 @@ The goal of this repo is to provide a Python Application Programming Interface (
    :maxdepth: 1
 
    Installation <install>
+   Downloading Model Grids <fetching_models>
    Quick Start <quickstart.ipynb>
 
 .. toctree::
