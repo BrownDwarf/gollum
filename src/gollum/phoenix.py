@@ -274,6 +274,10 @@ class PHOENIXGrid(SpectrumCollection):
         idx = (np.abs(self.metallicity_points - value)).argmin()
         return self.metallicity_points[idx]
 
+    def truncate(self, wavelength_range=None, data=None):
+        """Truncate the wavelength range of the grid"""
+        raise NotImplemented
+
     def show_dashboard(self, data=None, notebook_url="localhost:8888"):
         """Show an interactive dashboard for interacting with the PHOENIX grid
         Heavily inspired by the lightkurve .interact() method.
