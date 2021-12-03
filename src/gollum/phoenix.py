@@ -275,8 +275,45 @@ class PHOENIXGrid(SpectrumCollection):
         return self.metallicity_points[idx]
 
     def truncate(self, wavelength_range=None, data=None):
-        """Truncate the wavelength range of the grid"""
-        raise NotImplemented
+        """Truncate the wavelength range of the grid
+        
+        Parameters
+        ----------
+        wavelength_range: List or Tuple
+            A pair of values that denote the shortest and longest wavelengths
+            for truncating the grid.
+        data: Spectrum1D-like
+            A spectrum to which this method will match the wavelength limits
+
+        """
+        fiducial_spectrum = self[0]
+        wavelength_units = fiducial_spectrum.wavelength.unit
+        flux_units = fiducial_spectrum.flux.unit
+
+        if (data is not None) and (wavelength_range is None):
+
+            wavelength_range = (
+                fiducial_spectrum.wavelength.value.min() * wavelength_units,
+                fiducial_spectrum.wavelength.value.max() * wavelength_units,
+            )
+        shortest_wavelength, longest_wavelength = wavelength_range
+
+        wavelengths, fluxes = [], []
+        for spectrum in self:
+            mask = (spectrum.wavelength > shortest_wavelength) & (
+                spectrum.wavelength < longest_wavelength
+            )
+            wavelengths.append(spectrum.wavelength.value[mask])
+            fluxes.append(spectrum.flux.value[mask])
+
+        fluxes = np.array(fluxes) * flux_units
+        wavelengths = np.array(wavelengths) * wavelength_units
+
+        return super().__init__(
+            flux=fluxes,
+            spectral_axis=wavelengths,
+            meta={"grid_points": self.grid_points},
+        )
 
     def show_dashboard(self, data=None, notebook_url="localhost:8888"):
         """Show an interactive dashboard for interacting with the PHOENIX grid
