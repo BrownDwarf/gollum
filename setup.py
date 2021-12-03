@@ -13,9 +13,10 @@ setuptools.setup(
     install_requires=[
         "numpy",
         "scipy",
-        "astropy>=4.1",
+        "astropy>=4.1,<5.0",
         "specutils>=1.2",
         "importlib_resources",
+        "gwcs<0.17",
         "pandas",
         "matplotlib",
     ],
