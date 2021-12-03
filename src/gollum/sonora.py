@@ -519,4 +519,4 @@ class SonoraGrid(SpectrumCollection):
             doc.add_root(widgets_and_figures)
 
         output_notebook(verbose=False, hide_banner=True)
-        show(create_interact_ui)
+        show(create_interact_ui, notebook_url=notebook_url)

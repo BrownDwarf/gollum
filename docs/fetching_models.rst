@@ -19,9 +19,11 @@ Currently we only support the 2018 Sonora Model grids.  In a web browser, naviga
 The end result should look something like this: ::
 
     $ ls ~/libraries/raw/Sonora/
+                [...]
     sp_t2100g3160nc_m0.0.gz  sp_t450g316nc_m0.0.gz    sp_t950g31nc_m0.0.gz
     sp_t2100g316nc_m0.0.gz   sp_t450g31nc_m0.0.gz     sp_t950g562nc_m0.0.gz
     sp_t2100g31nc_m0.0.gz    sp_t450g562nc_m0.0.gz    sp_t950g56nc_m0.0.gz
+                [...]
 
 
 PHOENIX

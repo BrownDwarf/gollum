@@ -348,10 +348,7 @@ class PHOENIXGrid(SpectrumCollection):
                 wl_lo, wl_hi = new_lo, new_hi
 
                 data_source = ColumnDataSource(
-                    data=dict(
-                        wavelength=data.wavelength.value,
-                        flux=data.flux.value,
-                    )
+                    data=dict(wavelength=data.wavelength.value, flux=data.flux.value,)
                 )
                 fig.step(
                     "wavelength", "flux", line_width=1, color="blue", source=data_source
