@@ -8,6 +8,7 @@ PHOENIXSpectrum
 ###############
 """
 
+import copy
 import warnings
 import logging
 from gollum.precomputed_spectrum import PrecomputedSpectrum
@@ -164,70 +165,81 @@ class PHOENIXGrid(SpectrumCollection):
         path=None,
         wl_lo=8038,
         wl_hi=12849,
+        **kwargs,
     ):
-        teff_points = np.hstack(
-            (np.arange(2300, 7000, 100), np.arange(7000, 12_001, 200))
-        )
-        # Todo: some T_eff ranges go to log(g) = 0.0, consider adding these
-        logg_points = np.arange(2.0, 6.01, 0.5)
 
-        metallicity_points = np.array([-4, -3, -2, -1.5, -1, -0.5, 0, 0.5, 1])
+        if (
+            ("flux" in kwargs.keys())
+            and ("spectral_axis" in kwargs.keys())
+            and ("meta" in kwargs.keys())
+        ):
+            # Trigger a passthrough
+            super().__init__(**kwargs)
+        else:
 
-        if teff_range is not None:
-            subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
-            teff_points = teff_points[subset]
-
-        if logg_range is not None:
-            subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
-            logg_points = logg_points[subset]
-
-        if metallicity_range is not None:
-            subset = (metallicity_points >= metallicity_range[0]) & (
-                metallicity_points <= metallicity_range[1]
+            teff_points = np.hstack(
+                (np.arange(2300, 7000, 100), np.arange(7000, 12_001, 200))
             )
-            metallicity_points = metallicity_points[subset]
+            # Todo: some T_eff ranges go to log(g) = 0.0, consider adding these
+            logg_points = np.arange(2.0, 6.01, 0.5)
 
-        self.teff_points = teff_points
-        self.logg_points = logg_points
-        self.metallicity_points = metallicity_points
-        self.grid_labels = ("T_eff", "log(g)", "Z")
+            metallicity_points = np.array([-4, -3, -2, -1.5, -1, -0.5, 0, 0.5, 1])
 
-        wavelengths, fluxes = [], []
-        grid_points = []
+            if teff_range is not None:
+                subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
+                teff_points = teff_points[subset]
 
-        pbar = tqdm(teff_points)
-        for teff in pbar:
-            for logg in logg_points:
-                for metallicity in metallicity_points:
-                    pbar.set_description(
-                        "Processing Teff={} K, logg={:0.2f}, Z={:+0.1f}".format(
-                            teff, logg, metallicity
+            if logg_range is not None:
+                subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
+                logg_points = logg_points[subset]
+
+            if metallicity_range is not None:
+                subset = (metallicity_points >= metallicity_range[0]) & (
+                    metallicity_points <= metallicity_range[1]
+                )
+                metallicity_points = metallicity_points[subset]
+
+            wavelengths, fluxes = [], []
+            grid_points = []
+
+            pbar = tqdm(teff_points)
+            for teff in pbar:
+                for logg in logg_points:
+                    for metallicity in metallicity_points:
+                        pbar.set_description(
+                            "Processing Teff={} K, logg={:0.2f}, Z={:+0.1f}".format(
+                                teff, logg, metallicity
+                            )
                         )
-                    )
-                    grid_point = (teff, logg, metallicity)
-                    spec = PHOENIXSpectrum(
-                        teff=teff,
-                        logg=logg,
-                        metallicity=metallicity,
-                        path=path,
-                        wl_lo=wl_lo,
-                        wl_hi=wl_hi,
-                    )
-                    wavelengths.append(spec.wavelength)
-                    fluxes.append(spec.flux)
-                    grid_points.append(grid_point)
-        flux_out = np.array(fluxes) * fluxes[0].unit
-        wave_out = np.array(wavelengths) * wavelengths[0].unit
+                        grid_point = (teff, logg, metallicity)
+                        spec = PHOENIXSpectrum(
+                            teff=teff,
+                            logg=logg,
+                            metallicity=metallicity,
+                            path=path,
+                            wl_lo=wl_lo,
+                            wl_hi=wl_hi,
+                        )
+                        wavelengths.append(spec.wavelength)
+                        fluxes.append(spec.flux)
+                        grid_points.append(grid_point)
+            flux_out = np.array(fluxes) * fluxes[0].unit
+            wave_out = np.array(wavelengths) * wavelengths[0].unit
 
-        # Make a quick-access dictionary
-        n_spectra = len(grid_points)
-        self.n_spectra = n_spectra
-        lookup_dict = {grid_points[i]: i for i in range(n_spectra)}
-        self.lookup_dict = lookup_dict
+            # Make a quick-access dictionary
+            n_spectra = len(grid_points)
+            lookup_dict = {grid_points[i]: i for i in range(n_spectra)}
+            meta = {
+                "teff_points": teff_points,
+                "logg_points": logg_points,
+                "metallicity_points": metallicity_points,
+                "grid_labels": ("T_eff", "log(g)", "Z"),
+                "n_spectra": n_spectra,
+                "grid_points": grid_points,
+                "lookup_dict": lookup_dict,
+            }
 
-        super().__init__(
-            flux=flux_out, spectral_axis=wave_out, meta={"grid_points": grid_points}
-        )
+            super().__init__(flux=flux_out, spectral_axis=wave_out, meta=meta)
 
     def __getitem__(self, key):
         flux = self.flux[key]
@@ -259,8 +271,76 @@ class PHOENIXGrid(SpectrumCollection):
 
     @property
     def grid_points(self):
-        """What are the grid points of the spectrum?"""
+        """What are the coordinates of the grid?"""
         return self.meta["grid_points"]
+
+    @property
+    def teff_points(self):
+        """What are the Teff points of the grid?"""
+        return self.meta["teff_points"]
+
+    @property
+    def metallicity_points(self):
+        """What are the metallicity points of the grid?"""
+        return self.meta["metallicity_points"]
+
+    @property
+    def logg_points(self):
+        """What are the logg points of the grid?"""
+        return self.meta["logg_points"]
+
+    @property
+    def grid_labels(self):
+        """What are the grid labels?"""
+        return self.meta["grid_labels"]
+
+    @property
+    def n_spectra(self):
+        """How many distinct spectra are in the grid?"""
+        return self.meta["n_spectra"]
+
+    @property
+    def lookup_dict(self):
+        """Lookup dictioary for spectra from their grid coordinates"""
+        return self.meta["lookup_dict"]
+
+    def truncate(self, wavelength_range=None, data=None):
+        """Truncate the wavelength range of the grid
+        
+        Parameters
+        ----------
+        wavelength_range: List or Tuple of Quantities
+            A pair of values that denote the shortest and longest wavelengths
+            for truncating the grid.
+        data: Spectrum1D-like
+            A spectrum to which this method will match the wavelength limits
+
+        """
+        fiducial_spectrum = copy.deepcopy(self[0])
+        wavelength_units = fiducial_spectrum.wavelength.unit
+        flux_units = fiducial_spectrum.flux.unit
+
+        if (data is not None) and (wavelength_range is None):
+            wavelength_range = (
+                fiducial_spectrum.wavelength.value.min() * wavelength_units,
+                fiducial_spectrum.wavelength.value.max() * wavelength_units,
+            )
+        shortest_wavelength, longest_wavelength = wavelength_range
+
+        wavelengths, fluxes = [], []
+        for spectrum in self:
+            mask = (spectrum.wavelength > shortest_wavelength) & (
+                spectrum.wavelength < longest_wavelength
+            )
+            wavelengths.append(spectrum.wavelength.value[mask])
+            fluxes.append(spectrum.flux.value[mask])
+
+        fluxes = np.array(fluxes) * flux_units
+        wavelengths = np.array(wavelengths) * wavelength_units
+        assert fluxes is not None
+        assert wavelengths is not None
+
+        return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
 
     def get_index(self, grid_point):
         """Get the spectrum index associated with a given grid point"""
