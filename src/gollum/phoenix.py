@@ -279,7 +279,7 @@ class PHOENIXGrid(SpectrumCollection):
         
         Parameters
         ----------
-        wavelength_range: List or Tuple
+        wavelength_range: List or Tuple of Quantities
             A pair of values that denote the shortest and longest wavelengths
             for truncating the grid.
         data: Spectrum1D-like
@@ -291,7 +291,6 @@ class PHOENIXGrid(SpectrumCollection):
         flux_units = fiducial_spectrum.flux.unit
 
         if (data is not None) and (wavelength_range is None):
-
             wavelength_range = (
                 fiducial_spectrum.wavelength.value.min() * wavelength_units,
                 fiducial_spectrum.wavelength.value.max() * wavelength_units,

@@ -84,3 +84,10 @@ def test_grid():
     assert teff_point == grid.teff_points.min()
     teff_point = grid.find_nearest_teff(1e6)
     assert teff_point == grid.teff_points.max()
+
+    newgrid = grid.truncate(wavelength_range=(10800.0 * u.Angstrom, 11800 * u.Angstrom))
+    assert newgrid is not None
+    assert isinstance(newgrid, SpectrumCollection)
+    assert newgrid.grid_points == grid.grid_points
+    assert len(newgrid[0].wavelength.value) < len(grid[0].wavelength.value)
+    assert len(newgrid) == len(grid)

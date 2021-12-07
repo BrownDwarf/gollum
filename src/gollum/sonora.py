@@ -8,6 +8,7 @@ SonoraSpectrum
 ###############
 """
 
+import copy
 import warnings
 import logging
 from gollum.precomputed_spectrum import PrecomputedSpectrum
@@ -136,57 +137,67 @@ class SonoraGrid(SpectrumCollection):
         """
 
     def __init__(
-        self, teff_range=None, logg_range=None, path=None, wl_lo=8038, wl_hi=12849,
+        self,
+        teff_range=None,
+        logg_range=None,
+        path=None,
+        wl_lo=8038,
+        wl_hi=12849,
+        **kwargs,
     ):
-        teff_points = np.hstack(
-            (
-                np.arange(500, 600, 25),
-                np.arange(600, 1000, 50),
-                np.arange(1000, 2401, 100),
+
+        if "flux" in kwargs.keys():
+            super().__init__(**kwargs)
+        else:
+            teff_points = np.hstack(
+                (
+                    np.arange(500, 600, 25),
+                    np.arange(600, 1000, 50),
+                    np.arange(1000, 2401, 100),
+                )
             )
-        )
-        logg_points = np.arange(4.0, 5.51, 0.25)
+            logg_points = np.arange(4.0, 5.51, 0.25)
 
-        if teff_range is not None:
-            subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
-            teff_points = teff_points[subset]
+            if teff_range is not None:
+                subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
+                teff_points = teff_points[subset]
 
-        if logg_range is not None:
-            subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
-            logg_points = logg_points[subset]
+            if logg_range is not None:
+                subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
+                logg_points = logg_points[subset]
 
-        self.teff_points = teff_points
-        self.logg_points = logg_points
-        self.grid_labels = ("T_eff", "log(g)")
+            wavelengths, fluxes = [], []
+            grid_points = []
 
-        wavelengths, fluxes = [], []
-        grid_points = []
+            pbar = tqdm(teff_points)
+            for teff in pbar:
+                for logg in logg_points:
+                    pbar.set_description(
+                        "Processing Teff={} K, logg={:0.2f}".format(teff, logg)
+                    )
+                    grid_point = (teff, logg)
+                    spec = SonoraSpectrum(
+                        teff=teff, logg=logg, path=path, wl_lo=wl_lo, wl_hi=wl_hi
+                    )
+                    wavelengths.append(spec.wavelength)
+                    fluxes.append(spec.flux)
+                    grid_points.append(grid_point)
+            flux_out = np.array(fluxes) * fluxes[0].unit
+            wave_out = np.array(wavelengths) * wavelengths[0].unit
 
-        pbar = tqdm(teff_points)
-        for teff in pbar:
-            for logg in logg_points:
-                pbar.set_description(
-                    "Processing Teff={} K, logg={:0.2f}".format(teff, logg)
-                )
-                grid_point = (teff, logg)
-                spec = SonoraSpectrum(
-                    teff=teff, logg=logg, path=path, wl_lo=wl_lo, wl_hi=wl_hi
-                )
-                wavelengths.append(spec.wavelength)
-                fluxes.append(spec.flux)
-                grid_points.append(grid_point)
-        flux_out = np.array(fluxes) * fluxes[0].unit
-        wave_out = np.array(wavelengths) * wavelengths[0].unit
+            # Make a quick-access dictionary
+            n_spectra = len(grid_points)
+            lookup_dict = {grid_points[i]: i for i in range(n_spectra)}
+            meta = {
+                "teff_points": teff_points,
+                "logg_points": logg_points,
+                "grid_labels": ("T_eff", "log(g)"),
+                "n_spectra": n_spectra,
+                "grid_points": grid_points,
+                "lookup_dict": lookup_dict,
+            }
 
-        # Make a quick-access dictionary
-        n_spectra = len(grid_points)
-        self.n_spectra = n_spectra
-        lookup_dict = {grid_points[i]: i for i in range(n_spectra)}
-        self.lookup_dict = lookup_dict
-
-        super().__init__(
-            flux=flux_out, spectral_axis=wave_out, meta={"grid_points": grid_points}
-        )
+            super().__init__(flux=flux_out, spectral_axis=wave_out, meta=meta)
 
     def __getitem__(self, key):
         flux = self.flux[key]
@@ -197,7 +208,6 @@ class SonoraGrid(SpectrumCollection):
             )
         spectral_axis = self.spectral_axis[key]
         uncertainty = None if self.uncertainty is None else self.uncertainty[key]
-        wcs = None if self.wcs is None else self.wcs[key]
         mask = None if self.mask is None else self.mask[key]
         if self.meta is None:
             meta = None
@@ -211,15 +221,78 @@ class SonoraGrid(SpectrumCollection):
             flux=flux,
             spectral_axis=spectral_axis,
             uncertainty=uncertainty,
-            wcs=wcs,
+            wcs=None,
             mask=mask,
             meta=meta,
         )
 
     @property
     def grid_points(self):
-        """What are the grid points of the spectrum?"""
+        """What are the coordinates of the grid?"""
         return self.meta["grid_points"]
+
+    @property
+    def teff_points(self):
+        """What are the Teff points of the grid?"""
+        return self.meta["teff_points"]
+
+    @property
+    def logg_points(self):
+        """What are the logg points of the grid?"""
+        return self.meta["logg_points"]
+
+    @property
+    def grid_labels(self):
+        """What are the grid labels?"""
+        return self.meta["grid_labels"]
+
+    @property
+    def n_spectra(self):
+        """How many distinct spectra are in the grid?"""
+        return self.meta["n_spectra"]
+
+    @property
+    def lookup_dict(self):
+        """Lookup dictioary for spectra from their grid coordinates"""
+        return self.meta["lookup_dict"]
+
+    def truncate(self, wavelength_range=None, data=None):
+        """Truncate the wavelength range of the grid
+        
+        Parameters
+        ----------
+        wavelength_range: List or Tuple of Quantities
+            A pair of values that denote the shortest and longest wavelengths
+            for truncating the grid.
+        data: Spectrum1D-like
+            A spectrum to which this method will match the wavelength limits
+
+        """
+        fiducial_spectrum = copy.deepcopy(self[0])
+        wavelength_units = fiducial_spectrum.wavelength.unit
+        flux_units = fiducial_spectrum.flux.unit
+
+        if (data is not None) and (wavelength_range is None):
+            wavelength_range = (
+                fiducial_spectrum.wavelength.value.min() * wavelength_units,
+                fiducial_spectrum.wavelength.value.max() * wavelength_units,
+            )
+        shortest_wavelength, longest_wavelength = wavelength_range
+
+        wavelengths, fluxes = [], []
+        for spectrum in self:
+            mask = (spectrum.wavelength > shortest_wavelength) & (
+                spectrum.wavelength < longest_wavelength
+            )
+            wavelengths.append(spectrum.wavelength.value[mask])
+            fluxes.append(spectrum.flux.value[mask])
+
+        fluxes = np.array(fluxes) * flux_units
+        wavelengths = np.array(wavelengths) * wavelength_units
+        assert fluxes is not None
+        assert wavelengths is not None
+
+        return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
 
     def get_index(self, grid_point):
         """Get the spectrum index associated with a given grid point
