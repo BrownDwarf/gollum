@@ -146,7 +146,11 @@ class SonoraGrid(SpectrumCollection):
         **kwargs,
     ):
 
-        if "flux" in kwargs.keys():
+        if (
+            ("flux" in kwargs.keys())
+            and ("spectral_axis" in kwargs.keys())
+            and ("meta" in kwargs.keys())
+        ):
             super().__init__(**kwargs)
         else:
             teff_points = np.hstack(
