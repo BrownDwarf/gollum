@@ -8,7 +8,6 @@ PrecomputedSpectrum
 ###############
 """
 
-from os import O_RDONLY
 import warnings
 import logging
 import numpy as np
@@ -267,11 +266,14 @@ class PrecomputedSpectrum(Spectrum1D):
             return tilted_spectrum
 
     def fit_continuum(
-        self, pixel_distance=5001, polyorder=3, return_coeffs=False,
+        self,
+        pixel_distance=5001,
+        polyorder=3,
+        return_coeffs=False,
     ):
         """Finds the low frequency continuum trend using scipy's find_peaks filter
         and linear algebra.
-        
+
         Parameters
         ----------
         pixel_distance : int
@@ -317,6 +319,25 @@ class PrecomputedSpectrum(Spectrum1D):
             return (spec_out, coeffs)
         else:
             return spec_out
+
+    def to_pandas(self):
+        """Export the spectrum to a pandas dataframe"""
+        try:
+            import pandas as pd
+        except ImportError:
+            log.error("The to_pandas method requires the optional dependency pandas")
+        if self.mask is not None:
+            mask = self.mask
+        else:
+            mask = np.zeros(len(self.wavelength.value), dtype=int)
+
+        return pd.DataFrame(
+            {
+                "wavelength": self.wavelength.value,
+                "flux": self.flux.value,
+                "mask": mask,
+            }
+        )
 
     def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"
