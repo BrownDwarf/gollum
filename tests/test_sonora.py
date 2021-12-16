@@ -9,7 +9,7 @@ from specutils.spectra.spectrum_collection import SpectrumCollection
 def test_basic():
     """Do the basic methods work?"""
 
-    spec = SonoraSpectrum(teff=1200, logg=4.5, path="../../intuition/models/spectra/")
+    spec = SonoraSpectrum(teff=1200, logg=4.5, path=None)
 
     assert spec is not None
     assert isinstance(spec, Spectrum1D)
@@ -41,7 +41,7 @@ def test_basic():
 def test_resample():
     """Do the basic methods work?"""
 
-    spec = SonoraSpectrum(teff=850, logg=4.25, path="../../intuition/models/spectra/")
+    spec = SonoraSpectrum(teff=850, logg=4.25, path=None)
 
     assert spec is not None
 
@@ -65,7 +65,7 @@ def test_grid():
     grid = SonoraGrid(
         teff_range=(950, 1020),
         logg_range=(4.25, 4.75),
-        path="../../intuition/models/spectra/",
+        path=None,
     )
 
     assert grid is not None
