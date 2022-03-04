@@ -12,3 +12,5 @@ Getting started
    Finding a best fit rotational broadening and RV <best_fit_for_fixed_template.ipynb>
 
    Divide a spectrum by a black body curve <Divide_by_a_blackbody.ipynb>
+
+   Interactively fit spectra with a model dashboard <gollum_demo_Sonora_and_BDSS.ipynb>
