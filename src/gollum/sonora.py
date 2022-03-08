@@ -176,6 +176,7 @@ class SonoraGrid(SpectrumCollection):
             pbar = tqdm(teff_points)
             for teff in pbar:
                 for logg in logg_points:
+                    # to do: metallicity for loop here
                     pbar.set_description(
                         "Processing Teff={} K, logg={:0.2f}".format(teff, logg)
                     )
