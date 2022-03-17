@@ -24,7 +24,7 @@ from scipy.interpolate import UnivariateSpline, interp1d
 from scipy.signal import find_peaks, wavelets
 from specutils.manipulation import LinearInterpolatedResampler
 from specutils.fitting import fit_generic_continuum
-from utilities import apply_numpy_mask
+from gollum.utilities import apply_numpy_mask
 
 
 log = logging.getLogger(__name__)
