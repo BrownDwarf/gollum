@@ -24,6 +24,7 @@ from scipy.interpolate import UnivariateSpline, interp1d
 from scipy.signal import find_peaks, wavelets
 from specutils.manipulation import LinearInterpolatedResampler
 from specutils.fitting import fit_generic_continuum
+from utilities import apply_numpy_mask
 
 
 log = logging.getLogger(__name__)
@@ -52,6 +53,20 @@ class PrecomputedSpectrum(Spectrum1D):
         # Todo, we could put the wavelength limits in here.
 
         super().__init__(*args, **kwargs)
+
+    def apply_boolean_mask(self, mask):
+        """Apply a boolean mask to the spectrum
+
+        Parameters
+        ----------
+        mask: boolean mask, typically a numpy array
+            The boolean mask with numpy-style masking: True means "keep" that index and
+            False means discard that index
+        """
+
+        spec = apply_numpy_mask(self, mask)
+
+        return spec
 
     def normalize(self, percentile=None):
         """Normalize spectrum by its median value
@@ -266,10 +281,7 @@ class PrecomputedSpectrum(Spectrum1D):
             return tilted_spectrum
 
     def fit_continuum(
-        self,
-        pixel_distance=5001,
-        polyorder=3,
-        return_coeffs=False,
+        self, pixel_distance=5001, polyorder=3, return_coeffs=False,
     ):
         """Finds the low frequency continuum trend using scipy's find_peaks filter
         and linear algebra.
