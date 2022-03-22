@@ -83,6 +83,9 @@ class SonoraSpectrum(PrecomputedSpectrum):
             assert os.path.exists(
                 base_path
             ), "You must specify the path to local Sonora models: {}".format(base_path)
+
+            print("Successfully found the path to Sonora models: {}".format(base_path))
+
             assert teff in teff_points, "Teff must be on the grid points"
             assert logg in logg_points, "logg must be on the grid points"
 
