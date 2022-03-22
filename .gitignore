@@ -132,5 +132,5 @@ dmypy.json
 .envrc
 
 # notebooks are temporary for development
-notebooks/
+# notebooks/
 .DS_Store
