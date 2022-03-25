@@ -161,7 +161,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
         }
 
         if path is None:
-            path = "~/libraries/raw/Sonora/"
+            path = "~/libraries/raw/SonoraBobcat2021/"
 
         if (teff is not None) & (logg is not None):
             base_path = os.path.expanduser(path)
@@ -177,7 +177,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             base_name = "sp_t{0:0>.0f}g{1:}nc_m0.0".format(
                 float(teff), logg_par_dict[logg]
             )
-            fn = base_path + "/" + base_name + ".gz"
+            fn = base_path + "/" + base_name
 
             assert os.path.exists(fn), "Double check that the file {} exists".format(fn)
 
@@ -187,7 +187,6 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
                     fn,
                     skiprows=[0, 1],
                     delim_whitespace=True,
-                    compression="gzip",
                     names=["wavelength_um", "flux"],
                 )
                 .sort_values("wavelength_um")
