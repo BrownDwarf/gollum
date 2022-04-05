@@ -123,6 +123,7 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
         else:
             super().__init__(*args, **kwargs)
 
+
 class Sonora2021Spectrum(PrecomputedSpectrum):
     r"""
     A container for a single Sonora precomputed synthetic spectrum of a brown dwarfs or free-floating
@@ -137,7 +138,15 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
         """
 
     def __init__(
-        self, *args, teff=None, logg=None, metallicity = 0.0, path=None, wl_lo=8038, wl_hi=12849, **kwargs
+        self,
+        *args,
+        teff=None,
+        logg=None,
+        metallicity=0.0,
+        path=None,
+        wl_lo=8038,
+        wl_hi=12849,
+        **kwargs,
     ):
         # NOTE/QUESTION: Not sure if setting metallicity = 0.0 here to make it default is good or if setting metallicity to "None" would be better so we would know if user has specified a metallicity or not (would be able to include a warning)
 
@@ -180,12 +189,12 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
 
             if metallicity < 0:
                 base_name = "sp_t{0:0>.0f}g{1:}nc_m{0:0.01f}".format(
-                    float(teff), logg_par_dict[logg], float(met)
-                    )
+                    float(teff), logg_par_dict[logg], float(metallicity)
+                )
             else:
                 base_name = "sp_t{0:0>.0f}g{1:}nc_m{0:+0.0f}".format(
-                    float(teff), logg_par_dict[logg], float(met)
-                    )
+                    float(teff), logg_par_dict[logg], float(metallicity)
+                )
             fn = base_path + "/" + base_name
 
             assert os.path.exists(fn), "Double check that the file {} exists".format(fn)
@@ -216,7 +225,9 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
         else:
             super().__init__(*args, **kwargs)
 
+
 SonoraSpectrum = Sonora2021Spectrum
+
 
 class SonoraGrid(SpectrumCollection):
     r"""
@@ -238,7 +249,7 @@ class SonoraGrid(SpectrumCollection):
         self,
         teff_range=None,
         logg_range=None,
-        met_range=None
+        met_range=None,
         path=None,
         wl_lo=8038,
         wl_hi=12849,
@@ -284,11 +295,18 @@ class SonoraGrid(SpectrumCollection):
                     # to do: metallicity for loop here
                     for metallicity in met_points:
                         pbar.set_description(
-                            "Processing Teff={} K, logg={:0.2f}, metallicity={:0.1f}".format(teff, logg)
+                            "Processing Teff={} K, logg={:0.2f}, metallicity={:0.1f}".format(
+                                teff, logg
                             )
+                        )
                         grid_point = (teff, logg, metallicity)
                         spec = SonoraSpectrum(
-                            teff=teff, logg=logg, metallicity = metallicity, path=path, wl_lo=wl_lo, wl_hi=wl_hi
+                            teff=teff,
+                            logg=logg,
+                            metallicity=metallicity,
+                            path=path,
+                            wl_lo=wl_lo,
+                            wl_hi=wl_hi,
                         )
                         wavelengths.append(spec.wavelength)
                         fluxes.append(spec.flux)
