@@ -160,7 +160,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             5.5: "3160",
         }
 
-        met_points = [-0.5, 0, 0.5]
+        met_points = np.arange(-0.5, 0.51, 0.5)
 
         if path is None:
             path = "~/libraries/raw/SonoraBobcat2021/"
@@ -287,13 +287,13 @@ class SonoraGrid(SpectrumCollection):
                         pbar.set_description(
                             "Processing Teff={} K, logg={:0.2f}, met={}".format(teff, logg)
                             )
-                            grid_point = (teff, logg)
-                            spec = SonoraSpectrum(
+                        grid_point = (teff, logg)
+                        spec = SonoraSpectrum(
                             teff=teff, logg=logg, path=path, wl_lo=wl_lo, wl_hi=wl_hi
-                            )
-                            wavelengths.append(spec.wavelength)
-                            fluxes.append(spec.flux)
-                            grid_points.append(grid_point)
+                        )
+                        wavelengths.append(spec.wavelength)
+                        fluxes.append(spec.flux)
+                        grid_points.append(grid_point)
             flux_out = np.array(fluxes) * fluxes[0].unit
             wave_out = np.array(wavelengths) * wavelengths[0].unit
 
