@@ -188,11 +188,11 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             assert metallicity in met_points, "Fe/H must be a valid point"
 
             if metallicity < 0:
-                base_name = "sp_t{0:0>.0f}g{1:}nc_m{0:0.01f}".format(
+                base_name = "sp_t{0:0>.0f}g{1:}nc_m{2:0.01f}".format(
                     float(teff), logg_par_dict[logg], float(metallicity)
                 )
             else:
-                base_name = "sp_t{0:0>.0f}g{1:}nc_m{0:+0.0f}".format(
+                base_name = "sp_t{0:0>.0f}g{1:}nc_m{2:+0.1f}".format(
                     float(teff), logg_par_dict[logg], float(metallicity)
                 )
             fn = base_path + "/" + base_name
