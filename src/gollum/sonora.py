@@ -137,8 +137,9 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
         """
 
     def __init__(
-        self, *args, teff=None, logg=None, met = None, path=None, wl_lo=8038, wl_hi=12849, **kwargs
+        self, *args, teff=None, logg=None, metallicity = 0.0, path=None, wl_lo=8038, wl_hi=12849, **kwargs
     ):
+        # NOTE/QUESTION: Not sure if setting metallicity = 0.0 here to make it default is good or if setting metallicity to "None" would be better so we would know if user has specified a metallicity or not (would be able to include a warning)
 
         teff_points = np.hstack(
             (
@@ -165,7 +166,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
         if path is None:
             path = "~/libraries/raw/SonoraBobcat2021/"
 
-        if (teff is not None) & (logg is not None) & (met is not None):
+        if (teff is not None) & (logg is not None):
             base_path = os.path.expanduser(path)
             assert os.path.exists(
                 base_path
@@ -175,9 +176,9 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
 
             assert teff in teff_points, "Teff must be on the grid points"
             assert logg in logg_points, "logg must be on the grid points"
-            assert met in met_points, "Fe/H must be a valid point"
+            assert metallicity in met_points, "Fe/H must be a valid point"
 
-            if met < 0:
+            if metallicity < 0:
                 base_name = "sp_t{0:0>.0f}g{1:}nc_m{0:0.01f}".format(
                     float(teff), logg_par_dict[logg], float(met)
                     )
@@ -260,7 +261,7 @@ class SonoraGrid(SpectrumCollection):
             )
             logg_points = np.arange(4.0, 5.51, 0.25)
 
-            met_points = [-0.5, 0.0, 0.5]
+            met_points = np.arange(-0.5, 0.51, 0.5)
 
             if teff_range is not None:
                 subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
@@ -270,7 +271,7 @@ class SonoraGrid(SpectrumCollection):
                 subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
                 logg_points = logg_points[subset]
 
-            if met is not None:
+            if metallicity is not None:
                 subset = (met_points >= met_range[0]) & (met_points <= met_range[1])
                 met_points = met_points[subset]
 
@@ -281,15 +282,13 @@ class SonoraGrid(SpectrumCollection):
             for teff in pbar:
                 for logg in logg_points:
                     # to do: metallicity for loop here
-                    for met in met_points:
-                        # add code here
-
+                    for metallicity in met_points:
                         pbar.set_description(
-                            "Processing Teff={} K, logg={:0.2f}, met={}".format(teff, logg)
+                            "Processing Teff={} K, logg={:0.2f}, metallicity={:0.1f}".format(teff, logg)
                             )
-                        grid_point = (teff, logg)
+                        grid_point = (teff, logg, metallicity)
                         spec = SonoraSpectrum(
-                            teff=teff, logg=logg, path=path, wl_lo=wl_lo, wl_hi=wl_hi
+                            teff=teff, logg=logg, metallicity = metallicity, path=path, wl_lo=wl_lo, wl_hi=wl_hi
                         )
                         wavelengths.append(spec.wavelength)
                         fluxes.append(spec.flux)
