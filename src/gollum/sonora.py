@@ -148,7 +148,6 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
         wl_hi=12849,
         **kwargs,
     ):
-        # NOTE/QUESTION: Not sure if setting metallicity = 0.0 here to make it default is good or if setting metallicity to "None" would be better so we would know if user has specified a metallicity or not (would be able to include a warning)
 
         teff_points = np.hstack(
             (
@@ -157,17 +156,21 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
                 np.arange(1000, 2401, 100),
             )
         )
-        logg_points = np.arange(4.0, 5.51, 0.25)
+        logg_points = np.arange(3.0, 5.51, 0.25)
 
         # Map logg (cgs) to the gravity labels used in file names
         logg_par_dict = {
+            3.0: "10",
+            3.25: "17",
+            3.5: "31",
+            3.75: "56",
             4.0: "100",
             4.25: "178",
             4.5: "316",
             4.75: "562",
             5.0: "1000",
             5.25: "1780",
-            5.5: "3160",
+            5.5: "3160"
         }
 
         met_points = np.arange(-0.5, 0.51, 0.5)
@@ -181,13 +184,11 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
                 base_path
             ), "You must specify the path to local Sonora models: {}".format(base_path)
 
-            print("successfully found the path to Sonora models: {}".format(base_path))
-
             assert teff in teff_points, "Teff must be on the grid points"
             assert logg in logg_points, "logg must be on the grid points"
             assert metallicity in met_points, "Fe/H must be a valid point"
 
-            if metallicity < 0:
+            if metallicity <= 0:
                 base_name = "sp_t{0:0>.0f}g{1:}nc_m{2:0.01f}".format(
                     float(teff), logg_par_dict[logg], float(metallicity)
                 )
@@ -270,7 +271,7 @@ class SonoraGrid(SpectrumCollection):
                     np.arange(1000, 2401, 100),
                 )
             )
-            logg_points = np.arange(4.0, 5.51, 0.25)
+            logg_points = np.arange(3.0, 5.51, 0.25)
 
             met_points = np.arange(-0.5, 0.51, 0.5)
 
@@ -282,7 +283,7 @@ class SonoraGrid(SpectrumCollection):
                 subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
                 logg_points = logg_points[subset]
 
-            if metallicity is not None:
+            if met_range is not None:
                 subset = (met_points >= met_range[0]) & (met_points <= met_range[1])
                 met_points = met_points[subset]
 
@@ -292,22 +293,28 @@ class SonoraGrid(SpectrumCollection):
             pbar = tqdm(teff_points)
             for teff in pbar:
                 for logg in logg_points:
-                    # to do: metallicity for loop here
                     for metallicity in met_points:
                         pbar.set_description(
                             "Processing Teff={} K, logg={:0.2f}, metallicity={:0.1f}".format(
-                                teff, logg
+                                teff, logg, metallicity
                             )
                         )
                         grid_point = (teff, logg, metallicity)
-                        spec = SonoraSpectrum(
-                            teff=teff,
-                            logg=logg,
-                            metallicity=metallicity,
-                            path=path,
-                            wl_lo=wl_lo,
-                            wl_hi=wl_hi,
-                        )
+                        # "To do": See issue 31
+                        # Temporary work around: pass if we can't read the file
+                        try:
+                            spec = SonoraSpectrum(
+                                teff=teff,
+                                logg=logg,
+                                metallicity=metallicity,
+                                path=path,
+                                wl_lo=wl_lo,
+                                wl_hi=wl_hi,
+                                )
+                        except:
+                            print("Error with grid point Teff={} K, logg={:0.2f}, metallicity={:0.1f}".format(
+                                teff, logg, metallicity
+                            ))
                         wavelengths.append(spec.wavelength)
                         fluxes.append(spec.flux)
                         grid_points.append(grid_point)
