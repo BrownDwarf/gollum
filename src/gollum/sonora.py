@@ -170,7 +170,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             4.75: "562",
             5.0: "1000",
             5.25: "1780",
-            5.5: "3160"
+            5.5: "3160",
         }
 
         met_points = np.arange(-0.5, 0.51, 0.5)
@@ -310,11 +310,14 @@ class SonoraGrid(SpectrumCollection):
                                 path=path,
                                 wl_lo=wl_lo,
                                 wl_hi=wl_hi,
-                                )
+                            )
                         except:
-                            print("Error with grid point Teff={} K, logg={:0.2f}, metallicity={:0.1f}".format(
-                                teff, logg, metallicity
-                            ))
+                            log.info(
+                                "Grid point Teff={} K, logg={:0.2f}, metallicity={:0.1f} does not exist".format(
+                                    teff, logg, metallicity
+                                )
+                                + " in Sonora library"
+                            )
                         wavelengths.append(spec.wavelength)
                         fluxes.append(spec.flux)
                         grid_points.append(grid_point)
