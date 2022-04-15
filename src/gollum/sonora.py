@@ -724,6 +724,7 @@ class SonoraGrid(SpectrumCollection):
                 [fig],
                 [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
                 [sp4, logg_slider],
+                [sp4, sp4], # TO DO: Add metallicity slider
                 [sp4, smoothing_slider],
                 [sp4, vz_slider],
                 [sp4, scale_slider],
