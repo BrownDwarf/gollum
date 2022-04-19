@@ -173,7 +173,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             5.5: "3160",
         }
 
-        met_points = np.arange(-0.5, 0.51, 0.5)
+        metallicity_points = np.arange(-0.5, 0.51, 0.5)
 
         if path is None:
             path = "~/libraries/raw/SonoraBobcat2021/"
@@ -186,7 +186,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
 
             assert teff in teff_points, "Teff must be on the grid points"
             assert logg in logg_points, "logg must be on the grid points"
-            assert metallicity in met_points, "Fe/H must be a valid point"
+            assert metallicity in metallicity_points, "Fe/H must be a valid point"
 
             if metallicity <= 0:
                 base_name = "sp_t{0:0>.0f}g{1:}nc_m{2:0.01f}".format(
@@ -238,7 +238,7 @@ class SonoraGrid(SpectrumCollection):
     Args:
         Teff_range (tuple): The Teff limits of the grid model to read in.
         logg (tuple): The logg limits of the Sonora model to read in.
-        met_range (tuple): The met limits of the Sonora model to read in
+        metallicity_range (tuple): The metallicity limits of the Sonora model to read in
         path (str): The path to your local Sonora grid library.
             You must have the Sonora grid downloaded locally.
             Default: "~/libraries/raw/Sonora/"
@@ -250,7 +250,7 @@ class SonoraGrid(SpectrumCollection):
         self,
         teff_range=None,
         logg_range=None,
-        met_range=None,
+        metallicity_range=None,
         path=None,
         wl_lo=8038,
         wl_hi=12849,
@@ -273,7 +273,7 @@ class SonoraGrid(SpectrumCollection):
             )
             logg_points = np.arange(3.0, 5.51, 0.25)
 
-            met_points = np.arange(-0.5, 0.51, 0.5)
+            metallicity_points = np.arange(-0.5, 0.51, 0.5)
 
             if teff_range is not None:
                 subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
@@ -283,9 +283,9 @@ class SonoraGrid(SpectrumCollection):
                 subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
                 logg_points = logg_points[subset]
 
-            if met_range is not None:
-                subset = (met_points >= met_range[0]) & (met_points <= met_range[1])
-                met_points = met_points[subset]
+            if metallicity_range is not None:
+                subset = (metallicity_points >= metallicity_range[0]) & (metallicity_points <= metallicity_range[1])
+                metallicity_points = metallicity_points[subset]
 
             wavelengths, fluxes = [], []
             grid_points = []
@@ -293,7 +293,7 @@ class SonoraGrid(SpectrumCollection):
             pbar = tqdm(teff_points)
             for teff in pbar:
                 for logg in logg_points:
-                    for metallicity in met_points:
+                    for metallicity in metallicity_points:
                         pbar.set_description(
                             "Processing Teff={} K, logg={:0.2f}, metallicity={:0.1f}".format(
                                 teff, logg, metallicity
@@ -330,6 +330,7 @@ class SonoraGrid(SpectrumCollection):
             meta = {
                 "teff_points": teff_points,
                 "logg_points": logg_points,
+                "metallicity_points": metallicity_points,
                 "grid_labels": ("T_eff", "log(g)"),
                 "n_spectra": n_spectra,
                 "grid_points": grid_points,
@@ -379,6 +380,11 @@ class SonoraGrid(SpectrumCollection):
     def logg_points(self):
         """What are the logg points of the grid?"""
         return self.meta["logg_points"]
+
+    @property
+    def metallicity_points(self):
+        """What are the metallicity points of the grid?"""
+        return self.meta["metallicity_points"]
 
     @property
     def grid_labels(self):
@@ -597,6 +603,15 @@ class SonoraGrid(SpectrumCollection):
                 title="Surface Gravity: log(g) [cm/s^2]",
                 width=490,
             )
+            # IN PROGRESS: Metallicity slider
+            metallicity_slider = Slider(
+                start=min(self.metallicity_points),
+                end=max(self.metallicity_points),
+                value=0.5,
+                step=0.5,
+                title="Metallicity: metallicity [Fe/H]",
+                width=490,
+            )
             scale_slider = Slider(
                 start=0.1,
                 end=2.0,
@@ -650,7 +665,8 @@ class SonoraGrid(SpectrumCollection):
                 if teff != old:
                     teff_message.text = "Closest grid point: {}".format(teff)
                     logg = logg_slider.value
-                    grid_point = (teff, logg)
+                    metallicity = metallicity_slider.value
+                    grid_point = (teff, logg, metallicity)
                     index = self.get_index(grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -673,8 +689,34 @@ class SonoraGrid(SpectrumCollection):
             def update_upon_logg_selection(attr, old, new):
                 """Callback to take action when logg slider changes"""
                 teff = self.find_nearest_teff(teff_slider.value)
+                metallicity = metallicity_slider.value
 
-                grid_point = (teff, new)
+                # Why no if statement here to check if logg still old value?
+
+                grid_point = (teff, new, metallicity)
+                index = self.get_index(grid_point)
+
+                native_spec = self[index].normalize(percentile=95)
+                new_spec = (
+                    native_spec.rotationally_broaden(smoothing_slider.value)
+                    .multiply(scale_slider.value * u.dimensionless_unscaled)
+                    .rv_shift(vz_slider.value)
+                )
+
+                spec_source.data = {
+                    "native_wavelength": native_spec.wavelength.value,
+                    "native_flux": native_spec.flux.value,
+                    "wavelength": new_spec.wavelength.value,
+                    "flux": new_spec.flux.value,
+                }
+
+            # IN PROGRESS: Metallicity Slider
+            def update_upon_metallicity_selection(attr, old, new):
+                """Callback to take action when metallicity slider changes"""
+                teff = self.find_nearest_teff(teff_slider.value)
+                logg = logg_slider.value
+                
+                grid_point = (teff, logg, new)
                 index = self.get_index(grid_point)
 
                 native_spec = self[index].normalize(percentile=95)
@@ -711,6 +753,7 @@ class SonoraGrid(SpectrumCollection):
             vz_slider.on_change("value", update_upon_vz)
             teff_slider.on_change("value", update_upon_teff_selection)
             logg_slider.on_change("value", update_upon_logg_selection)
+            metallicity_slider.on_change("value", update_upon_metallicity_selection)
             scale_slider.on_change("value", update_upon_scale)
 
             sp1, sp2, sp3, sp4 = (
@@ -724,7 +767,7 @@ class SonoraGrid(SpectrumCollection):
                 [fig],
                 [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
                 [sp4, logg_slider],
-                [sp4, sp4], # TO DO: Add metallicity slider
+                [sp4, metallicity_slider], 
                 [sp4, smoothing_slider],
                 [sp4, vz_slider],
                 [sp4, scale_slider],
