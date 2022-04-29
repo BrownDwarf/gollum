@@ -77,7 +77,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             wl_filename = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
             assert os.path.exists(
                 wl_filename
-            ), "You need to place the PHOENIX models in {}".format(base_path)
+            ), f"You need to place the PHOENIX models in {base_path}"
 
             wl_orig = fits.open(wl_filename)[0].data.astype(np.float64)
 
@@ -85,9 +85,9 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             wl_out = wl_orig[mask]
 
             # Deal with metallicity
-            metallicity_string = "{:+0.1f}".format(metallicity)
-            if metallicity == 0.0:
-                metallicity_string = "-0.0"
+            metallicity_string = f"{metallicity:+0.1f}"
+
+            metallicity_string = "-0.0" if metallicity == 0.0 else metallicity_string
 
             fn = (
                 base_path
@@ -306,7 +306,7 @@ class PHOENIXGrid(SpectrumCollection):
 
     def truncate(self, wavelength_range=None, data=None):
         """Truncate the wavelength range of the grid
-        
+
         Parameters
         ----------
         wavelength_range: List or Tuple of Quantities
