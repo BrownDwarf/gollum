@@ -65,6 +65,7 @@ def test_grid():
     grid = SonoraGrid(
         teff_range=(950, 1020),
         logg_range=(4.25, 4.75),
+        metallicity_range=(0.0, 0.5),
         path=None,
     )
 
