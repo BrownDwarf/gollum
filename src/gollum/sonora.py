@@ -22,6 +22,9 @@ import os
 from specutils.spectra.spectrum1d import Spectrum1D
 from tqdm import tqdm
 
+from math import sqrt
+from sklearn.neighbors import KDTree
+
 from bokeh.io import show, output_notebook, push_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Span, Range1d, Dropdown
@@ -39,7 +42,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 class Sonora2017Spectrum(PrecomputedSpectrum):
-    r"""
+    """
     A container for a single Sonora precomputed synthetic spectrum of a brown dwarfs or free-floating
     Gas Giant planet.
 
@@ -444,6 +447,53 @@ class SonoraGrid(SpectrumCollection):
         """
         return self.lookup_dict[grid_point]
 
+    def get_distance(self, grid_point1, grid_point2):
+        return sqrt( ((gridpoint1[0]-gridpoint2[0]) ** 2) + (gridpoint1[1]-gridpoint2[1]) ** 2) + (gridpoint1[2]-gridpoint2[2]) ** 2) )
+
+    #  Need to add a function to find the near grid point in the case it doesn't exist (find nearest point in a lattice)
+    def find_nearest_grid_point(self, teff, logg, metallicity):
+        # Alt: a KD tree?
+        current = (teff, logg, metallicity)
+
+        idx = (np.abs(self.teff_points - value)).argmin()
+        new_teff = self.teff_points[idx]
+        idy = (np.abs(self.logg_points - value)).argmin()
+        new_logg = self.logg_points[idy]
+        idz = (np.abs(self.metallicity_points - value)).argmin()
+        new_metallicity = self.metallicity_points[idz]
+
+        nearest_point = current
+        least_distance = 100
+        if get_distance(current, (new_teff, logg, metallicity)) < least_distance:
+            least_distance = get_distance(current, (new_teff, logg, metallicity)) 
+            nearest_point = (new_teff, logg, metallicity)
+
+        if get_distance(current, (new_teff, new_logg, metallicity)) < least_distance:
+            least_distance = get_distance(current, (new_teff, new_logg, metallicity)) 
+            nearest_point = (new_teff, new_logg, metallicity)
+
+        if get_distance(current, (new_teff, logg, new_metallicity)) < least_distance:
+            least_distance = get_distance(current, (new_teff, logg, new_metallicity)) 
+            nearest_point = (new_teff, logg, new_metallicity)
+
+        if get_distance(current, (new_teff, new_logg, new_metallicity)) < least_distance:
+            least_distance = get_distance(current, (new_teff, new_logg, new_metallicity)) 
+            nearest_point = (new_teff, new_logg, new_metallicity)
+
+        if get_distance(current, (teff, new_logg, metallicity)) < least_distance:
+            least_distance = get_distance(current, (teff, new_logg, metallicity)) 
+            nearest_point = (teff, new_logg, metallicity)
+
+        if get_distance(current, (teff, new_logg, new_metallicity)) < least_distance:
+            least_distance = get_distance(current, (teff, new_logg, new_metallicity)) 
+            nearest_point = (teff, new_logg, new_metallicity)
+
+        if get_distance(current, (teff, logg, new_metallicity)) < least_distance:
+            least_distance = get_distance(current, (teff, logg, new_metallicity)) 
+            nearest_point = (teff, logg, new_metallicity)
+
+        return nearest_point
+
     def find_nearest_teff(self, value):
         idx = (np.abs(self.teff_points - value)).argmin()
         return self.teff_points[idx]
@@ -603,11 +653,10 @@ class SonoraGrid(SpectrumCollection):
                 title="Surface Gravity: log(g) [cm/s^2]",
                 width=490,
             )
-            # IN PROGRESS: Metallicity slider
             metallicity_slider = Slider(
                 start=min(self.metallicity_points),
                 end=max(self.metallicity_points),
-                value=0.5,
+                value=0.0,
                 step=0.5,
                 title="Metallicity: metallicity [Fe/H]",
                 width=490,
@@ -691,8 +740,6 @@ class SonoraGrid(SpectrumCollection):
                 teff = self.find_nearest_teff(teff_slider.value)
                 metallicity = metallicity_slider.value
 
-                # Why no if statement here to check if logg still old value?
-
                 grid_point = (teff, new, metallicity)
                 index = self.get_index(grid_point)
 
@@ -709,8 +756,6 @@ class SonoraGrid(SpectrumCollection):
                     "wavelength": new_spec.wavelength.value,
                     "flux": new_spec.flux.value,
                 }
-
-            # IN PROGRESS: Metallicity Slider
             def update_upon_metallicity_selection(attr, old, new):
                 """Callback to take action when metallicity slider changes"""
                 teff = self.find_nearest_teff(teff_slider.value)
