@@ -313,6 +313,9 @@ class SonoraGrid(SpectrumCollection):
                                 wl_lo=wl_lo,
                                 wl_hi=wl_hi,
                             )
+                            wavelengths.append(spec.wavelength)
+                            fluxes.append(spec.flux)
+                            grid_points.append(grid_point)
                         except:
                             log.info(
                                 "Grid point Teff={} K, logg={:0.2f}, metallicity={:0.1f} does not exist".format(
@@ -320,9 +323,6 @@ class SonoraGrid(SpectrumCollection):
                                 )
                                 + " in Sonora library"
                             )
-                        wavelengths.append(spec.wavelength)
-                        fluxes.append(spec.flux)
-                        grid_points.append(grid_point)
             flux_out = np.array(fluxes) * fluxes[0].unit
             wave_out = np.array(wavelengths) * wavelengths[0].unit
 
@@ -451,45 +451,14 @@ class SonoraGrid(SpectrumCollection):
 
     #  Need to add a function to find the near grid point in the case it doesn't exist (find nearest point in a lattice)
     def find_nearest_grid_point(self, teff, logg, metallicity):
-        # Alt: a KD tree?
         current = (teff, logg, metallicity)
 
-        idx = (np.abs(self.teff_points - teff)).argmin()
-        new_teff = self.teff_points[idx]
-        idy = (np.abs(self.logg_points - logg)).argmin()
-        new_logg = self.logg_points[idy]
-        idz = (np.abs(self.metallicity_points - metallicity)).argmin()
-        new_metallicity = self.metallicity_points[idz]
-
-        nearest_point = current
-        least_distance = 100
-        if self.get_distance(current, (new_teff, logg, metallicity)) < least_distance:
-            least_distance = self.get_distance(current, (new_teff, logg, metallicity)) 
-            nearest_point = (new_teff, logg, metallicity)
-
-        if self.get_distance(current, (new_teff, new_logg, metallicity)) < least_distance:
-            least_distance = self.get_distance(current, (new_teff, new_logg, metallicity)) 
-            nearest_point = (new_teff, new_logg, metallicity)
-
-        if self.get_distance(current, (new_teff, logg, new_metallicity)) < least_distance:
-            least_distance = self.get_distance(current, (new_teff, logg, new_metallicity)) 
-            nearest_point = (new_teff, logg, new_metallicity)
-
-        if self.get_distance(current, (new_teff, new_logg, new_metallicity)) < least_distance:
-            least_distance = self.get_distance(current, (new_teff, new_logg, new_metallicity)) 
-            nearest_point = (new_teff, new_logg, new_metallicity)
-
-        if self.get_distance(current, (teff, new_logg, metallicity)) < least_distance:
-            least_distance = self.get_distance(current, (teff, new_logg, metallicity)) 
-            nearest_point = (teff, new_logg, metallicity)
-
-        if self.get_distance(current, (teff, new_logg, new_metallicity)) < least_distance:
-            least_distance = self.get_distance(current, (teff, new_logg, new_metallicity)) 
-            nearest_point = (teff, new_logg, new_metallicity)
-
-        if self.get_distance(current, (teff, logg, new_metallicity)) < least_distance:
-            least_distance = self.get_distance(current, (teff, logg, new_metallicity)) 
-            nearest_point = (teff, logg, new_metallicity)
+        distances = []
+        for point in self.grid_points:
+            distances.append(self.get_distance(current, point))
+        shortest_distance = min(distances)
+        idx = distances.index(shortest_distance)
+        nearest_point = self.grid_points[idx]
 
         return nearest_point
 
@@ -642,7 +611,7 @@ class SonoraGrid(SpectrumCollection):
                 width=490,
             )
             teff_message = Div(
-                text="Closest grid point: {}".format(1000), width=100, height=10
+                text="Closest T_eff point: {}".format(1000), width=100, height=10
             )
             logg_slider = Slider(
                 start=min(self.logg_points),
@@ -652,13 +621,19 @@ class SonoraGrid(SpectrumCollection):
                 title="Surface Gravity: log(g) [cm/s^2]",
                 width=490,
             )
+            logg_message = Div(
+                text="Closest log(g) point: {}".format(1000), width=100, height=10
+            )
             metallicity_slider = Slider(
                 start=min(self.metallicity_points),
                 end=max(self.metallicity_points),
                 value=0.0,
                 step=0.5,
-                title="Metallicity: metallicity [Fe/H]",
+                title="Metallicity: Metallicity [Fe/H]",
                 width=490,
+            )
+            metallicity_message = Div(
+                text="Closest Metallicity point: {}".format(1000), width=100, height=10
             )
             scale_slider = Slider(
                 start=0.1,
@@ -711,19 +686,49 @@ class SonoraGrid(SpectrumCollection):
                 """Callback to take action when teff slider changes"""
                 logg = logg_slider.value
                 metallicity = metallicity_slider.value
-                old_grid_point = (old, logg, metallicity)
                 new_grid_point = self.find_nearest_grid_point(new, logg, metallicity)
 
-                if new_grid_point != old_grid_point:
+                if new_grid_point[0] != old:
                     teff = new_grid_point[0]
                     logg = new_grid_point[1]
                     metallicity = new_grid_point[2]
 
-                    teff_message.text = "Closest grid point: {}".format(teff)
-                    logg = logg_slider.value
-                    metallicity = metallicity_slider.value
-                    grid_point = (teff, logg, metallicity)
-                    index = self.get_index(grid_point)
+                    teff_message.text = "Closest T_eff point: {}".format(teff)
+                    logg_message.text = "Closest log(g) point: {}".format(logg)
+                    metallicity_message.text = "Closest Metallicity point: {}".format(metallicity)
+                    index = self.get_index(new_grid_point)
+
+                    native_spec = self[index].normalize(percentile=95)
+                    new_spec = (
+                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        .multiply(scale_slider.value * u.dimensionless_unscaled)
+                        .rv_shift(vz_slider.value)
+                    )
+
+                    spec_source.data = {
+                        "native_wavelength": native_spec.wavelength.value,
+                        "native_flux": native_spec.flux.value,
+                        "wavelength": new_spec.wavelength.value,
+                        "flux": new_spec.flux.value,
+                    }
+                else:
+                    pass
+
+            def update_upon_logg_selection(attr, old, new):
+                """Callback to take action when logg slider changes"""
+                teff = teff_slider.value
+                metallicity = metallicity_slider.value
+                new_grid_point = self.find_nearest_grid_point(teff, new, metallicity)
+
+                if new_grid_point[1] != old:
+                    teff = new_grid_point[0]
+                    logg = new_grid_point[1]
+                    metallicity = new_grid_point[2]
+
+                    teff_message.text = "Closest T_eff point: {}".format(teff)
+                    logg_message.text = "Closest log(g) point: {}".format(logg)
+                    metallicity_message.text = "Closest Metallicity point: {}".format(metallicity)
+                    index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
                     new_spec = (
@@ -741,49 +746,37 @@ class SonoraGrid(SpectrumCollection):
 
                 else:
                     pass
-
-            def update_upon_logg_selection(attr, old, new):
-                """Callback to take action when logg slider changes"""
-                teff = self.find_nearest_teff(teff_slider.value)
-                metallicity = metallicity_slider.value
-
-                grid_point = (teff, new, metallicity)
-                index = self.get_index(grid_point)
-
-                native_spec = self[index].normalize(percentile=95)
-                new_spec = (
-                    native_spec.rotationally_broaden(smoothing_slider.value)
-                    .multiply(scale_slider.value * u.dimensionless_unscaled)
-                    .rv_shift(vz_slider.value)
-                )
-
-                spec_source.data = {
-                    "native_wavelength": native_spec.wavelength.value,
-                    "native_flux": native_spec.flux.value,
-                    "wavelength": new_spec.wavelength.value,
-                    "flux": new_spec.flux.value,
-                }
             def update_upon_metallicity_selection(attr, old, new):
                 """Callback to take action when metallicity slider changes"""
-                teff = self.find_nearest_teff(teff_slider.value)
+                teff = teff_slider.value
                 logg = logg_slider.value
-                
-                grid_point = (teff, logg, new)
-                index = self.get_index(grid_point)
+                new_grid_point = self.find_nearest_grid_point(teff, logg, new)
 
-                native_spec = self[index].normalize(percentile=95)
-                new_spec = (
-                    native_spec.rotationally_broaden(smoothing_slider.value)
-                    .multiply(scale_slider.value * u.dimensionless_unscaled)
-                    .rv_shift(vz_slider.value)
-                )
+                if new_grid_point[2] != old:
+                    teff = new_grid_point[0]
+                    logg = new_grid_point[1]
+                    metallicity = new_grid_point[2]
 
-                spec_source.data = {
-                    "native_wavelength": native_spec.wavelength.value,
-                    "native_flux": native_spec.flux.value,
-                    "wavelength": new_spec.wavelength.value,
-                    "flux": new_spec.flux.value,
-                }
+                    teff_message.text = "Closest T_eff point: {}".format(teff)
+                    logg_message.text = "Closest log(g) point: {}".format(logg)
+                    metallicity_message.text = "Closest Metallicity point: {}".format(metallicity)
+                    index = self.get_index(new_grid_point)
+
+                    native_spec = self[index].normalize(percentile=95)
+                    new_spec = (
+                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        .multiply(scale_slider.value * u.dimensionless_unscaled)
+                        .rv_shift(vz_slider.value)
+                    )
+
+                    spec_source.data = {
+                        "native_wavelength": native_spec.wavelength.value,
+                        "native_flux": native_spec.flux.value,
+                        "wavelength": new_spec.wavelength.value,
+                        "flux": new_spec.flux.value,
+                    }
+                else:
+                    pass
 
             def go_right_by_one():
                 """Step forward in time by a single cadence"""
@@ -818,8 +811,8 @@ class SonoraGrid(SpectrumCollection):
             widgets_and_figures = layout(
                 [fig],
                 [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
-                [sp4, logg_slider],
-                [sp4, metallicity_slider], 
+                [sp4, logg_slider, sp3, logg_message],
+                [sp4, metallicity_slider, sp3, metallicity_message], 
                 [sp4, smoothing_slider],
                 [sp4, vz_slider],
                 [sp4, scale_slider],
