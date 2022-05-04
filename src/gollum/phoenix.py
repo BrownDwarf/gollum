@@ -9,7 +9,6 @@ PHOENIXSpectrum
 """
 
 import copy
-from turtle import down
 import warnings
 import logging
 from gollum.precomputed_spectrum import PrecomputedSpectrum
@@ -83,6 +82,12 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
                 wl_filename
             ), f"You need to place the PHOENIX models in {base_path}"
         else:
+            log.info(
+                "Experimental feature! Attempting to download PHOENIX models from the internet..."
+            )
+            log.info(
+                "We are using this FTP site: ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
+            )
             wl_filename = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
             base_path = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/"
 
