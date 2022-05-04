@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
     name="gollum",
-    version="0.1.1",
+    version="0.2.0",
     author="gully",
     author_email="igully@gmail.com",
     description="A Python package for working with precomputed synthetic spectral models",
@@ -13,11 +13,12 @@ setuptools.setup(
     install_requires=[
         "numpy",
         "scipy",
-        "astropy>=4.1,<5.0",
-        "specutils",
+        "astropy",
+        "specutils>=1.5",
         "importlib_resources",
         "pandas",
         "matplotlib",
+        "pyyaml",
     ],
     packages=setuptools.find_packages(where="src"),
     package_dir={"": "src"},
@@ -30,5 +31,5 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",  # astropy 5 and up now requires Python 3.8+, sorry!
 )
