@@ -98,24 +98,24 @@ def test_nearest_gridpoint():
     """Do the basic methods work?"""
 
     grid = SonoraGrid(
-        teff_range=(950, 1020),
+        teff_range=(950, 1200),
         logg_range=(4.25, 4.75),
         metallicity_range=(0.0, 0.5),
         path=None,
     )
 
     assert grid is not None
-     # Test same gridpoint has zero distance
-    distance = grid.get_distance((1900, 4.0,0.0),(1900, 4.0, 0.0))
+    # Test same gridpoint has zero distance
+    distance = grid.get_distance((1900, 4.0, 0.0), (1900, 4.0, 0.0))
     assert distance == 0
 
-     # Test different gridpoints give you a positive distance
-    distance = grid.get_distance((1900, 4.0,0.0),(1950, 4.5, 0.5))
+    # Test different gridpoints give you a positive distance
+    distance = grid.get_distance((1900, 4.0, 0.0), (1950, 4.5, 0.5))
     assert distance > 0
 
     # Test if get_nearest_grid_point returns a valid point (itself)
-    assert grid.find_nearest_grid_point(1900, 4.5, 0.5) == (1900, 4.5, 0.5) 
+    assert grid.find_nearest_grid_point(1100, 4.5, 0.0) == (1100, 4.5, 0.0)
 
     # Test if get_nearest_grid_point return a valid point for an invalid input
-    assert grid.find_nearest_grid_point(1901, 4.5, 0.5) == (1900, 4.5, 0.5)
-  
+    assert grid.find_nearest_grid_point(1100.1, 4.501, 0.001) == (1100, 4.5, 0.0)
+

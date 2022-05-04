@@ -65,33 +65,33 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         **kwargs,
     ):
 
-        if metallicity is None:
-            metallicity = 0.0  # solar by default
-
-        if path is None:
-            path = "~/libraries/raw/PHOENIX/"
-
-        if download == False:
-            base_path = os.path.expanduser(path)
-            assert os.path.exists(
-                base_path
-            ), "You must specify the path to local PHOENIX models"
-
-            wl_filename = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
-            assert os.path.exists(
-                wl_filename
-            ), f"You need to place the PHOENIX models in {base_path}"
-        else:
-            log.info(
-                "Experimental feature! Attempting to download PHOENIX models from the internet..."
-            )
-            log.info(
-                "We are using this FTP site: ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
-            )
-            wl_filename = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
-            base_path = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/"
-
         if (teff is not None) & (logg is not None):
+
+            if metallicity is None:
+                metallicity = 0.0  # solar by default
+
+            if path is None:
+                path = "~/libraries/raw/PHOENIX/"
+
+            if download == False:
+                base_path = os.path.expanduser(path)
+                assert os.path.exists(
+                    base_path
+                ), "You must specify the path to local PHOENIX models"
+
+                wl_filename = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+                assert os.path.exists(
+                    wl_filename
+                ), f"You need to place the PHOENIX models in {base_path}"
+            else:
+                log.info(
+                    "Experimental feature! Attempting to download PHOENIX models from the internet..."
+                )
+                log.info(
+                    "We are using this FTP site: ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
+                )
+                wl_filename = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+                base_path = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/"
 
             wl_orig = fits.open(wl_filename)[0].data.astype(np.float64)
 
