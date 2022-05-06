@@ -37,7 +37,7 @@ The `gollum` framework provides a user-friendly Application Programming Interfac
 
 # Statement of need
 
-Citation to  `starfish` framework [@czekala15] 
+Citation to  `starfish` framework [@czekala15]
 
 
 `gollum` depends on `astropy` [@astropy13; @astropy18], `numpy` [@harris2020array], `specutils`, `scipy` [@scipy2020], and others.
@@ -49,6 +49,10 @@ Citation to  `starfish` framework [@czekala15]
 # Supported model grids
 
 We currently support two precomputed synthetic spectral models: PHOENIX  (XX Cite Husser), and Sonora-Bobcat (Marley et al. XX).
+
+# Dashboard
+
+We have a human in the loop interactive dashboard which allows users to compare data to models. Specifically, the current dashboard is designed to support the latest available Sonora-Bobcat 2021 Models, which allows users to control sliders correlating with intrinsic properties (effective temperature, surface gravity, and metallicity) and extrinsic properties (rotational broadening, radial velocity, and a normalization scalar). 
 
 # Acknowledgements
 
