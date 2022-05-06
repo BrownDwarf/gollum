@@ -810,7 +810,7 @@ class SonoraGrid(SpectrumCollection):
 
             widgets_and_figures = layout(
                 [fig],
-                [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
+                [l_button, sp1, r_button, sp2, teff_slider, sp2, teff_message],
                 [sp4, logg_slider, sp3, logg_message],
                 [sp4, metallicity_slider, sp3, metallicity_message], 
                 [sp4, smoothing_slider],
