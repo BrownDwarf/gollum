@@ -37,7 +37,7 @@ The `gollum` framework provides a user-friendly Application Programming Interfac
 
 # Statement of need
 
-Citation to  `starfish` framework [@czekala15] 
+Citation to  `starfish` framework [@czekala15]
 
 
 `gollum` depends on `astropy` [@astropy13; @astropy18], `numpy` [@harris2020array], `specutils`, `scipy` [@scipy2020], and others.
@@ -49,6 +49,14 @@ Citation to  `starfish` framework [@czekala15]
 # Supported model grids
 
 We currently support two precomputed synthetic spectral models: PHOENIX  (XX Cite Husser), and Sonora-Bobcat (Marley et al. XX).
+
+# Dashboard
+
+We have a human-in-the-loop interactive dashboard which allows users to compare data to models. The current version of the dashboard is specifically designed to support the latest Sonora-Bobcat 2021 Models.
+
+This dashboard allows users to control sliders correlating with intrinsic properties (effective temperature, surface gravity, and metallicity) and extrinsic properties (rotational broadening, radial velocity, and a normalization scalar). From the selected intrinsic values, the dashboard can find the closest matching model (based on the closest existing point in a jagged 3D array of existing intrinsic values) and display it on screen so that the user can compare it with the real data. The data itself shows up as a blue plot, while the model is red, which will allow users to make by-eye fittings of the models to the data displayed.
+
+There is some latency in the updating of the model's graph when the user moves certain sliders too quickly. This latency comes from the large amount of data points and the effect of the curse of dimensionality when it comes to the search for the nearest grid point based on intrinsic values that the dashboard must do with each update of the sliders. This latency mostly only applies when the user moves the sliders very quickly, however. More gradual movement of the sliders allows for relatively smooth updating of the model spectrum with minimal latency.
 
 # Acknowledgements
 

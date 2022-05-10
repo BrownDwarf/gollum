@@ -801,16 +801,17 @@ class SonoraGrid(SpectrumCollection):
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
             scale_slider.on_change("value", update_upon_scale)
 
-            sp1, sp2, sp3, sp4 = (
+            sp1, sp2, sp3, sp4, sp5 = (
                 Spacer(width=5),
                 Spacer(width=10),
                 Spacer(width=20),
                 Spacer(width=100),
+                Spacer(width=25)
             )
 
             widgets_and_figures = layout(
                 [fig],
-                [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
+                [l_button, sp1, r_button, sp2, teff_slider, sp5, teff_message],
                 [sp4, logg_slider, sp3, logg_message],
                 [sp4, metallicity_slider, sp3, metallicity_message], 
                 [sp4, smoothing_slider],
