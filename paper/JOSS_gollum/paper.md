@@ -13,6 +13,9 @@ authors:
   - name: Caroline V. Morley
     orcid: 0000-0002-4404-0456
     affiliation: 1
+  - name: Jiayi Cao
+    orchid: 0000-0002-2466-3816
+    affiliation: 1
   - name: More TBD
     affiliation: 2
 affiliations:
