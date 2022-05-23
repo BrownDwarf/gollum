@@ -76,7 +76,7 @@ class PrecomputedSpectrum(Spectrum1D):
             log.warning(
                 "Your velocity sampling appears to be non-uniform  "
                 "at the {:0.4f} km/s level, which could affect future convolution proceses."
-                "  Consider applying the `remap_to_velocity_axis` method.".format(
+                "  Consider applying the `resample_to_uniform_in_velocity` method.".format(
                     velocity_variation
                 )
             )
