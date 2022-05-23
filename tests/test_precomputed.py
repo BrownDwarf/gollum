@@ -59,14 +59,14 @@ def test_resampling():
     y_vec = (y_continuum + y_perturbation) * u.dimensionless_unscaled
     spec = PrecomputedSpectrum(spectral_axis=x_vec, flux=y_vec)
 
-    new_spec = spec.remap_to_velocity_axis()
+    new_spec = spec.resample_to_uniform_in_velocity()
 
     assert new_spec is not None
     assert isinstance(new_spec, Spectrum1D)
     assert isinstance(new_spec.flux, np.ndarray)
     assert len(new_spec.wavelength) != len(spec.wavelength)
 
-    new_spec = spec.remap_to_velocity_axis(oversample=3.5)
+    new_spec = spec.resample_to_uniform_in_velocity(oversample=3.5)
 
     assert new_spec is not None
     assert isinstance(new_spec, Spectrum1D)
@@ -74,7 +74,7 @@ def test_resampling():
     assert len(new_spec.wavelength) != len(spec.wavelength)
 
     # Test undersampling... should log a warning...
-    new_spec = spec.remap_to_velocity_axis(oversample=0.2)
+    new_spec = spec.resample_to_uniform_in_velocity(oversample=0.2)
 
     assert new_spec is not None
     assert isinstance(new_spec, Spectrum1D)

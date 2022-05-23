@@ -55,6 +55,33 @@ class PrecomputedSpectrum(Spectrum1D):
 
         super().__init__(*args, **kwargs)
 
+    @property
+    def velocity_spacing(self):
+        """The velocity sampling of the spectrum
+        
+        Returns
+        -------
+        np.array
+            vector of per pixel velocity sampling
+        """
+        c_kmps = const.c.to(u.km / u.s).value
+        per_pixel_velocity_sampling = (
+            c_kmps * np.diff(self.wavelength.value) / self.wavelength.value[1:]
+        )
+        velocity_variation = np.std(per_pixel_velocity_sampling)
+
+        # Problems may arise if pixel spacings jump around by more than 50 m/s:
+        velocity_variation_threshold = 0.05  # km/s
+        if velocity_variation > velocity_variation_threshold:
+            log.warning(
+                "Your velocity sampling appears to be non-uniform  "
+                "at the {:0.4f} km/s level, which could affect future convolution proceses."
+                "  Consider applying the `remap_to_velocity_axis` method.".format(
+                    velocity_variation
+                )
+            )
+        return np.median(per_pixel_velocity_sampling) * u.km / u.s
+
     def apply_boolean_mask(self, mask):
         """Apply a boolean mask to the spectrum
 
@@ -201,7 +228,7 @@ class PrecomputedSpectrum(Spectrum1D):
             wcs=None,
         )
 
-    def remap_to_velocity_axis(self, oversample=1.4):
+    def resample_to_uniform_in_velocity(self, oversample=1.4):
         """Resample spectrum to a uniform-in-velocity pixel spacing
 
         Args:
@@ -235,8 +262,8 @@ class PrecomputedSpectrum(Spectrum1D):
         if new_pixel_resolution < max_pixel_resolution:
             log.warning(
                 "You are trying to oversample the spectrum by a factor of {}.  "
-                "The highest existing per-pixel resolution of the spectrum was {}, "
-                "whereas your new resolution is only {}.  You may want to consider "
+                "The highest existing per-pixel resolution of the spectrum was {:0.1f}, "
+                "whereas your new resolution is only {:0.1f}.  You may want to consider "
                 " a higher oversample factor to avoid information loss.".format(
                     oversample, max_pixel_resolution, new_pixel_resolution
                 )
