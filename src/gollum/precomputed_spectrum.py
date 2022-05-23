@@ -73,7 +73,7 @@ class PrecomputedSpectrum(Spectrum1D):
         # Problems may arise if pixel spacings jump around by more than 50 m/s:
         velocity_variation_threshold = 0.05  # km/s
         if velocity_variation > velocity_variation_threshold:
-            log.warning(
+            log.info(
                 "Your velocity sampling appears to be non-uniform  "
                 "at the {:0.4f} km/s level, which could affect future convolution proceses."
                 "  Consider applying the `resample_to_uniform_in_velocity` method.".format(
@@ -172,7 +172,8 @@ class PrecomputedSpectrum(Spectrum1D):
         broadened_spec : (PrecomputedSpectrum)
             Instrumentally Broadened Spectrum
         """
-        # TODO: I think we want the Nadarya-Watson estimator here instead
+        # In detail the spectral resolution is wavelength dependent...
+        # For now we assume a constant resolving power
         angstroms_per_pixel = np.median(np.diff(self.wavelength.value))
         lam0 = np.median(self.wavelength.value)
         delta_lam = lam0 / resolving_power
