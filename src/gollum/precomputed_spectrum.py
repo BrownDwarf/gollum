@@ -14,6 +14,7 @@ import numpy as np
 import astropy
 from astropy import units as u
 from astropy.modeling.physical_models import BlackBody
+from astropy import constants as const
 import specutils
 
 import matplotlib.pyplot as plt
@@ -53,6 +54,33 @@ class PrecomputedSpectrum(Spectrum1D):
         # Todo, we could put the wavelength limits in here.
 
         super().__init__(*args, **kwargs)
+
+    @property
+    def velocity_spacing(self):
+        """The velocity sampling of the spectrum
+        
+        Returns
+        -------
+        np.array
+            vector of per pixel velocity sampling
+        """
+        c_kmps = const.c.to(u.km / u.s).value
+        per_pixel_velocity_sampling = (
+            c_kmps * np.diff(self.wavelength.value) / self.wavelength.value[1:]
+        )
+        velocity_variation = np.std(per_pixel_velocity_sampling)
+
+        # Problems may arise if pixel spacings jump around by more than 50 m/s:
+        velocity_variation_threshold = 0.05  # km/s
+        if velocity_variation > velocity_variation_threshold:
+            log.warning(
+                "Your velocity sampling appears to be non-uniform  "
+                "at the {:0.4f} km/s level, which could affect future convolution proceses."
+                "  Consider applying the `resample_to_uniform_in_velocity` method.".format(
+                    velocity_variation
+                )
+            )
+        return np.median(per_pixel_velocity_sampling) * u.km / u.s
 
     def apply_boolean_mask(self, mask):
         """Apply a boolean mask to the spectrum
@@ -193,6 +221,62 @@ class PrecomputedSpectrum(Spectrum1D):
         """
         fluxc_resample = LinearInterpolatedResampler()
         output = fluxc_resample(self, target_spectrum.wavelength)
+
+        return self._copy(
+            spectral_axis=output.wavelength.value * output.wavelength.unit,
+            flux=output.flux,
+            wcs=None,
+        )
+
+    def resample_to_uniform_in_velocity(self, oversample=1.4):
+        """Resample spectrum to a uniform-in-velocity pixel spacing
+
+        Args:
+            oversample: The desired oversampling in velocity, compared to 
+            the typical velocity sampling at original pixel spacing.  Typically,
+            you will want to oversample to ensure the narrowest lines remain 
+            resolved at the new sampling, at the expense of more pixels than
+            you started with.  If your original spectrum has large gaps, you 
+            may end up with many more pixels than you st
+
+        Returns
+        -------
+        remapped_spec : (PrecomputedSpectrum)
+            Remapped Spectrum
+        """
+
+        c_kmps = const.c.to(u.km / u.s).value
+        lambda_0 = np.min(self.wavelength.value)
+        lambda_max = np.max(self.wavelength.value)
+
+        # Compute the per pixel resolving power
+        ## Note: assumes a reasonably contiguous sampling in wavelength
+        ## Major gaps in wavelength will mess up this approach.
+        per_pixel_resolution = self.wavelength.value[1:] / np.diff(
+            self.wavelength.value
+        )
+        median_pixel_resolution = np.median(per_pixel_resolution)
+        max_pixel_resolution = np.max(per_pixel_resolution)
+        new_pixel_resolution = median_pixel_resolution * oversample
+
+        if new_pixel_resolution < max_pixel_resolution:
+            log.warning(
+                "You are trying to oversample the spectrum by a factor of {}.  "
+                "The highest existing per-pixel resolution of the spectrum was {:0.1f}, "
+                "whereas your new resolution is only {:0.1f}.  You may want to consider "
+                " a higher oversample factor to avoid information loss.".format(
+                    oversample, max_pixel_resolution, new_pixel_resolution
+                )
+            )
+
+        velocity_resolution_kmps = c_kmps / new_pixel_resolution
+
+        velocity_max = c_kmps * np.log(lambda_max / lambda_0)
+        velocity_vector = np.arange(0, velocity_max, velocity_resolution_kmps)
+        new_wavelength_sampling = lambda_0 * np.exp(velocity_vector / c_kmps)
+
+        fluxc_resample = LinearInterpolatedResampler()
+        output = fluxc_resample(self, new_wavelength_sampling * u.AA)
 
         return self._copy(
             spectral_axis=output.wavelength.value * output.wavelength.unit,
