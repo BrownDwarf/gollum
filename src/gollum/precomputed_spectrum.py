@@ -261,7 +261,7 @@ class PrecomputedSpectrum(Spectrum1D):
         new_pixel_resolution = median_pixel_resolution * oversample
 
         if new_pixel_resolution < max_pixel_resolution:
-            log.warning(
+            log.info(
                 "You are trying to oversample the spectrum by a factor of {}.  "
                 "The highest existing per-pixel resolution of the spectrum was {:0.1f}, "
                 "whereas your new resolution is only {:0.1f}.  You may want to consider "
