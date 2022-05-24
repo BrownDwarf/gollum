@@ -20,6 +20,7 @@ from astropy import units as u
 from specutils import SpectrumCollection
 import os
 from specutils.spectra.spectrum1d import Spectrum1D
+from scipy.ndimage import gaussian_filter1d
 from tqdm import tqdm
 
 from math import sqrt
@@ -286,7 +287,9 @@ class SonoraGrid(SpectrumCollection):
                 logg_points = logg_points[subset]
 
             if metallicity_range is not None:
-                subset = (metallicity_points >= metallicity_range[0]) & (metallicity_points <= metallicity_range[1])
+                subset = (metallicity_points >= metallicity_range[0]) & (
+                    metallicity_points <= metallicity_range[1]
+                )
                 metallicity_points = metallicity_points[subset]
 
             wavelengths, fluxes = [], []
@@ -441,13 +444,54 @@ class SonoraGrid(SpectrumCollection):
 
         return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
 
+    def instrumental_broaden(self, resolving_power):
+        """Instrumental broaden the grid"""
+
+        # Currently assumes they all have the same wavelength grid!
+        angstroms_per_pixel = np.median(np.diff(self.wavelength[0, :].value))
+        lam0 = np.median(self.wavelength[0, :].value)
+        delta_lam = lam0 / resolving_power
+
+        scale_factor = 2.355
+        sigma = delta_lam / scale_factor / angstroms_per_pixel
+
+        convolved_flux = (
+            gaussian_filter1d(self.flux.value, sigma, axis=1) * self.flux.unit
+        )
+        return self.__class__(
+            flux=convolved_flux, spectral_axis=self.wavelength, meta=self.meta
+        )
+
+    def decimate(self, decimation_fraction=0.1):
+        """Decimate the grid"""
+
+        ## Hmmm, this implementation may be brittle...
+        fluxes = []
+        wavelengths = []
+
+        for spec in self:
+            newspec = spec.resample_to_uniform_in_velocity(decimation_fraction)
+            fluxes.append(newspec.flux.value)
+            wavelengths.append(newspec.wavelength.value)
+
+        output = SonoraGrid(
+            flux=np.array(fluxes) * newspec.flux.unit,
+            spectral_axis=np.array(wavelengths) * newspec.wavelength.unit,
+            meta=self.meta,
+        )
+        return output
+
     def get_index(self, grid_point):
         """Get the spectrum index associated with a given grid point
         """
         return self.lookup_dict[grid_point]
 
     def get_distance(self, gridpoint1, gridpoint2):
-        return sqrt(((gridpoint1[0]-gridpoint2[0]) ** 2) + ((gridpoint1[1]-gridpoint2[1]) ** 2) + ((gridpoint1[2]-gridpoint2[2]) ** 2))
+        return sqrt(
+            ((gridpoint1[0] - gridpoint2[0]) ** 2)
+            + ((gridpoint1[1] - gridpoint2[1]) ** 2)
+            + ((gridpoint1[2] - gridpoint2[2]) ** 2)
+        )
 
     #  Need to add a function to find the near grid point in the case it doesn't exist (find nearest point in a lattice)
     def find_nearest_grid_point(self, teff, logg, metallicity):
@@ -695,7 +739,9 @@ class SonoraGrid(SpectrumCollection):
 
                     teff_message.text = "Closest T_eff point: {}".format(teff)
                     logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(metallicity)
+                    metallicity_message.text = "Closest Metallicity point: {}".format(
+                        metallicity
+                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -727,7 +773,9 @@ class SonoraGrid(SpectrumCollection):
 
                     teff_message.text = "Closest T_eff point: {}".format(teff)
                     logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(metallicity)
+                    metallicity_message.text = "Closest Metallicity point: {}".format(
+                        metallicity
+                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -746,6 +794,7 @@ class SonoraGrid(SpectrumCollection):
 
                 else:
                     pass
+
             def update_upon_metallicity_selection(attr, old, new):
                 """Callback to take action when metallicity slider changes"""
                 teff = teff_slider.value
@@ -759,7 +808,9 @@ class SonoraGrid(SpectrumCollection):
 
                     teff_message.text = "Closest T_eff point: {}".format(teff)
                     logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(metallicity)
+                    metallicity_message.text = "Closest Metallicity point: {}".format(
+                        metallicity
+                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -806,14 +857,14 @@ class SonoraGrid(SpectrumCollection):
                 Spacer(width=10),
                 Spacer(width=20),
                 Spacer(width=100),
-                Spacer(width=25)
+                Spacer(width=25),
             )
 
             widgets_and_figures = layout(
                 [fig],
                 [l_button, sp1, r_button, sp2, teff_slider, sp5, teff_message],
                 [sp4, logg_slider, sp3, logg_message],
-                [sp4, metallicity_slider, sp3, metallicity_message], 
+                [sp4, metallicity_slider, sp3, metallicity_message],
                 [sp4, smoothing_slider],
                 [sp4, vz_slider],
                 [sp4, scale_slider],

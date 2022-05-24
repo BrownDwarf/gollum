@@ -261,7 +261,7 @@ class PrecomputedSpectrum(Spectrum1D):
         new_pixel_resolution = median_pixel_resolution * oversample
 
         if new_pixel_resolution < max_pixel_resolution:
-            log.warning(
+            log.info(
                 "You are trying to oversample the spectrum by a factor of {}.  "
                 "The highest existing per-pixel resolution of the spectrum was {:0.1f}, "
                 "whereas your new resolution is only {:0.1f}.  You may want to consider "
@@ -284,6 +284,29 @@ class PrecomputedSpectrum(Spectrum1D):
             flux=output.flux,
             wcs=None,
         )
+
+    def decimate(self, decimation_factor=None, n_pixels=None, resolving_power=None):
+        """Decimate the number of samples in the spectrum
+
+        Args:
+            decimation_factor: The fraction of pixels to keep. Default: 0.1
+            n_pixels: The number of pixels to keep. Default: 2,000
+            resolving_power: The resolving power of the new spectrum.  Default: 3,000
+
+        Returns
+        -------
+        decimated_spec : (PrecomputedSpectrum)
+            Decimated Spectrum
+        """
+        if n_pixels is not None:
+            raise NotImplementedError
+        if resolving_power is not None:
+            raise NotImplementedError
+
+        if decimation_factor is None:
+            decimation_factor = 0.1
+
+        return self.resample_to_uniform_in_velocity(oversample=decimation_factor)
 
     def get_blackbody_spectrum(self, teff=None):
         """Get the blackbody spectrum associated with the input model"""
