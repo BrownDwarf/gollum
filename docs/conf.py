@@ -54,7 +54,7 @@ nbsphinx_timeout = 60
 
 autosummary_generate = True
 html_show_sourcelink = True
-
+numpydoc_show_class_members = False
 
 nbsphinx_thumbnails = {
     "tutorials/best_fit_for_fixed_template": "_static/extrinsic_grid_search.png",
