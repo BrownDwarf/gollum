@@ -8,13 +8,13 @@ PrecomputedSpectrum
 ###############
 """
 
-from os import O_RDONLY
 import warnings
 import logging
 import numpy as np
 import astropy
 from astropy import units as u
 from astropy.modeling.physical_models import BlackBody
+from astropy import constants as const
 import specutils
 
 import matplotlib.pyplot as plt
@@ -25,6 +25,7 @@ from scipy.interpolate import UnivariateSpline, interp1d
 from scipy.signal import find_peaks, wavelets
 from specutils.manipulation import LinearInterpolatedResampler
 from specutils.fitting import fit_generic_continuum
+from gollum.utilities import apply_numpy_mask
 
 
 log = logging.getLogger(__name__)
@@ -53,6 +54,47 @@ class PrecomputedSpectrum(Spectrum1D):
         # Todo, we could put the wavelength limits in here.
 
         super().__init__(*args, **kwargs)
+
+    @property
+    def velocity_spacing(self):
+        """The velocity sampling of the spectrum
+        
+        Returns
+        -------
+        np.array
+            vector of per pixel velocity sampling
+        """
+        c_kmps = const.c.to(u.km / u.s).value
+        per_pixel_velocity_sampling = (
+            c_kmps * np.diff(self.wavelength.value) / self.wavelength.value[1:]
+        )
+        velocity_variation = np.std(per_pixel_velocity_sampling)
+
+        # Problems may arise if pixel spacings jump around by more than 50 m/s:
+        velocity_variation_threshold = 0.05  # km/s
+        if velocity_variation > velocity_variation_threshold:
+            log.info(
+                "Your velocity sampling appears to be non-uniform  "
+                "at the {:0.4f} km/s level, which could affect future convolution proceses."
+                "  Consider applying the `resample_to_uniform_in_velocity` method.".format(
+                    velocity_variation
+                )
+            )
+        return np.median(per_pixel_velocity_sampling) * u.km / u.s
+
+    def apply_boolean_mask(self, mask):
+        """Apply a boolean mask to the spectrum
+
+        Parameters
+        ----------
+        mask: boolean mask, typically a numpy array
+            The boolean mask with numpy-style masking: True means "keep" that index and
+            False means discard that index
+        """
+
+        spec = apply_numpy_mask(self, mask)
+
+        return spec
 
     def normalize(self, percentile=None):
         """Normalize spectrum by its median value
@@ -130,7 +172,8 @@ class PrecomputedSpectrum(Spectrum1D):
         broadened_spec : (PrecomputedSpectrum)
             Instrumentally Broadened Spectrum
         """
-        # TODO: I think we want the Nadarya-Watson estimator here instead
+        # In detail the spectral resolution is wavelength dependent...
+        # For now we assume a constant resolving power
         angstroms_per_pixel = np.median(np.diff(self.wavelength.value))
         lam0 = np.median(self.wavelength.value)
         delta_lam = lam0 / resolving_power
@@ -185,6 +228,85 @@ class PrecomputedSpectrum(Spectrum1D):
             flux=output.flux,
             wcs=None,
         )
+
+    def resample_to_uniform_in_velocity(self, oversample=1.4):
+        """Resample spectrum to a uniform-in-velocity pixel spacing
+
+        Args:
+            oversample: The desired oversampling in velocity, compared to 
+            the typical velocity sampling at original pixel spacing.  Typically,
+            you will want to oversample to ensure the narrowest lines remain 
+            resolved at the new sampling, at the expense of more pixels than
+            you started with.  If your original spectrum has large gaps, you 
+            may end up with many more pixels than you st
+
+        Returns
+        -------
+        remapped_spec : (PrecomputedSpectrum)
+            Remapped Spectrum
+        """
+
+        c_kmps = const.c.to(u.km / u.s).value
+        lambda_0 = np.min(self.wavelength.value)
+        lambda_max = np.max(self.wavelength.value)
+
+        # Compute the per pixel resolving power
+        ## Note: assumes a reasonably contiguous sampling in wavelength
+        ## Major gaps in wavelength will mess up this approach.
+        per_pixel_resolution = self.wavelength.value[1:] / np.diff(
+            self.wavelength.value
+        )
+        median_pixel_resolution = np.median(per_pixel_resolution)
+        max_pixel_resolution = np.max(per_pixel_resolution)
+        new_pixel_resolution = median_pixel_resolution * oversample
+
+        if new_pixel_resolution < max_pixel_resolution:
+            log.info(
+                "You are trying to oversample the spectrum by a factor of {}.  "
+                "The highest existing per-pixel resolution of the spectrum was {:0.1f}, "
+                "whereas your new resolution is only {:0.1f}.  You may want to consider "
+                " a higher oversample factor to avoid information loss.".format(
+                    oversample, max_pixel_resolution, new_pixel_resolution
+                )
+            )
+
+        velocity_resolution_kmps = c_kmps / new_pixel_resolution
+
+        velocity_max = c_kmps * np.log(lambda_max / lambda_0)
+        velocity_vector = np.arange(0, velocity_max, velocity_resolution_kmps)
+        new_wavelength_sampling = lambda_0 * np.exp(velocity_vector / c_kmps)
+
+        fluxc_resample = LinearInterpolatedResampler()
+        output = fluxc_resample(self, new_wavelength_sampling * u.AA)
+
+        return self._copy(
+            spectral_axis=output.wavelength.value * output.wavelength.unit,
+            flux=output.flux,
+            wcs=None,
+        )
+
+    def decimate(self, decimation_factor=None, n_pixels=None, resolving_power=None):
+        """Decimate the number of samples in the spectrum
+
+        Args:
+            decimation_factor: The fraction of pixels to keep. Default: 0.1
+            n_pixels: The number of pixels to keep. Default: 2,000
+            resolving_power: The resolving power of the new spectrum.  Default: 3,000
+
+        Returns
+        -------
+        decimated_spec : (PrecomputedSpectrum)
+            Decimated Spectrum
+        """
+        if n_pixels is not None:
+            raise NotImplementedError
+        if resolving_power is not None:
+            raise NotImplementedError
+
+        if decimation_factor is None:
+            decimation_factor = 0.1
+
+        return self.resample_to_uniform_in_velocity(oversample=decimation_factor)
 
     def get_blackbody_spectrum(self, teff=None):
         """Get the blackbody spectrum associated with the input model"""
@@ -271,7 +393,7 @@ class PrecomputedSpectrum(Spectrum1D):
     ):
         """Finds the low frequency continuum trend using scipy's find_peaks filter
         and linear algebra.
-        
+
         Parameters
         ----------
         pixel_distance : int
@@ -317,6 +439,25 @@ class PrecomputedSpectrum(Spectrum1D):
             return (spec_out, coeffs)
         else:
             return spec_out
+
+    def to_pandas(self):
+        """Export the spectrum to a pandas dataframe"""
+        try:
+            import pandas as pd
+        except ImportError:
+            log.error("The to_pandas method requires the optional dependency pandas")
+        if self.mask is not None:
+            mask = self.mask
+        else:
+            mask = np.zeros(len(self.wavelength.value), dtype=int)
+
+        return pd.DataFrame(
+            {
+                "wavelength": self.wavelength.value,
+                "flux": self.flux.value,
+                "mask": mask,
+            }
+        )
 
     def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"

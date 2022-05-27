@@ -46,6 +46,8 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         logg (float): The logg label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
         path (str): The path to your local PHOENIX grid library.  You must have the PHOENIX
             grid downloaded locally.  Default: "~/libraries/raw/PHOENIX/"
+        download (bool): **Experimental** Whether or not you want to download the spectra 
+            from the internet.  Requires an internet connection to work.
         wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
         wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
     """
@@ -57,21 +59,39 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         logg=None,
         metallicity=0.0,  # solar by default
         path="~/libraries/raw/PHOENIX/",
+        download=False,
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
     ):
 
         if (teff is not None) & (logg is not None):
-            base_path = os.path.expanduser(path)
-            assert os.path.exists(
-                base_path
-            ), "You must specify the path to local PHOENIX models"
 
-            wl_filename = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
-            assert os.path.exists(
-                wl_filename
-            ), "You need to place the PHOENIX models in {}".format(base_path)
+            if metallicity is None:
+                metallicity = 0.0  # solar by default
+
+            if path is None:
+                path = "~/libraries/raw/PHOENIX/"
+
+            if download == False:
+                base_path = os.path.expanduser(path)
+                assert os.path.exists(
+                    base_path
+                ), "You must specify the path to local PHOENIX models"
+
+                wl_filename = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+                assert os.path.exists(
+                    wl_filename
+                ), f"You need to place the PHOENIX models in {base_path}"
+            else:
+                log.info(
+                    "Experimental feature! Attempting to download PHOENIX models from the internet..."
+                )
+                log.info(
+                    "We are using this FTP site: ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
+                )
+                wl_filename = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+                base_path = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/"
 
             wl_orig = fits.open(wl_filename)[0].data.astype(np.float64)
 
@@ -79,15 +99,14 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             wl_out = wl_orig[mask]
 
             # Deal with metallicity
-            metallicity_string = "{:+0.1f}".format(metallicity)
-            if metallicity == 0.0:
-                metallicity_string = "-0.0"
+            metallicity_string = f"{metallicity:+0.1f}"
+
+            metallicity_string = "-0.0" if metallicity == 0.0 else metallicity_string
 
             fn = (
                 base_path
                 + "/Z{}/lte{:05d}-{:0.2f}{}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
             ).format(metallicity_string, teff, logg, metallicity_string)
-            assert os.path.exists(fn), "Double check that the file {} exists".format(fn)
 
             flux_orig = fits.open(fn)[0].data.astype(np.float64)
             # Units: erg/s/cm^2/cm

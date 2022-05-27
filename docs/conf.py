@@ -18,11 +18,11 @@ sys.path.insert(0, os.path.abspath("../src/"))
 # -- Project information -----------------------------------------------------
 
 project = "gollum"
-copyright = "2021, gully"
+copyright = "2021, 2022, gully"
 author = "gully"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1.1"
+release = "0.2.2"
 
 
 # -- General configuration ---------------------------------------------------
@@ -39,6 +39,8 @@ extensions = [
     "nbsphinx",
     "sphinx.ext.githubpages",
     "sphinx.ext.ifconfig",
+    "sphinx_gallery.load_style",
+    "numpydoc",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -52,7 +54,14 @@ nbsphinx_timeout = 60
 
 autosummary_generate = True
 html_show_sourcelink = True
+numpydoc_show_class_members = False
 
+nbsphinx_thumbnails = {
+    "tutorials/best_fit_for_fixed_template": "_static/extrinsic_grid_search.png",
+    "tutorials/PHOENIX_tutorial": "_static/gollum_units.png",
+    "tutorials/Divide_by_a_blackbody": "_static/blackbody.png",
+    "tutorials/gollum_demo_Sonora_and_BDSS": "_static/sliders.png",
+}
 
 # -- Options for HTML output -------------------------------------------------
 
