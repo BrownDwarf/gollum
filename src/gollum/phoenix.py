@@ -166,7 +166,7 @@ class PHOENIXGrid(SpectrumCollection):
         **kwargs,
     ):
 
-        if set("flux", "spectral_axis", "meta").issubset(kwargs):
+        if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
             # Trigger a passthrough
             super().__init__(**kwargs)
         else:
