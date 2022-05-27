@@ -46,7 +46,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         logg (float): The logg label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
         path (str): The path to your local PHOENIX grid library.  You must have the PHOENIX
             grid downloaded locally.  Default: "~/libraries/raw/PHOENIX/"
-        download (bool): **Experimental** Whether or not you want to download the spectra 
+        download (bool): **Experimental** Whether or not you want to download the spectra
             from the internet.  Requires an internet connection to work.
         wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
         wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
@@ -66,12 +66,6 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
     ):
 
         if (teff is not None) & (logg is not None):
-
-            if metallicity is None:
-                metallicity = 0.0  # solar by default
-
-            if path is None:
-                path = "~/libraries/raw/PHOENIX/"
 
             if download == False:
                 base_path = os.path.expanduser(path)
