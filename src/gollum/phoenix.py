@@ -180,8 +180,7 @@ class PHOENIXGrid(SpectrumCollection):
                 )
                 metallicity_points = metallicity_points[subset]
 
-            wavelengths, fluxes = [], []
-            grid_points = []
+            wavelengths, fluxes, grid_points = [], [], []
 
             pbar = tqdm(teff_points)
             for teff in pbar:
@@ -192,7 +191,6 @@ class PHOENIXGrid(SpectrumCollection):
                                 teff, logg, metallicity
                             )
                         )
-                        grid_point = (teff, logg, metallicity)
                         spec = PHOENIXSpectrum(
                             teff=teff,
                             logg=logg,
@@ -203,13 +201,12 @@ class PHOENIXGrid(SpectrumCollection):
                         )
                         wavelengths.append(spec.wavelength)
                         fluxes.append(spec.flux)
-                        grid_points.append(grid_point)
+                        grid_points.append((teff, logg, metallicity))
             flux_out = np.array(fluxes) * fluxes[0].unit
             wave_out = np.array(wavelengths) * wavelengths[0].unit
 
             # Make a quick-access dictionary
-            n_spectra = len(grid_points)
-            lookup_dict = {grid_points[i]: i for i in range(n_spectra)}
+            lookup_dict = {value: i for i, value in enumerate(grid_points)}
             meta = {
                 "teff_points": teff_points,
                 "logg_points": logg_points,
@@ -306,6 +303,7 @@ class PHOENIXGrid(SpectrumCollection):
                 fiducial_spectrum.wavelength.value.min() * wavelength_units,
                 fiducial_spectrum.wavelength.value.max() * wavelength_units,
             )
+
         shortest_wavelength, longest_wavelength = wavelength_range
 
         wavelengths, fluxes = [], []
@@ -318,8 +316,7 @@ class PHOENIXGrid(SpectrumCollection):
 
         fluxes = np.array(fluxes) * flux_units
         wavelengths = np.array(wavelengths) * wavelength_units
-        assert fluxes is not None
-        assert wavelengths is not None
+        assert fluxes is not None and wavelengths is not None
 
         return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
 
@@ -328,11 +325,11 @@ class PHOENIXGrid(SpectrumCollection):
         return self.lookup_dict[grid_point]
 
     def find_nearest_teff(self, value):
-        idx = (np.abs(self.teff_points - value)).argmin()
+        idx = np.abs(self.teff_points - value).argmin()
         return self.teff_points[idx]
 
     def find_nearest_metallicity(self, value):
-        idx = (np.abs(self.metallicity_points - value)).argmin()
+        idx = np.abs(self.metallicity_points - value).argmin()
         return self.metallicity_points[idx]
 
     def show_dashboard(self, data=None, notebook_url="localhost:8888"):
@@ -507,9 +504,6 @@ class PHOENIXGrid(SpectrumCollection):
                         "flux": new_spec.flux.value,
                     }
 
-                else:
-                    pass
-
             def update_upon_metallicity_selection(attr, old, new):
                 """Callback to take action when teff slider changes"""
                 metallicity = self.find_nearest_metallicity(new)
@@ -530,9 +524,6 @@ class PHOENIXGrid(SpectrumCollection):
                         "wavelength": new_spec.wavelength.value,
                         "flux": new_spec.flux.value,
                     }
-
-                else:
-                    pass
 
             def update_upon_logg_selection(attr, old, new):
                 """Callback to take action when logg slider changes"""
