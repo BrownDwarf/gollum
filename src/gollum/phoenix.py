@@ -55,18 +55,12 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         *args,
         teff=None,
         logg=None,
-        metallicity=None,
-        path=None,
+        metallicity=0.0,  # solar by default
+        path="~/libraries/raw/PHOENIX/",
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
     ):
-
-        if path is None:
-            path = "~/libraries/raw/PHOENIX/"
-
-        if metallicity is None:
-            metallicity = 0.0  # solar by default
 
         if (teff is not None) & (logg is not None):
             base_path = os.path.expanduser(path)
@@ -121,26 +115,17 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
     @property
     def teff(self):
         """The input Effective Temperature associated with this model"""
-        if "teff" in self.meta.keys():
-            return self.meta["teff"]
-        else:
-            return None
+        return self.meta['teff'] if 'teff' in self.meta else None
 
     @property
     def logg(self):
         """The input surface gravity associated with this model"""
-        if "logg" in self.meta.keys():
-            return self.meta["logg"]
-        else:
-            return None
+        return self.meta['logg'] if 'logg' in self.meta else None
 
     @property
     def metallicity(self):
         """The input metallicity associated with this model"""
-        if "metallicity" in self.meta.keys():
-            return self.meta["metallicity"]
-        else:
-            return None
+        return self.meta['metallicity'] if 'metallicity' in self.meta else None
 
 
 class PHOENIXGrid(SpectrumCollection):
@@ -168,11 +153,7 @@ class PHOENIXGrid(SpectrumCollection):
         **kwargs,
     ):
 
-        if (
-            ("flux" in kwargs.keys())
-            and ("spectral_axis" in kwargs.keys())
-            and ("meta" in kwargs.keys())
-        ):
+        if set('flux', 'spectral_axis', 'meta').issubset(kwargs):
             # Trigger a passthrough
             super().__init__(**kwargs)
         else:
@@ -306,7 +287,7 @@ class PHOENIXGrid(SpectrumCollection):
 
     def truncate(self, wavelength_range=None, data=None):
         """Truncate the wavelength range of the grid
-        
+
         Parameters
         ----------
         wavelength_range: List or Tuple of Quantities
