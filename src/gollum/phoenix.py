@@ -128,17 +128,17 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
     @property
     def teff(self):
         """The input Effective Temperature associated with this model"""
-        return self.meta['teff'] if 'teff' in self.meta else None
+        return self.meta["teff"] if "teff" in self.meta else None
 
     @property
     def logg(self):
         """The input surface gravity associated with this model"""
-        return self.meta['logg'] if 'logg' in self.meta else None
+        return self.meta["logg"] if "logg" in self.meta else None
 
     @property
     def metallicity(self):
         """The input metallicity associated with this model"""
-        return self.meta['metallicity'] if 'metallicity' in self.meta else None
+        return self.meta["metallicity"] if "metallicity" in self.meta else None
 
 
 class PHOENIXGrid(SpectrumCollection):
@@ -166,7 +166,7 @@ class PHOENIXGrid(SpectrumCollection):
         **kwargs,
     ):
 
-        if set('flux', 'spectral_axis', 'meta').issubset(kwargs):
+        if set("flux", "spectral_axis", "meta").issubset(kwargs):
             # Trigger a passthrough
             super().__init__(**kwargs)
         else:
