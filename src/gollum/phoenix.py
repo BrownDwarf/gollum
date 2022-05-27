@@ -220,6 +220,7 @@ class PHOENIXGrid(SpectrumCollection):
 
             # Make a quick-access dictionary
             lookup_dict = {value: i for i, value in enumerate(grid_points)}
+            n_spectra = len(grid_points)
             meta = {
                 "teff_points": teff_points,
                 "logg_points": logg_points,
