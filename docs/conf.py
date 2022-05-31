@@ -61,6 +61,7 @@ nbsphinx_thumbnails = {
     "tutorials/PHOENIX_tutorial": "_static/gollum_units.png",
     "tutorials/Divide_by_a_blackbody": "_static/blackbody.png",
     "tutorials/gollum_demo_Sonora_and_BDSS": "_static/sliders.png",
+    "tutorials/Phoenix_dashboard_demo": "_static/PHOENIX_dashboard_thumbnail.png",
 }
 
 # -- Options for HTML output -------------------------------------------------
