@@ -8,33 +8,32 @@ PHOENIXSpectrum
 ###############
 """
 
-import copy
-import warnings
-import logging
-from gollum.precomputed_spectrum import PrecomputedSpectrum
-import numpy as np
+import os
 import astropy
+import numpy as np
+
+from copy import deepcopy
+from warnings import filterwarnings
+from logging import getLogger
+from tqdm import tqdm
+from gollum.precomputed_spectrum import PrecomputedSpectrum
+from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.io import fits
 from astropy import units as u
 from specutils import SpectrumCollection
 from specutils.spectra.spectrum1d import Spectrum1D
-from tqdm import tqdm
-import os
-
-from bokeh.io import show, output_notebook, push_notebook
+from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import Slider, Span, Range1d, Dropdown
+from bokeh.models import Slider, Range1d
 from bokeh.layouts import layout, Spacer
 from bokeh.models.widgets import Button, Div
 
-log = logging.getLogger(__name__)
+log = getLogger(__name__)
 
 #  See Issue: https://github.com/astropy/specutils/issues/779
-warnings.filterwarnings(
-    "ignore", category=astropy.utils.exceptions.AstropyDeprecationWarning
-)
+filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
-warnings.filterwarnings("ignore", category=RuntimeWarning)
+filterwarnings("ignore", category=RuntimeWarning)
 
 
 class PHOENIXSpectrum(PrecomputedSpectrum):
@@ -308,7 +307,7 @@ class PHOENIXGrid(SpectrumCollection):
             A spectrum to which this method will match the wavelength limits
 
         """
-        fiducial_spectrum = copy.deepcopy(self[0])
+        fiducial_spectrum = deepcopy(self[0])
         wavelength_units = fiducial_spectrum.wavelength.unit
         flux_units = fiducial_spectrum.flux.unit
 
@@ -387,18 +386,18 @@ class PHOENIXGrid(SpectrumCollection):
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
             )
-            fig.title.offset = -10
-            fig.yaxis.axis_label = "Flux "
-            fig.xaxis.axis_label = "Wavelength (micron)"
+            fig.title.offset = 150
+            fig.yaxis.axis_label = "Flux"
+            fig.xaxis.axis_label = "Wavelength (\u00B5m)"
             fig.y_range = Range1d(start=0, end=1.5)
 
             fig.step(
                 "wavelength",
                 "flux",
                 line_width=1,
-                color="gray",
+                color="red",
                 source=spec_source,
-                nonselection_line_color="gray",
+                nonselection_line_color="red",
                 nonselection_line_alpha=1.0,
             )
             wl_lo, wl_hi = (
@@ -453,7 +452,7 @@ class PHOENIXGrid(SpectrumCollection):
                 end=max(self.teff_points),
                 value=self.teff_points[1],
                 step=100,
-                title="Effective Temperature: T_eff [Kelvin]",
+                title="Effective Temperature: T_eff [K]",
                 width=490,
             )
             teff_message = Div(
@@ -580,12 +579,7 @@ class PHOENIXGrid(SpectrumCollection):
             logg_slider.on_change("value", update_upon_logg_selection)
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
 
-            sp1, sp2, sp3, sp4 = (
-                Spacer(width=5),
-                Spacer(width=10),
-                Spacer(width=20),
-                Spacer(width=100),
-            )
+            sp1, sp2, sp3, sp4 = (Spacer(width=w) for w in (5, 10, 20, 100))
 
             widgets_and_figures = layout(
                 [fig],
