@@ -42,12 +42,11 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
     A container for PHOENIX spectra
 
     Args:
-        Teff (int): The Teff label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
+        teff (int): The teff label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
         logg (float): The logg label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
-        path (str): The path to your local PHOENIX grid library.  You must have the PHOENIX
-            grid downloaded locally.  Default: "~/libraries/raw/PHOENIX/"
-        download (bool): **Experimental** Whether or not you want to download the spectra
-            from the internet.  Requires an internet connection to work.
+        path (str): The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
+        download (bool): **Experimental** Set to True if you want to download the spectra
+            from the internet; requires an internet connection.
         wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
         wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
     """
@@ -65,18 +64,15 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         **kwargs,
     ):
 
-        if (teff is not None) & (logg is not None):
-
+        if teff & logg:
             if download == False:
                 base_path = os.path.expanduser(path)
-                assert os.path.exists(
-                    base_path
-                ), "You must specify the path to local PHOENIX models"
+                assert os.path.exists(base_path), "Given path does not exist."
 
                 wl_filename = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
                 assert os.path.exists(
                     wl_filename
-                ), f"You need to place the PHOENIX models in {base_path}"
+                ), f"PHOENIX models must be placed in {base_path}"
             else:
                 site = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
                 log.info(
