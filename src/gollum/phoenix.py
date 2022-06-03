@@ -64,8 +64,8 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         **kwargs,
     ):
 
-        if teff & logg:
-            if download == False:
+        if teff and logg:
+            if not download:
                 base_path = os.path.expanduser(path)
                 assert os.path.exists(base_path), "Given path does not exist."
 
@@ -75,9 +75,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
                 ), f"PHOENIX models must be placed in {base_path}"
             else:
                 site = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
-                log.info(
-                    "Experimental feature! Attempting to download PHOENIX models from the internet..."
-                )
+                log.info("[WIP]Downloading PHOENIX models from the internet...")
                 log.info(f"We are using this FTP site: {site}")
                 wl_filename = f"{site}WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
                 base_path = f"{site}PHOENIX-ACES-AGSS-COND-2011/"
@@ -134,12 +132,10 @@ class PHOENIXGrid(SpectrumCollection):
     A container for a grid of PHOENIX precomputed synthetic spectra of stars.
 
     Args:
-        teff_range (tuple): The Teff limits of the grid model to read in.
+        teff_range (tuple): The teff limits of the grid model to read in.
         logg_range (tuple): The logg limits of the grid model to read in.
         metallicity_range (tuple) : The metallicity limits of the grid model to read in.
-        path (str): The path to your local PHOENIX grid library.
-            You must have the PHOENIX grid downloaded locally.
-            Default: "~/libraries/raw/PHOENIX/"
+        path (str): The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
         wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
         wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
     """
@@ -203,17 +199,14 @@ class PHOENIXGrid(SpectrumCollection):
             flux_out = np.array(fluxes) * fluxes[0].unit
             wave_out = np.array(wavelengths) * wavelengths[0].unit
 
-            # Make a quick-access dictionary
-            lookup_dict = {value: i for i, value in enumerate(grid_points)}
-            n_spectra = len(grid_points)
             meta = {
                 "teff_points": teff_points,
                 "logg_points": logg_points,
                 "metallicity_points": metallicity_points,
                 "grid_labels": ("T_eff", "log(g)", "Z"),
-                "n_spectra": n_spectra,
+                "n_spectra": len(grid_points),
                 "grid_points": grid_points,
-                "lookup_dict": lookup_dict,
+                "lookup_dict": {value: i for i, value in enumerate(grid_points)},
             }
 
             super().__init__(flux=flux_out, spectral_axis=wave_out, meta=meta)
