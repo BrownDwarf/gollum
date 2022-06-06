@@ -111,20 +111,9 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         else:
             super().__init__(*args, **kwargs)
 
-    @property
-    def teff(self):
-        """The input Effective Temperature associated with this model"""
-        return self.meta["teff"] if "teff" in self.meta else None
-
-    @property
-    def logg(self):
-        """The input surface gravity associated with this model"""
-        return self.meta["logg"] if "logg" in self.meta else None
-
-    @property
-    def metallicity(self):
-        """The input metallicity associated with this model"""
-        return self.meta["metallicity"] if "metallicity" in self.meta else None
+    teff = property(lambda self: self.meta.get("teff"))
+    logg = property(lambda self: self.meta.get("logg"))
+    metallicity = property(lambda self: self.meta.get("metallicity"))
 
 
 class PHOENIXGrid(SpectrumCollection):
@@ -231,40 +220,13 @@ class PHOENIXGrid(SpectrumCollection):
             meta=meta,
         )
 
-    @property
-    def grid_points(self):
-        """What are the coordinates of the grid?"""
-        return self.meta["grid_points"]
-
-    @property
-    def teff_points(self):
-        """What are the Teff points of the grid?"""
-        return self.meta["teff_points"]
-
-    @property
-    def metallicity_points(self):
-        """What are the metallicity points of the grid?"""
-        return self.meta["metallicity_points"]
-
-    @property
-    def logg_points(self):
-        """What are the logg points of the grid?"""
-        return self.meta["logg_points"]
-
-    @property
-    def grid_labels(self):
-        """What are the grid labels?"""
-        return self.meta["grid_labels"]
-
-    @property
-    def n_spectra(self):
-        """How many distinct spectra are in the grid?"""
-        return self.meta["n_spectra"]
-
-    @property
-    def lookup_dict(self):
-        """Lookup dictioary for spectra from their grid coordinates"""
-        return self.meta["lookup_dict"]
+    grid_points = property(lambda self: self.meta["grid_points"])
+    teff_points = property(lambda self: self.meta["teff_points"])
+    metallicity_points = property(lambda self: self.meta["metallicity_points"])
+    logg_points = property(lambda self: self.meta["logg_points"])
+    grid_labels = property(lambda self: self.meta["grid_labels"])
+    n_spectra = property(lambda self: self.meta["n_spectra"])
+    lookup_dict = property(lambda self: self.meta["lookup_dict"])
 
     def truncate(self, wavelength_range=None, data=None):
         """Truncate the wavelength range of the grid
@@ -427,9 +389,7 @@ class PHOENIXGrid(SpectrumCollection):
                 width=700,
             )
             teff_message = Div(
-                text=f"Closest grid point: {min(self.teff_points)}",
-                width=100,
-                height=10,
+                text=f"Closest grid point: {self.teff_points[1]}", width=100, height=10,
             )
             logg_slider = Slider(
                 start=min(self.logg_points),
