@@ -44,6 +44,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
     Args:
         teff (int): The teff label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
         logg (float): The logg label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
+        metallicity (float): The metallicity label of the PHOENIX model to read in. Must be on the PHOENIX grid.
         path (str): The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
         download (bool): **Experimental** Set to True if you want to download the spectra
             from the internet; requires an internet connection.
@@ -69,18 +70,16 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
                 base_path = os.path.expanduser(path)
                 assert os.path.exists(base_path), "Given path does not exist."
 
-                wl_filename = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
-                assert os.path.exists(
-                    wl_filename
-                ), f"PHOENIX models must be placed in {base_path}"
+                wl_file = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+                assert os.path.exists(wl_file), f"PHOENIX models must be in {base_path}"
             else:
                 site = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
                 log.info("[WIP]Downloading PHOENIX models from the internet...")
                 log.info(f"We are using this FTP site: {site}")
-                wl_filename = f"{site}WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+                wl_file = f"{site}WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
                 base_path = f"{site}PHOENIX-ACES-AGSS-COND-2011/"
 
-            wl_orig = fits.open(wl_filename)[0].data.astype(np.float64)
+            wl_orig = fits.open(wl_file)[0].data.astype(np.float64)
 
             mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
             wl_out = wl_orig[mask]
@@ -89,8 +88,11 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             metallicity_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
             fn = f"{base_path}/Z{metallicity_string}/lte{teff:05d}-{logg:0.2f}{metallicity_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
+            if not os.path.exists(fn) and os.path.exists(wl_file):
+                raise FileExistsError
 
             flux_orig = fits.open(fn)[0].data.astype(np.float64)
+
             flux_native = flux_orig[mask]
             # Units: erg/s/cm^2/cm
             native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
@@ -146,7 +148,7 @@ class PHOENIXGrid(SpectrumCollection):
         else:
 
             teff_points = np.hstack(
-                (np.arange(2300, 7000, 100), np.arange(7000, 12_001, 200))
+                (np.arange(2300, 7000, 100), np.arange(7000, 12001, 200))
             )
             # Todo: some T_eff ranges go to log(g) = 0.0, consider adding these
             logg_points = np.arange(2.0, 6.01, 0.5)
@@ -266,9 +268,7 @@ class PHOENIXGrid(SpectrumCollection):
 
         return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
 
-    def get_index(self, grid_point):
-        """Get the spectrum index associated with a given grid point"""
-        return self.lookup_dict[grid_point]
+    get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
     def find_nearest_teff(self, value):
         idx = np.abs(self.teff_points - value).argmin()
