@@ -87,6 +87,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             # Deal with metallicity
             metallicity_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
+            # Start work on issue 33
             fn = f"{base_path}/Z{metallicity_string}/lte{teff:05d}-{logg:0.2f}{metallicity_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
             if not os.path.exists(fn) and os.path.exists(wl_file):
                 raise FileExistsError
@@ -94,7 +95,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             flux_orig = fits.open(fn)[0].data.astype(np.float64)
 
             flux_native = flux_orig[mask]
-            # Units: erg/s/cm^2/cm
+            # Units:  erg/s/cm^2/cm
             native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
             meta_dict = {
                 "teff": teff,
