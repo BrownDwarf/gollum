@@ -83,7 +83,9 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
 
             fn = f"{base_path}/Z{metallicity_string}/lte{teff:05d}-{logg:0.2f}{metallicity_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
             if not os.path.exists(fn):
-                raise FileExistsError("No PHOENIX Spectrum file exists for given parameters.")
+                raise FileExistsError(
+                    "No PHOENIX Spectrum file exists for given parameters."
+                )
 
             wl_orig = fits.open(wl_file)[0].data.astype(np.float64)
             mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
