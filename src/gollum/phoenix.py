@@ -84,12 +84,9 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
             wl_out = wl_orig[mask]
 
-            # Deal with metallicity
             metallicity_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
             fn = f"{base_path}/Z{metallicity_string}/lte{teff:05d}-{logg:0.2f}{metallicity_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
-            if not os.path.exists(fn) and os.path.exists(wl_file):
-                raise FileExistsError
 
             flux_orig = fits.open(fn)[0].data.astype(np.float64)
 
