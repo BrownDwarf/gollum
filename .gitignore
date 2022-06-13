@@ -137,3 +137,4 @@ notebooks/
 
 # ignore data files
 data/
+.vscode/settings.json
