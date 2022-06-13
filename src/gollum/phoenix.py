@@ -79,35 +79,29 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
                 wl_file = f"{site}WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
                 base_path = f"{site}PHOENIX-ACES-AGSS-COND-2011/"
 
-            wl_orig = fits.open(wl_file)[0].data.astype(np.float64)
+            metallicity_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
+            fn = f"{base_path}/Z{metallicity_string}/lte{teff:05d}-{logg:0.2f}{metallicity_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
+            if not os.path.exists(fn):
+                raise FileExistsError("No PHOENIX Spectrum file exists for given parameters.")
+
+            wl_orig = fits.open(wl_file)[0].data.astype(np.float64)
             mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
             wl_out = wl_orig[mask]
 
-            # Deal with metallicity
-            metallicity_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
-
-            # Start work on issue 33
-            fn = f"{base_path}/Z{metallicity_string}/lte{teff:05d}-{logg:0.2f}{metallicity_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
-            if not os.path.exists(fn) and os.path.exists(wl_file):
-                raise FileExistsError
-
             flux_orig = fits.open(fn)[0].data.astype(np.float64)
-
             flux_native = flux_orig[mask]
-            # Units:  erg/s/cm^2/cm
             native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
-            meta_dict = {
-                "teff": teff,
-                "logg": logg,
-                "metallicity": metallicity,
-                "native_flux_unit": native_flux_unit,
-            }
 
             super().__init__(
                 spectral_axis=wl_out * u.AA,
                 flux=flux_native * native_flux_unit,
-                meta=meta_dict,
+                meta={
+                    "teff": teff,
+                    "logg": logg,
+                    "metallicity": metallicity,
+                    "native_flux_unit": native_flux_unit,
+                },
                 **kwargs,
             )
 
@@ -176,17 +170,22 @@ class PHOENIXGrid(SpectrumCollection):
 
             for teff, logg, Z in pbar:
                 pbar.desc = f"Processing Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
-                spec = PHOENIXSpectrum(
-                    teff=teff,
-                    logg=logg,
-                    metallicity=Z,
-                    path=path,
-                    wl_lo=wl_lo,
-                    wl_hi=wl_hi,
-                )
+                try:
+                    spec = PHOENIXSpectrum(
+                        teff=teff,
+                        logg=logg,
+                        metallicity=Z,
+                        path=path,
+                        wl_lo=wl_lo,
+                        wl_hi=wl_hi,
+                    )
+                except FileExistsError:
+                    pass
                 wavelengths.append(spec.wavelength)
                 fluxes.append(spec.flux)
                 grid_points.append((teff, logg, Z))
+            if grid_points == []:
+                raise ValueError("Empty grid; parameter limits out of range")
 
             flux_out = np.array(fluxes) * fluxes[0].unit
             wave_out = np.array(wavelengths) * wavelengths[0].unit
