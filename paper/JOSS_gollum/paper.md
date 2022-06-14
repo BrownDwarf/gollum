@@ -14,6 +14,7 @@ authors:
     orcid: 0000-0002-4404-0456
     affiliation: 1
   - name: Sujay Shankar
+    orcid: 0000-0002-2290-6810
     affiliation: 1
   - name: More TBD
     affiliation: 2
