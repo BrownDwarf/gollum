@@ -166,9 +166,11 @@ class PHOENIXGrid(SpectrumCollection):
                 )
                 metallicity_points = metallicity_points[subset]
 
-            wavelengths, fluxes, grid_points = [], [], []
-            L = len(teff_points) * len(logg_points) * len(metallicity_points)
-            pbar = tqdm(product(teff_points, logg_points, metallicity_points), total=L)
+            wavelengths, fluxes, grid_points, missing = [], [], [], 0
+            pbar = tqdm(
+                product(teff_points, logg_points, metallicity_points),
+                total=len(teff_points) * len(logg_points) * len(metallicity_points),
+            )
 
             for teff, logg, Z in pbar:
                 pbar.desc = f"Processing Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
@@ -182,26 +184,28 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_hi=wl_hi,
                     )
                 except FileExistsError:
-                    pass
+                    missing += 1
                 wavelengths.append(spec.wavelength)
                 fluxes.append(spec.flux)
                 grid_points.append((teff, logg, Z))
             assert grid_points != [], "Empty grid; parameter limits out of range"
+            print(
+                f"{missing} files not found; grid may not cover given parameter ranges fully"
+            ) if missing else None
 
-            flux_out = np.array(fluxes) * fluxes[0].unit
-            wave_out = np.array(wavelengths) * wavelengths[0].unit
-
-            meta = {
-                "teff_points": teff_points,
-                "logg_points": logg_points,
-                "metallicity_points": metallicity_points,
-                "grid_labels": ("T_eff", "log(g)", "Z"),
-                "n_spectra": len(grid_points),
-                "grid_points": grid_points,
-                "lookup_dict": {value: i for i, value in enumerate(grid_points)},
-            }
-
-            super().__init__(flux=flux_out, spectral_axis=wave_out, meta=meta)
+            super().__init__(
+                flux=np.array(fluxes) * fluxes[0].unit,
+                spectral_axis=np.array(wavelengths) * wavelengths[0].unit,
+                meta={
+                    "teff_points": teff_points,
+                    "logg_points": logg_points,
+                    "metallicity_points": metallicity_points,
+                    "grid_labels": ("T_eff", "log(g)", "Z"),
+                    "n_spectra": len(grid_points),
+                    "grid_points": grid_points,
+                    "lookup_dict": {value: i for i, value in enumerate(grid_points)},
+                },
+            )
 
     def __getitem__(self, key):
         flux = self.flux[key]
