@@ -79,31 +79,31 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
                 wl_file = f"{site}WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
                 base_path = f"{site}PHOENIX-ACES-AGSS-COND-2011/"
 
-            wl_orig = fits.open(wl_file)[0].data.astype(np.float64)
-
-            mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
-            wl_out = wl_orig[mask]
-
             metallicity_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
             fn = f"{base_path}/Z{metallicity_string}/lte{teff:05d}-{logg:0.2f}{metallicity_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
+            if not os.path.exists(fn):
+                raise FileExistsError(
+                    "No PHOENIX Spectrum file exists for given parameters."
+                )
+
+            wl_orig = fits.open(wl_file)[0].data.astype(np.float64)
+            mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
+            wl_out = wl_orig[mask]
 
             flux_orig = fits.open(fn)[0].data.astype(np.float64)
-
             flux_native = flux_orig[mask]
-            # Units: erg/s/cm^2/cm
             native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
-            meta_dict = {
-                "teff": teff,
-                "logg": logg,
-                "metallicity": metallicity,
-                "native_flux_unit": native_flux_unit,
-            }
 
             super().__init__(
                 spectral_axis=wl_out * u.AA,
                 flux=flux_native * native_flux_unit,
-                meta=meta_dict,
+                meta={
+                    "teff": teff,
+                    "logg": logg,
+                    "metallicity": metallicity,
+                    "native_flux_unit": native_flux_unit,
+                },
                 **kwargs,
             )
 
@@ -166,38 +166,46 @@ class PHOENIXGrid(SpectrumCollection):
                 )
                 metallicity_points = metallicity_points[subset]
 
-            wavelengths, fluxes, grid_points = [], [], []
-            L = len(teff_points) * len(logg_points) * len(metallicity_points)
-            pbar = tqdm(product(teff_points, logg_points, metallicity_points), total=L)
+            wavelengths, fluxes, grid_points, missing = [], [], [], 0
+            pbar = tqdm(
+                product(teff_points, logg_points, metallicity_points),
+                total=len(teff_points) * len(logg_points) * len(metallicity_points),
+            )
 
             for teff, logg, Z in pbar:
                 pbar.desc = f"Processing Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
-                spec = PHOENIXSpectrum(
-                    teff=teff,
-                    logg=logg,
-                    metallicity=Z,
-                    path=path,
-                    wl_lo=wl_lo,
-                    wl_hi=wl_hi,
-                )
+                try:
+                    spec = PHOENIXSpectrum(
+                        teff=teff,
+                        logg=logg,
+                        metallicity=Z,
+                        path=path,
+                        wl_lo=wl_lo,
+                        wl_hi=wl_hi,
+                    )
+                except FileExistsError:
+                    missing += 1
                 wavelengths.append(spec.wavelength)
                 fluxes.append(spec.flux)
                 grid_points.append((teff, logg, Z))
+            assert grid_points != [], "Empty grid; parameter limits out of range"
+            print(
+                f"{missing} files not found; grid may not cover given parameter ranges fully"
+            ) if missing else None
 
-            flux_out = np.array(fluxes) * fluxes[0].unit
-            wave_out = np.array(wavelengths) * wavelengths[0].unit
-
-            meta = {
-                "teff_points": teff_points,
-                "logg_points": logg_points,
-                "metallicity_points": metallicity_points,
-                "grid_labels": ("T_eff", "log(g)", "Z"),
-                "n_spectra": len(grid_points),
-                "grid_points": grid_points,
-                "lookup_dict": {value: i for i, value in enumerate(grid_points)},
-            }
-
-            super().__init__(flux=flux_out, spectral_axis=wave_out, meta=meta)
+            super().__init__(
+                flux=np.array(fluxes) * fluxes[0].unit,
+                spectral_axis=np.array(wavelengths) * wavelengths[0].unit,
+                meta={
+                    "teff_points": teff_points,
+                    "logg_points": logg_points,
+                    "metallicity_points": metallicity_points,
+                    "grid_labels": ("T_eff", "log(g)", "Z"),
+                    "n_spectra": len(grid_points),
+                    "grid_points": grid_points,
+                    "lookup_dict": {value: i for i, value in enumerate(grid_points)},
+                },
+            )
 
     def __getitem__(self, key):
         flux = self.flux[key]
@@ -237,7 +245,6 @@ class PHOENIXGrid(SpectrumCollection):
             for truncating the grid.
         data: Spectrum1D-like
             A spectrum to which this method will match the wavelength limits
-
         """
         fiducial_spectrum = deepcopy(self[0])
         wavelength_units = fiducial_spectrum.wavelength.unit
@@ -259,11 +266,13 @@ class PHOENIXGrid(SpectrumCollection):
             wavelengths.append(spectrum.wavelength.value[mask])
             fluxes.append(spectrum.flux.value[mask])
 
-        fluxes = np.array(fluxes) * flux_units
-        wavelengths = np.array(wavelengths) * wavelength_units
         assert fluxes and wavelengths
 
-        return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
+        return self.__class__(
+            flux=np.array(fluxes) * flux_units,
+            spectral_axis=np.array(wavelengths) * wavelength_units,
+            meta=self.meta,
+        )
 
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
@@ -292,7 +301,6 @@ class PHOENIXGrid(SpectrumCollection):
             will need to supply this value for the application to display
             properly. If no protocol is supplied in the URL, e.g. if it is
             of the form "localhost:8888", then "http" will be used.
-
         """
 
         def create_interact_ui(doc):
@@ -349,7 +357,7 @@ class PHOENIXGrid(SpectrumCollection):
                 wl_lo, wl_hi = new_lo, new_hi
 
                 data_source = ColumnDataSource(
-                    data=dict(wavelength=data.wavelength.value, flux=data.flux.value,)
+                    data={"wavelength": data.wavelength.value, "flux": data.flux.value}
                 )
                 fig.step(
                     "wavelength", "flux", line_width=1, color="blue", source=data_source
@@ -386,7 +394,7 @@ class PHOENIXGrid(SpectrumCollection):
                 width=700,
             )
             teff_message = Div(
-                text=f"Closest grid point: {self.teff_points[1]}", width=100, height=10,
+                text=f"Closest point: {self.teff_points[1]}K", width=100, height=10,
             )
             logg_slider = Slider(
                 start=min(self.logg_points),
@@ -429,7 +437,7 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when teff slider changes"""
                 teff = self.find_nearest_teff(new)
                 if teff != old:
-                    teff_message.text = f"Closest grid point: {teff}"
+                    teff_message.text = f"Closest point: {teff}K"
                     point = (teff, logg_slider.value, metallicity_slider.value)
                     native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = native_spec.rotationally_broaden(
@@ -481,7 +489,7 @@ class PHOENIXGrid(SpectrumCollection):
             def go_right_by_one():
                 """Step forward by a single cadence"""
                 new_index = np.abs(self.teff_points - teff_slider.value).argmin() + 1
-                if new_index <= (len(self.teff_points) - 1):
+                if new_index < len(self.teff_points):
                     teff_slider.value = self.teff_points[new_index]
 
             def go_left_by_one():
