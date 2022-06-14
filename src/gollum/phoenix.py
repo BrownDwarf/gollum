@@ -186,8 +186,7 @@ class PHOENIXGrid(SpectrumCollection):
                 wavelengths.append(spec.wavelength)
                 fluxes.append(spec.flux)
                 grid_points.append((teff, logg, Z))
-            if grid_points == []:
-                raise ValueError("Empty grid; parameter limits out of range")
+            assert grid_points != [], "Empty grid; parameter limits out of range"
 
             flux_out = np.array(fluxes) * fluxes[0].unit
             wave_out = np.array(wavelengths) * wavelengths[0].unit
