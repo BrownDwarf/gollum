@@ -300,7 +300,6 @@ class PHOENIXGrid(SpectrumCollection):
             will need to supply this value for the application to display
             properly. If no protocol is supplied in the URL, e.g. if it is
             of the form "localhost:8888", then "http" will be used.
-
         """
 
         def create_interact_ui(doc):
@@ -357,7 +356,7 @@ class PHOENIXGrid(SpectrumCollection):
                 wl_lo, wl_hi = new_lo, new_hi
 
                 data_source = ColumnDataSource(
-                    data=dict(wavelength=data.wavelength.value, flux=data.flux.value,)
+                    data={"wavelength": data.wavelength.value, "flux": data.flux.value}
                 )
                 fig.step(
                     "wavelength", "flux", line_width=1, color="blue", source=data_source
@@ -489,7 +488,7 @@ class PHOENIXGrid(SpectrumCollection):
             def go_right_by_one():
                 """Step forward by a single cadence"""
                 new_index = np.abs(self.teff_points - teff_slider.value).argmin() + 1
-                if new_index <= (len(self.teff_points) - 1):
+                if new_index < len(self.teff_points):
                     teff_slider.value = self.teff_points[new_index]
 
             def go_left_by_one():
