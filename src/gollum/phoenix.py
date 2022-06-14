@@ -245,7 +245,6 @@ class PHOENIXGrid(SpectrumCollection):
             for truncating the grid.
         data: Spectrum1D-like
             A spectrum to which this method will match the wavelength limits
-
         """
         fiducial_spectrum = deepcopy(self[0])
         wavelength_units = fiducial_spectrum.wavelength.unit
@@ -267,11 +266,13 @@ class PHOENIXGrid(SpectrumCollection):
             wavelengths.append(spectrum.wavelength.value[mask])
             fluxes.append(spectrum.flux.value[mask])
 
-        fluxes = np.array(fluxes) * flux_units
-        wavelengths = np.array(wavelengths) * wavelength_units
         assert fluxes and wavelengths
 
-        return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
+        return self.__class__(
+            flux=np.array(fluxes) * flux_units,
+            spectral_axis=np.array(wavelengths) * wavelength_units,
+            meta=self.meta,
+        )
 
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
@@ -393,7 +394,7 @@ class PHOENIXGrid(SpectrumCollection):
                 width=700,
             )
             teff_message = Div(
-                text=f"Closest grid point: {self.teff_points[1]}", width=100, height=10,
+                text=f"Closest point: {self.teff_points[1]}K", width=100, height=10,
             )
             logg_slider = Slider(
                 start=min(self.logg_points),
@@ -436,7 +437,7 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when teff slider changes"""
                 teff = self.find_nearest_teff(new)
                 if teff != old:
-                    teff_message.text = f"Closest grid point: {teff}"
+                    teff_message.text = f"Closest point: {teff}K"
                     point = (teff, logg_slider.value, metallicity_slider.value)
                     native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = native_spec.rotationally_broaden(
