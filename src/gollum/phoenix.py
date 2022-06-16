@@ -38,7 +38,7 @@ filterwarnings("ignore", category=RuntimeWarning)
 
 
 class PHOENIXSpectrum(PrecomputedSpectrum):
-    r"""
+    """
     A container for PHOENIX spectra
 
     Args:
@@ -48,8 +48,8 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         path (str): The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
         download (bool): **Experimental** Set to True if you want to download the spectra
             from the internet; requires an internet connection.
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
+        wl_lo (float): the bluest wavelength of the models to keep (\u212B)
+        wl_hi (float): the reddest wavelength of the models to keep (\u212B)
     """
 
     def __init__(
@@ -117,7 +117,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
 
 
 class PHOENIXGrid(SpectrumCollection):
-    r"""
+    """
     A container for a grid of PHOENIX precomputed synthetic spectra of stars.
 
     Args:
@@ -125,8 +125,8 @@ class PHOENIXGrid(SpectrumCollection):
         logg_range (tuple): The logg limits of the grid model to read in.
         metallicity_range (tuple) : The metallicity limits of the grid model to read in.
         path (str): The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
+        wl_lo (float): the bluest wavelength of the models to keep (\u212B)
+        wl_hi (float): the reddest wavelength of the models to keep (\u212B)
     """
 
     def __init__(
