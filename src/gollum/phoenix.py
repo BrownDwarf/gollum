@@ -82,7 +82,8 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             metallicity_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
             fn = f"{base_path}/Z{metallicity_string}/lte{teff:05d}-{logg:0.2f}{metallicity_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
-            if not os.path.exists(fn):
+            if not os.path.exists(fn) and not download:
+                # Have to add website requests, download check is a temporary fix
                 raise FileExistsError(
                     "No PHOENIX Spectrum file exists for given parameters."
                 )
@@ -284,7 +285,9 @@ class PHOENIXGrid(SpectrumCollection):
         idx = np.abs(self.metallicity_points - value).argmin()
         return self.metallicity_points[idx]
 
-    def show_dashboard(self, data=None, notebook_url="localhost:8888"):
+    def show_dashboard(
+        self, data=None, notebook_url="localhost:8888"
+    ):  # pragma: no cover
         """Show an interactive dashboard for interacting with the PHOENIX grid
         Heavily inspired by the lightkurve .interact() method.
 
