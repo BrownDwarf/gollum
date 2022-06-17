@@ -1,43 +1,36 @@
-import copy
+from copy import deepcopy
 from specutils.spectra import Spectrum1D
 
 
 def apply_numpy_mask(spec, mask):
-    """Applies a boolean mask to an input spectrum, numpy-style (True=Keep, False=Discard)
-
+    """Applies a numpy-style boolean mask to an input spectrum (True=Keep, False=Discard)
 
     Parameters
     ----------
-    spec: Spectrum1D-like object
-        Object storing spectrum
-    mask: boolean mask, typically a numpy array
-        The boolean mask with numpy-style masking: True means "keep" that index and False means discard that index
+    spec : Spectrum1D object
+           Object containing a spectrum
+    mask : boolean mask, typically a numpy array
+           The boolean mask to apply to the spectrum
+    
+    Returns
+    -------
+    masked_spec: Spectrum1D object
+        The spectrum with the mask applied
     """
 
     assert isinstance(spec, Spectrum1D), "Input must be a specutils Spectrum1D object"
 
-    assert mask.sum() > 0, "The masked spectrum must have at least one pixel remaining"
+    assert mask.any(), "The masked spectrum must have at least one pixel remaining"
 
-    if len(mask) != len(spec.spectral_axis.value):
+    if (mask_length := len(mask)) != (npx := len(spec.spectral_axis.value)):
         raise IndexError(
-            "Your boolean mask has {} entries and your spectrum has {} pixels.  "
-            " The boolean mask should have the same shape as the spectrum."
+            f"Your mask has {mask_length} entries and your spectrum has {npx} pixels. They should be the same shape"
         )
-
-    if spec.mask is not None:
-        mask_out = spec.mask[mask]
-    else:
-        mask_out = None
-
-    if spec.meta is not None:
-        meta_out = copy.deepcopy(spec.meta)
-    else:
-        meta_out = None
 
     return spec.__class__(
         spectral_axis=spec.wavelength.value[mask] * spec.wavelength.unit,
         flux=spec.flux[mask],
-        mask=mask_out,
+        mask=spec.mask[mask] if spec.mask else None,
         wcs=None,
-        meta=meta_out,
+        meta=deepcopy(spec.meta) if spec.meta else None,
     )
