@@ -46,13 +46,19 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
     A container for a single Sonora precomputed synthetic spectrum of a brown dwarfs or free-floating
     Gas Giant planet.
 
-    Args:
-        Teff (int): The Teff label of the Sonora model to read in.  Must be on the Sonora grid.
-        logg (float): The logg label of the Sonora model to read in.  Must be on the Sonora grid.
-        path (str): The path to your local Sonora grid library.  You must have the Sonora grid downloaded locally.  Default: "~/libraries/raw/Sonora/"
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
-        """
+    Parameters
+    ----------
+    teff : int
+        The teff label of the Sonora model to read in.  Must be on the Sonora grid.
+    logg : float
+        The logg label of the Sonora model to read in.  Must be on the Sonora grid.
+    path : str
+        The path to your local Sonora grid library.  You must have the Sonora grid downloaded locally.  Default: "~/libraries/raw/Sonora/"
+    wl_lo : float
+        The shortest wavelength of the models to keep (Angstroms)
+    wl_hi : float
+        The longest wavelength of the models to keep (Angstroms)
+    """
 
     def __init__(
         self, *args, teff=None, logg=None, path=None, wl_lo=8038, wl_hi=12849, **kwargs
@@ -132,13 +138,21 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
     A container for a single Sonora precomputed synthetic spectrum of a brown dwarfs or free-floating
     Gas Giant planet.
 
-    Args:
-        Teff (int): The Teff label of the Sonora model to read in.  Must be on the Sonora grid.
-        logg (float): The logg label of the Sonora model to read in.  Must be on the Sonora grid.
-        path (str): The path to your local Sonora grid library.  You must have the Sonora grid downloaded locally.  Default: "~/libraries/raw/Sonora/"
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
-        """
+    Parameters
+    ----------
+    teff : int
+        The teff label of the Sonora model to read in.  Must be on the Sonora grid.
+    logg : float
+        The logg label of the Sonora model to read in.  Must be on the Sonora grid.
+    metallicity : float
+        The metallicity label of the Sonora model to read in.  Must be on the Sonora grid.
+    path : str
+        The path to your local Sonora grid library.  You must have the Sonora grid downloaded locally.  Default: "~/libraries/raw/Sonora/"
+    wl_lo : float
+        The shortest wavelength of the models to keep (Angstroms)
+    wl_hi : float
+        The longest wavelength of the models to keep (Angstroms)
+    """
 
     def __init__(
         self,
@@ -238,16 +252,21 @@ class SonoraGrid(SpectrumCollection):
     A container for a grid of Sonora precomputed synthetic spectra of brown dwarfs and free-floating
     Gas Giant planets.
 
-    Args:
-        Teff_range (tuple): The Teff limits of the grid model to read in.
-        logg (tuple): The logg limits of the Sonora model to read in.
-        metallicity_range (tuple): The metallicity limits of the Sonora model to read in
-        path (str): The path to your local Sonora grid library.
-            You must have the Sonora grid downloaded locally.
-            Default: "~/libraries/raw/Sonora/"
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
-        """
+    Parameters
+    ----------
+    teff_range : tuple
+        The Teff limits of the grid model to read in.
+    logg : tuple
+        The logg limits of the Sonora model to read in.
+    metallicity_range : tuple
+        The metallicity limits of the Sonora model to read in
+    path : str
+        The path to your locally downloaded Sonora grid library. Default: "~/libraries/raw/Sonora/"
+    wl_lo : float
+        The shortest wavelength of the models to keep (Angstroms)
+    wl_hi : float
+        The longest wavelength of the models to keep (Angstroms)
+    """
 
     def __init__(
         self,
@@ -348,8 +367,7 @@ class SonoraGrid(SpectrumCollection):
         flux = self.flux[key]
         if flux.ndim != 1:
             raise ValueError(
-                "Currently only 1D data structures may be "
-                "returned from slice operations."
+                "Currently only 1D data structures may be returned from slice operations."
             )
         spectral_axis = self.spectral_axis[key]
         uncertainty = None if self.uncertainty is None else self.uncertainty[key]
@@ -411,9 +429,8 @@ class SonoraGrid(SpectrumCollection):
 
         Parameters
         ----------
-        wavelength_range: List or Tuple of Quantities
-            A pair of values that denote the shortest and longest wavelengths
-            for truncating the grid.
+        wavelength_range: list or tuple
+            A pair of values that denote the shortest and longest wavelengths for truncating the grid.
         data: Spectrum1D-like
             A spectrum to which this method will match the wavelength limits
 
@@ -529,7 +546,6 @@ class SonoraGrid(SpectrumCollection):
             will need to supply this value for the application to display
             properly. If no protocol is supplied in the URL, e.g. if it is
             of the form "localhost:8888", then "http" will be used.
-
         """
 
         def create_interact_ui(doc):

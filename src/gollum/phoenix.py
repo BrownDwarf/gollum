@@ -40,15 +40,22 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
     """
     A container for PHOENIX spectra
 
-    Args:
-        teff (int): The teff label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
-        logg (float): The logg label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
-        metallicity (float): The metallicity label of the PHOENIX model to read in. Must be on the PHOENIX grid.
-        path (str): The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
-        download (bool): **Experimental** Set to True if you want to download the spectra
-            from the internet; requires an internet connection.
-        wl_lo (float): the bluest wavelength of the models to keep (\u212B)
-        wl_hi (float): the reddest wavelength of the models to keep (\u212B)
+    Parameters
+    ----------
+    teff : int
+        The teff label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
+    logg : float
+        The logg label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
+    metallicity : float
+        The metallicity label of the PHOENIX model to read in. Must be on the PHOENIX grid.
+    path : str
+        The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
+    download : bool
+        [Experimental] Set to True if you want to download the spectra from the internet; requires an internet connection.
+    wl_lo : float
+        The shortest wavelength of the models to keep (\u212B)
+    wl_hi : float
+        The longest wavelength of the models to keep (\u212B)
     """
 
     def __init__(
@@ -69,7 +76,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
                 base_path = os.path.expanduser(path)
                 assert os.path.exists(base_path), "Given path does not exist."
 
-                wl_file = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+                wl_file = f"{base_path}/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
                 assert os.path.exists(wl_file), f"PHOENIX models must be in {base_path}"
             else:
                 site = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
@@ -78,9 +85,9 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
                 wl_file = f"{site}WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
                 base_path = f"{site}PHOENIX-ACES-AGSS-COND-2011/"
 
-            metallicity_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
+            Z_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
-            fn = f"{base_path}/Z{metallicity_string}/lte{teff:05d}-{logg:0.2f}{metallicity_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
+            fn = f"{base_path}/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
             if not os.path.exists(fn) and not download:
                 # Have to add website requests, download check is a temporary fix
                 raise FileExistsError(
@@ -119,13 +126,20 @@ class PHOENIXGrid(SpectrumCollection):
     """
     A container for a grid of PHOENIX precomputed synthetic spectra of stars.
 
-    Args:
-        teff_range (tuple): The teff limits of the grid model to read in.
-        logg_range (tuple): The logg limits of the grid model to read in.
-        metallicity_range (tuple) : The metallicity limits of the grid model to read in.
-        path (str): The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
-        wl_lo (float): the bluest wavelength of the models to keep (\u212B)
-        wl_hi (float): the reddest wavelength of the models to keep (\u212B)
+    Parameters
+    ----------
+    teff_range : tuple
+        The teff limits of the grid model to read in.
+    logg_range : tuple
+        The logg limits of the grid model to read in.
+    metallicity_range : tuple
+        The metallicity limits of the grid model to read in.
+    path : str
+        The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
+    wl_lo : float
+        The shortest wavelength of the models to keep (\u212B)
+    wl_hi : float
+        The longest wavelength of the models to keep (\u212B)
     """
 
     def __init__(
@@ -240,11 +254,16 @@ class PHOENIXGrid(SpectrumCollection):
 
         Parameters
         ----------
-        wavelength_range: List or Tuple of Quantities
+        wavelength_range: list or tuple
             A pair of values that denote the shortest and longest wavelengths
             for truncating the grid.
         data: Spectrum1D-like
             A spectrum to which this method will match the wavelength limits
+        
+        Returns
+        -------
+        truncated_spectrum: Spectrum1D-like
+            The spectrum after being truncated to the given wavelength range
         """
         fiducial_spectrum = deepcopy(self[0])
         wavelength_units = fiducial_spectrum.wavelength.unit
@@ -287,8 +306,8 @@ class PHOENIXGrid(SpectrumCollection):
     def show_dashboard(
         self, data=None, notebook_url="localhost:8888"
     ):  # pragma: no cover
-        """Show an interactive dashboard for interacting with the PHOENIX grid
-        Heavily inspired by the lightkurve .interact() method.
+        """Show an interactive dashboard for the PHOENIX grid;
+        heavily inspired by the lightkurve .interact() method
 
         Parameters
         ----------

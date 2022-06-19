@@ -7,24 +7,22 @@ A container for a single precomputed synthetic model spectrum at a single grid-p
 PrecomputedSpectrum
 ###############
 """
-
-from warnings import filterwarnings, catch_warnings
-from logging import getLogger
-import numpy as np
-from astropy import units as u
-from astropy.modeling.physical_models import BlackBody
-from astropy.utils.exceptions import AstropyDeprecationWarning
-from astropy import constants as const
 import specutils
-
+import numpy as np
 import matplotlib.pyplot as plt
-from copy import deepcopy
 
+from copy import deepcopy
+from logging import getLogger
+from warnings import filterwarnings, catch_warnings
+from gollum.utilities import apply_numpy_mask
 from scipy.ndimage import gaussian_filter1d
 from scipy.signal import find_peaks
 from specutils.manipulation import LinearInterpolatedResampler
 from specutils.fitting import fit_generic_continuum
-from gollum.utilities import apply_numpy_mask
+from astropy import units as u
+from astropy.modeling.physical_models import BlackBody
+from astropy.utils.exceptions import AstropyDeprecationWarning
+from astropy import constants as const
 
 log = getLogger(__name__)
 
@@ -53,7 +51,8 @@ class PrecomputedSpectrum(Spectrum1D):
         
         Returns
         -------
-        velocity_spacing (np.array): vector of per pixel velocity sampling
+        velocity_spacing : np.array
+            vector of per pixel velocity sampling
         """
         c_kmps = const.c.to(u.km / u.s).value
         per_pixel_velocity_sampling = (
@@ -75,7 +74,8 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        mask (boolean mask): The numpy-style boolean mask: True means keep that index and False means discard it.
+        mask : boolean mask
+            The numpy-style boolean mask: True means keep that index and False means discard it.
         """
         return apply_numpy_mask(self, mask)
 
@@ -84,11 +84,13 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        percentile (int): The percentile to which the spectrum will be normalized (default: 50th percentile)
+        percentile : int
+            The percentile to which the spectrum will be normalized (default: 50th percentile)
 
         Returns
         -------
-        normalized_spec (PrecomputedSpectrum): Normalized spectrum
+        normalized_spec : PrecomputedSpectrum
+            Normalized spectrum
         """
         spec = self._copy(
             spectral_axis=self.wavelength.value * self.wavelength.unit, wcs=None
@@ -111,13 +113,16 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        vsini (int): :math:`v\sin{i}` in units of km/s
-        u1 (float): Limb-darkening coefficient 1
-        u2 (float): Limb-darkening coefficient 2
+        vsini : int
+            :math:`v\sin{i}` in units of km/s
+        u1 : float
+            Limb-darkening coefficient 1
+        u2 : float
+            Limb-darkening coefficient 2
 
         Returns
         -------
-        broadened_spec : (PrecomputedSpectrum)
+        broadened_spec : PrecomputedSpectrum
             Rotationally Broadened Spectrum
         """
         lam0 = np.median(self.wavelength.value)
@@ -150,11 +155,13 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        resolving_power (int): Instrumental resolving power :math:`R = \frac{\lambda}{\delta \lambda}`
+        resolving_power : int
+            Instrumental resolving power :math:`R = \frac{\lambda}{\delta \lambda}`
 
         Returns
         -------
-        broadened_spec (PrecomputedSpectrum): Instrumentally broadened spectrum
+        broadened_spec : PrecomputedSpectrum
+            Instrumentally broadened spectrum
         """
         # In detail the spectral resolution is wavelength dependent...
         # For now we assume a constant resolving power
@@ -173,11 +180,13 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        rv (int): Radial velocity in km/s
+        rv : int
+            Radial velocity in km/s
 
         Returns
         -------
-        shifted_spec (PrecomputedSpectrum): RV-Shifted Spectrum
+        shifted_spec : PrecomputedSpectrum
+            RV-Shifted Spectrum
         """
         try:
             output = deepcopy(self)
@@ -196,11 +205,13 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        target_spectrum (Spectrum1D): Spectrum whose wavelength grid you seek to match
+        target_spectrum : Spectrum1D
+            Spectrum whose wavelength grid you seek to match
 
         Returns
         -------
-        resampled_spec (PrecomputedSpectrum): Resampled spectrum
+        resampled_spec : PrecomputedSpectrum
+            Resampled spectrum
         """
         output = LinearInterpolatedResampler()(self, target_spectrum.wavelength)
 
@@ -215,14 +226,16 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        oversample (float): The desired oversampling in velocity, compared to the typical velocity sampling at original pixel spacing.
-        Typically, you will want to oversample to ensure the narrowest lines remain resolved at the new sampling,
-        at the expense of more pixels than you started with.
-        If your original spectrum has large gaps, you may end up with many more pixels than you started with.
+        oversample : float
+            The desired oversampling in velocity, compared to the typical velocity sampling at original pixel spacing.
+            Typically, you will want to oversample to ensure the narrowest lines remain resolved at the new sampling,
+            at the expense of more pixels than you started with.
+            If your original spectrum has large gaps, you may end up with many more pixels than you started with.
 
         Returns
         -------
-        remapped_spec (PrecomputedSpectrum): Resampled spectrum
+        resampled_spec : PrecomputedSpectrum
+            Resampled spectrum
         """
 
         c_kmps = const.c.to(u.km / u.s).value
@@ -265,13 +278,17 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        decimation_factor (float): The fraction of pixels to keep. Default: 0.1
-        n_pixels (int): The number of pixels to keep. Default: 2,000
-        resolving_power (int): The resolving power of the new spectrum.  Default: 3,000
+        decimation_factor : float
+            The fraction of pixels to keep. Default: 0.1
+        n_pixels  : int
+            The number of pixels to keep. Default: 2,000
+        resolving_power : int
+            The resolving power of the new spectrum.  Default: 3,000
 
         Returns
         -------
-        decimated_spec (PrecomputedSpectrum): Decimated Spectrum
+        decimated_spec : PrecomputedSpectrum
+            Decimated Spectrum
         """
         if n_pixels or resolving_power:
             raise NotImplementedError(
@@ -318,11 +335,13 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        teff (float): The effective temperature of the blackbody to divide by.
+        teff : float
+            The effective temperature of the blackbody to divide by.
 
         Returns
         -------
-        divided_spec (PrecomputedSpectrum): The spectrum after being divided by the blackbody.
+        divided_spec : PrecomputedSpectrum
+            The spectrum after being divided by the blackbody.
         """
         return self.divide(self.get_blackbody_spectrum(teff=teff), handle_meta="ff")
 
@@ -331,12 +350,15 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        target_spectrum (Spectrum1D): A Spectrum1D object whose flux tilt to match against
-        return_model (bool): Whether or not to return the model
+        target_spectrum : Spectrum1D
+            A Spectrum1D object whose flux tilt to match against
+        return_model : bool
+            Whether or not to return the model
 
         Returns
         -------
-        tilted_spec (PrecomputedSpectrum): Tilted spectrum
+        tilted_spec : PrecomputedSpectrum
+            Tilted spectrum
         """
         ## Assume the template is resampled exactly to the data...
         g1_fit = fit_generic_continuum(target_spectrum.divide(self, handle_meta="ff"))
@@ -349,15 +371,20 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        pixel_distance (int): The minimum separation between peaks, in pixels. Default = 5001 px
-        polyorder (int): The polynomial degree to be used for peak fitting
-        return_coeffs (bool): If `True`, returns a 2-tuple (trend_spec, trend_coeffs) where trend_spec is the fitted trend.
+        pixel_distance : int
+            The minimum separation between peaks, in pixels. Default = 5001 px
+        polyorder : int
+            The polynomial degree to be used for peak fitting
+        return_coeffs : bool
+            If `True`, returns a 2-tuple (trend_spec, trend_coeffs) where trend_spec is the fitted trend.
 
         Returns
         -------
-        spec_out (`PrecomputedSpectrum`): New Spectrum object representing a fit of the continuum.
+        spec_out : PrecomputedSpectrum
+            New Spectrum object representing a fit of the continuum.
         If ``return_coeffs`` is set to ``True``, this method will also return:
-        coeffs (np.array): New vector of polynomial coefficients that reproduce the trend.
+            coeffs : np.array
+                New vector of polynomial coefficients that reproduce the trend.
         """
 
         x_vector, y_vector = self.wavelength.value, self.flux.value
@@ -402,18 +429,24 @@ class PrecomputedSpectrum(Spectrum1D):
 
         Parameters
         ----------
-        ax (`~matplotlib.axes.Axes`): A matplotlib axes object to plot into. If no axes is provided, a new one will be generated.
-        ylo (scalar): Y-axis lower bound
-        yhi (scalar): Y-axis upper bound
-        figsize (tuple): Dimensions of the figure
-        label (str): The label for plt.legend()
+        ax : `~matplotlib.axes.Axes`
+            A matplotlib axes object to plot into. If no axes is provided, a new one will be generated.
+        ylo : float
+            Y-axis lower bound
+        yhi : float
+            Y-axis upper bound
+        figsize : tuple
+            Dimensions of the figure
+        label : str
+            The label for plt.legend()
 
         Returns
         -------
-        ax (`~matplotlib.axes.Axes`): The axis to display and/or modify
+        ax : `~matplotlib.axes.Axes`
+            The axis to display and/or modify
         """
         if not ax:
-            fig, ax = plt.subplots(1, figsize=figsize)
+            ax = plt.subplots(1, figsize=figsize)[1]
             ax.set_ylim(ylo, yhi)
             ax.set_xlabel(r"$\lambda \;(\AA)$")
             ax.set_ylabel("Flux")

@@ -8,9 +8,9 @@ def apply_numpy_mask(spec, mask):
     Parameters
     ----------
     spec : Spectrum1D object
-           Object containing a spectrum
+        Object containing a spectrum
     mask : boolean mask, typically a numpy array
-           The boolean mask to apply to the spectrum
+        The mask to apply to the spectrum
     
     Returns
     -------
