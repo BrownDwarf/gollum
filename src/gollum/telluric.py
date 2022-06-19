@@ -139,4 +139,3 @@ class TelFitSpectrum(PrecomputedSpectrum):
         n_air = 1.0 + 2.735182e-4 + 131.4182 / wave_A ** 2 + 2.76249e8 / wave_A ** 4
         vacuum_wavelengths = self.wavelength * n_air
         return self._copy(spectral_axis=vacuum_wavelengths, wcs=None)
-

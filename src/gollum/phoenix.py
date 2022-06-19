@@ -198,6 +198,9 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_hi=wl_hi,
                     )
                 except FileExistsError:
+                    log.info(
+                        f"No file exists for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
+                    )
                     missing += 1
                 wavelengths.append(spec.wavelength)
                 fluxes.append(spec.flux)
