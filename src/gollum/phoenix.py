@@ -88,17 +88,11 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
 
             Z_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
-            fn = f"{base_path}/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
-            if not os.path.exists(fn) and not download:
-                # Have to add website requests, download check is a temporary fix
-                raise FileExistsError(
-                    "No PHOENIX Spectrum file exists for given parameters."
-                )
-
             wl_orig = fits.open(wl_file)[0].data.astype(np.float64)
             mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
             wl_out = wl_orig[mask]
 
+            fn = f"{base_path}/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
             flux_orig = fits.open(fn)[0].data.astype(np.float64)
             flux_native = flux_orig[mask]
             native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
@@ -198,7 +192,7 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_lo=wl_lo,
                         wl_hi=wl_hi,
                     )
-                except (FileExistsError, URLError):
+                except (FileNotFoundError, URLError):
                     log.info(f"No file for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}")
                     missing += 1
                 wavelengths.append(spec.wavelength)

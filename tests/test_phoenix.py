@@ -7,7 +7,7 @@ import astropy.units as u
 
 def test_spectrum():
     """Testing the PHOENIXSpectrum class"""
-    with raises(FileExistsError):
+    with raises(FileNotFoundError):
         PHOENIXSpectrum(teff=7000, logg=2, metallicity=2.0)
 
     spec = PHOENIXSpectrum(teff=5000, logg=4)
@@ -26,7 +26,7 @@ def test_spectrum():
     assert new_spec.plot(label="demo", color="r")
 
     new_spec = (
-        spec.rotationally_broaden(28.8).rv_shift(10.1).instrumental_broaden(55_000)
+        spec.rotationally_broaden(28.8).rv_shift(10.1).instrumental_broaden(55000)
     )
 
     assert new_spec
