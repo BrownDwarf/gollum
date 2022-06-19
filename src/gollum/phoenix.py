@@ -16,6 +16,7 @@ from itertools import product
 from warnings import filterwarnings
 from logging import getLogger
 from tqdm import tqdm
+from urllib.error import URLError
 from gollum.precomputed_spectrum import PrecomputedSpectrum
 from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.io import fits
@@ -197,10 +198,8 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_lo=wl_lo,
                         wl_hi=wl_hi,
                     )
-                except FileExistsError:
-                    log.info(
-                        f"No file exists for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
-                    )
+                except (FileExistsError, URLError):
+                    log.info(f"No file for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}")
                     missing += 1
                 wavelengths.append(spec.wavelength)
                 fluxes.append(spec.flux)
