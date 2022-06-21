@@ -42,7 +42,7 @@ The `gollum` framework provides a user-friendly Application Programming Interfac
 
 The spectra of stars, brown dwarfs, and planets are amazingly complex and information-rich.  Centuries of effort in astrophysics have distilled that complexity into the fundamental parameters that control the bulk appearance of stellar and substellar spectra: effective temperature, surface gravity, iron abundance, and sometimes other compositional consituents.  Synthetic spectral models mimic a star's spectrum given these few properties.  The computational expense of modeling stars has driven practitioners to precompute the models finely in wavelength coordinates, but coarsely over trios or quartets of these fundamental properties.  Comparing these coarsely sampled grids of precomputed synthetic spectra to data remains a challenge.  The spectrum bandwidth, grid size, and grid dimensionality have made it difficult for newcomers to build an intuition for how the spectral appearance depends on the input physics.
 
-`gollum` resolves these challenges.  Beyond merely accessing the voluminous grid data, `gollum` provides intuition in the form of interactive visualization.
+`gollum` resolves these challenges.  Beyond merely accessing the voluminous grid data, `gollum` provides intuition in the form of interactive visualization. One of `gollum`'s key features is its ability to visualize these grid data via a dashboard powered by `bokeh` [@bokeh2018].
 
 
 
