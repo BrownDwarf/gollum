@@ -8,48 +8,55 @@ PHOENIXSpectrum
 ###############
 """
 
-import copy
-import warnings
-import logging
-from gollum.precomputed_spectrum import PrecomputedSpectrum
+import os
 import numpy as np
-import astropy
+
+from copy import deepcopy
+from itertools import product
+from warnings import filterwarnings
+from logging import getLogger
+from tqdm import tqdm
+from urllib.error import URLError
+from gollum.precomputed_spectrum import PrecomputedSpectrum
+from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.io import fits
 from astropy import units as u
 from specutils import SpectrumCollection
 from specutils.spectra.spectrum1d import Spectrum1D
-from tqdm import tqdm
-import os
-
-from bokeh.io import show, output_notebook, push_notebook
+from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import Slider, Span, Range1d, Dropdown
+from bokeh.models import Slider, Range1d
 from bokeh.layouts import layout, Spacer
 from bokeh.models.widgets import Button, Div
 
-log = logging.getLogger(__name__)
+log = getLogger(__name__)
 
 #  See Issue: https://github.com/astropy/specutils/issues/779
-warnings.filterwarnings(
-    "ignore", category=astropy.utils.exceptions.AstropyDeprecationWarning
-)
+filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
-warnings.filterwarnings("ignore", category=RuntimeWarning)
+filterwarnings("ignore", category=RuntimeWarning)
 
 
 class PHOENIXSpectrum(PrecomputedSpectrum):
-    r"""
+    """
     A container for PHOENIX spectra
 
-    Args:
-        Teff (int): The Teff label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
-        logg (float): The logg label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
-        path (str): The path to your local PHOENIX grid library.  You must have the PHOENIX
-            grid downloaded locally.  Default: "~/libraries/raw/PHOENIX/"
-        download (bool): **Experimental** Whether or not you want to download the spectra 
-            from the internet.  Requires an internet connection to work.
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
+    Parameters
+    ----------
+    teff : int
+        The teff label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
+    logg : float
+        The logg label of the PHOENIX model to read in.  Must be on the PHOENIX grid.
+    metallicity : float
+        The metallicity label of the PHOENIX model to read in. Must be on the PHOENIX grid.
+    path : str
+        The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
+    download : bool
+        [Experimental] Set to True if you want to download the spectra from the internet; requires an internet connection.
+    wl_lo : float
+        The shortest wavelength of the models to keep (\u212B)
+    wl_hi : float
+        The longest wavelength of the models to keep (\u212B)
     """
 
     def __init__(
@@ -57,117 +64,77 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         *args,
         teff=None,
         logg=None,
-        metallicity=None,
-        path=None,
+        metallicity=0.0,  # solar by default
+        path="~/libraries/raw/PHOENIX/",
         download=False,
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
     ):
 
-        if (teff is not None) & (logg is not None):
-
-            if metallicity is None:
-                metallicity = 0.0  # solar by default
-
-            if path is None:
-                path = "~/libraries/raw/PHOENIX/"
-
-            if download == False:
+        if teff and logg:
+            if not download:
                 base_path = os.path.expanduser(path)
-                assert os.path.exists(
-                    base_path
-                ), "You must specify the path to local PHOENIX models"
+                assert os.path.exists(base_path), "Given path does not exist."
 
-                wl_filename = base_path + "/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
-                assert os.path.exists(
-                    wl_filename
-                ), f"You need to place the PHOENIX models in {base_path}"
+                wl_file = f"{base_path}/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+                assert os.path.exists(wl_file), f"PHOENIX models must be in {base_path}"
             else:
-                log.info(
-                    "Experimental feature! Attempting to download PHOENIX models from the internet..."
-                )
-                log.info(
-                    "We are using this FTP site: ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
-                )
-                wl_filename = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
-                base_path = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/"
+                site = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
+                log.info("[WIP]Downloading PHOENIX models from the internet...")
+                log.info(f"We are using this FTP site: {site}")
+                wl_file = f"{site}WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+                base_path = f"{site}PHOENIX-ACES-AGSS-COND-2011/"
 
-            wl_orig = fits.open(wl_filename)[0].data.astype(np.float64)
+            Z_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
+            wl_orig = fits.open(wl_file)[0].data.astype(np.float64)
             mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
             wl_out = wl_orig[mask]
 
-            # Deal with metallicity
-            metallicity_string = f"{metallicity:+0.1f}"
-
-            metallicity_string = "-0.0" if metallicity == 0.0 else metallicity_string
-
-            fn = (
-                base_path
-                + "/Z{}/lte{:05d}-{:0.2f}{}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
-            ).format(metallicity_string, teff, logg, metallicity_string)
-
+            fn = f"{base_path}/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
             flux_orig = fits.open(fn)[0].data.astype(np.float64)
-            # Units: erg/s/cm^2/cm
             flux_native = flux_orig[mask]
-
-            native_flux_units = u.erg / u.s / u.cm ** 2 / u.cm
-
-            meta_dict = {
-                "teff": teff,
-                "logg": logg,
-                "metallicity": metallicity,
-                "native_flux_unit": native_flux_units,
-            }
+            native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
 
             super().__init__(
                 spectral_axis=wl_out * u.AA,
-                flux=flux_native * native_flux_units,
-                meta=meta_dict,
+                flux=flux_native * native_flux_unit,
+                meta={
+                    "teff": teff,
+                    "logg": logg,
+                    "metallicity": metallicity,
+                    "native_flux_unit": native_flux_unit,
+                },
                 **kwargs,
             )
 
         else:
             super().__init__(*args, **kwargs)
 
-    @property
-    def teff(self):
-        """The input Effective Temperature associated with this model"""
-        if "teff" in self.meta.keys():
-            return self.meta["teff"]
-        else:
-            return None
-
-    @property
-    def logg(self):
-        """The input surface gravity associated with this model"""
-        if "logg" in self.meta.keys():
-            return self.meta["logg"]
-        else:
-            return None
-
-    @property
-    def metallicity(self):
-        """The input metallicity associated with this model"""
-        if "metallicity" in self.meta.keys():
-            return self.meta["metallicity"]
-        else:
-            return None
+    teff = property(lambda self: self.meta.get("teff"))
+    logg = property(lambda self: self.meta.get("logg"))
+    metallicity = property(lambda self: self.meta.get("metallicity"))
 
 
 class PHOENIXGrid(SpectrumCollection):
-    r"""
+    """
     A container for a grid of PHOENIX precomputed synthetic spectra of stars.
 
-    Args:
-        Teff_range (tuple): The Teff limits of the grid model to read in.
-        logg (tuple): The logg limits of the grid model to read in.
-        path (str): The path to your local PHOENIX grid library.
-            You must have the PHOENIX grid downloaded locally.
-            Default: "~/libraries/raw/PHOENIX/"
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
+    Parameters
+    ----------
+    teff_range : tuple
+        The teff limits of the grid model to read in.
+    logg_range : tuple
+        The logg limits of the grid model to read in.
+    metallicity_range : tuple
+        The metallicity limits of the grid model to read in.
+    path : str
+        The path to your locally downloaded PHOENIX grid library. Default: "~/libraries/raw/PHOENIX/"
+    wl_lo : float
+        The shortest wavelength of the models to keep (\u212B)
+    wl_hi : float
+        The longest wavelength of the models to keep (\u212B)
     """
 
     def __init__(
@@ -175,169 +142,135 @@ class PHOENIXGrid(SpectrumCollection):
         teff_range=None,
         logg_range=None,
         metallicity_range=None,
-        path=None,
+        path="~/libraries/raw/PHOENIX/",
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
     ):
 
-        if (
-            ("flux" in kwargs.keys())
-            and ("spectral_axis" in kwargs.keys())
-            and ("meta" in kwargs.keys())
-        ):
+        if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
             # Trigger a passthrough
             super().__init__(**kwargs)
         else:
 
             teff_points = np.hstack(
-                (np.arange(2300, 7000, 100), np.arange(7000, 12_001, 200))
+                (np.arange(2300, 7000, 100), np.arange(7000, 12001, 200))
             )
             # Todo: some T_eff ranges go to log(g) = 0.0, consider adding these
             logg_points = np.arange(2.0, 6.01, 0.5)
 
             metallicity_points = np.array([-4, -3, -2, -1.5, -1, -0.5, 0, 0.5, 1])
 
-            if teff_range is not None:
+            if teff_range:
                 subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
                 teff_points = teff_points[subset]
 
-            if logg_range is not None:
+            if logg_range:
                 subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
                 logg_points = logg_points[subset]
 
-            if metallicity_range is not None:
+            if metallicity_range:
                 subset = (metallicity_points >= metallicity_range[0]) & (
                     metallicity_points <= metallicity_range[1]
                 )
                 metallicity_points = metallicity_points[subset]
 
-            wavelengths, fluxes = [], []
-            grid_points = []
+            wavelengths, fluxes, grid_points, missing = [], [], [], 0
+            pbar = tqdm(
+                product(teff_points, logg_points, metallicity_points),
+                total=len(teff_points) * len(logg_points) * len(metallicity_points),
+            )
 
-            pbar = tqdm(teff_points)
-            for teff in pbar:
-                for logg in logg_points:
-                    for metallicity in metallicity_points:
-                        pbar.set_description(
-                            "Processing Teff={} K, logg={:0.2f}, Z={:+0.1f}".format(
-                                teff, logg, metallicity
-                            )
-                        )
-                        grid_point = (teff, logg, metallicity)
-                        spec = PHOENIXSpectrum(
-                            teff=teff,
-                            logg=logg,
-                            metallicity=metallicity,
-                            path=path,
-                            wl_lo=wl_lo,
-                            wl_hi=wl_hi,
-                        )
-                        wavelengths.append(spec.wavelength)
-                        fluxes.append(spec.flux)
-                        grid_points.append(grid_point)
-            flux_out = np.array(fluxes) * fluxes[0].unit
-            wave_out = np.array(wavelengths) * wavelengths[0].unit
+            for teff, logg, Z in pbar:
+                pbar.desc = f"Processing Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
+                try:
+                    spec = PHOENIXSpectrum(
+                        teff=teff,
+                        logg=logg,
+                        metallicity=Z,
+                        path=path,
+                        wl_lo=wl_lo,
+                        wl_hi=wl_hi,
+                    )
+                except (FileNotFoundError, URLError):
+                    log.info(f"No file for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}")
+                    missing += 1
+                wavelengths.append(spec.wavelength)
+                fluxes.append(spec.flux)
+                grid_points.append((teff, logg, Z))
+            assert grid_points != [], "Empty grid; parameter limits out of range"
+            print(
+                f"{missing} files not found; grid may not cover given parameter ranges fully"
+            ) if missing else None
 
-            # Make a quick-access dictionary
-            n_spectra = len(grid_points)
-            lookup_dict = {grid_points[i]: i for i in range(n_spectra)}
-            meta = {
-                "teff_points": teff_points,
-                "logg_points": logg_points,
-                "metallicity_points": metallicity_points,
-                "grid_labels": ("T_eff", "log(g)", "Z"),
-                "n_spectra": n_spectra,
-                "grid_points": grid_points,
-                "lookup_dict": lookup_dict,
-            }
-
-            super().__init__(flux=flux_out, spectral_axis=wave_out, meta=meta)
+            super().__init__(
+                flux=np.array(fluxes) * fluxes[0].unit,
+                spectral_axis=np.array(wavelengths) * wavelengths[0].unit,
+                meta={
+                    "teff_points": teff_points,
+                    "logg_points": logg_points,
+                    "metallicity_points": metallicity_points,
+                    "grid_labels": ("T_eff", "log(g)", "Z"),
+                    "n_spectra": len(grid_points),
+                    "grid_points": grid_points,
+                    "lookup_dict": {value: i for i, value in enumerate(grid_points)},
+                },
+            )
 
     def __getitem__(self, key):
         flux = self.flux[key]
         if flux.ndim != 1:
             raise ValueError(
-                "Currently only 1D data structures may be "
-                "returned from slice operations."
+                "Currently only 1D data structures may be returned from slice operations."
             )
-        spectral_axis = self.spectral_axis[key]
-        uncertainty = None if self.uncertainty is None else self.uncertainty[key]
-        wcs = None if self.wcs is None else self.wcs[key]
-        mask = None if self.mask is None else self.mask[key]
-        if self.meta is None:
-            meta = None
-        else:
-            try:
-                meta = self.meta[key]
-            except KeyError:
-                meta = self.meta
+        try:
+            meta = self.meta[key]
+        except (KeyError, TypeError):
+            meta = self.meta
 
         return PHOENIXSpectrum(
             flux=flux,
-            spectral_axis=spectral_axis,
-            uncertainty=uncertainty,
-            wcs=wcs,
-            mask=mask,
+            spectral_axis=self.spectral_axis[key],
+            uncertainty=self.uncertainty[key] if self.uncertainty else None,
+            wcs=self.wcs[key] if self.wcs else None,
+            mask=self.mask[key] if self.mask else None,
             meta=meta,
         )
 
-    @property
-    def grid_points(self):
-        """What are the coordinates of the grid?"""
-        return self.meta["grid_points"]
-
-    @property
-    def teff_points(self):
-        """What are the Teff points of the grid?"""
-        return self.meta["teff_points"]
-
-    @property
-    def metallicity_points(self):
-        """What are the metallicity points of the grid?"""
-        return self.meta["metallicity_points"]
-
-    @property
-    def logg_points(self):
-        """What are the logg points of the grid?"""
-        return self.meta["logg_points"]
-
-    @property
-    def grid_labels(self):
-        """What are the grid labels?"""
-        return self.meta["grid_labels"]
-
-    @property
-    def n_spectra(self):
-        """How many distinct spectra are in the grid?"""
-        return self.meta["n_spectra"]
-
-    @property
-    def lookup_dict(self):
-        """Lookup dictioary for spectra from their grid coordinates"""
-        return self.meta["lookup_dict"]
+    grid_points = property(lambda self: self.meta["grid_points"])
+    teff_points = property(lambda self: self.meta["teff_points"])
+    metallicity_points = property(lambda self: self.meta["metallicity_points"])
+    logg_points = property(lambda self: self.meta["logg_points"])
+    grid_labels = property(lambda self: self.meta["grid_labels"])
+    n_spectra = property(lambda self: self.meta["n_spectra"])
+    lookup_dict = property(lambda self: self.meta["lookup_dict"])
 
     def truncate(self, wavelength_range=None, data=None):
         """Truncate the wavelength range of the grid
 
         Parameters
         ----------
-        wavelength_range: List or Tuple of Quantities
+        wavelength_range: list or tuple
             A pair of values that denote the shortest and longest wavelengths
             for truncating the grid.
         data: Spectrum1D-like
             A spectrum to which this method will match the wavelength limits
-
+        
+        Returns
+        -------
+        truncated_spectrum: Spectrum1D-like
+            The spectrum after being truncated to the given wavelength range
         """
-        fiducial_spectrum = copy.deepcopy(self[0])
+        fiducial_spectrum = deepcopy(self[0])
         wavelength_units = fiducial_spectrum.wavelength.unit
         flux_units = fiducial_spectrum.flux.unit
 
-        if (data is not None) and (wavelength_range is None):
+        if data and wavelength_range:
             wavelength_range = (
                 fiducial_spectrum.wavelength.value.min() * wavelength_units,
                 fiducial_spectrum.wavelength.value.max() * wavelength_units,
             )
+
         shortest_wavelength, longest_wavelength = wavelength_range
 
         wavelengths, fluxes = [], []
@@ -348,28 +281,29 @@ class PHOENIXGrid(SpectrumCollection):
             wavelengths.append(spectrum.wavelength.value[mask])
             fluxes.append(spectrum.flux.value[mask])
 
-        fluxes = np.array(fluxes) * flux_units
-        wavelengths = np.array(wavelengths) * wavelength_units
-        assert fluxes is not None
-        assert wavelengths is not None
+        assert fluxes and wavelengths
 
-        return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
+        return self.__class__(
+            flux=np.array(fluxes) * flux_units,
+            spectral_axis=np.array(wavelengths) * wavelength_units,
+            meta=self.meta,
+        )
 
-    def get_index(self, grid_point):
-        """Get the spectrum index associated with a given grid point"""
-        return self.lookup_dict[grid_point]
+    get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
     def find_nearest_teff(self, value):
-        idx = (np.abs(self.teff_points - value)).argmin()
+        idx = np.abs(self.teff_points - value).argmin()
         return self.teff_points[idx]
 
     def find_nearest_metallicity(self, value):
-        idx = (np.abs(self.metallicity_points - value)).argmin()
+        idx = np.abs(self.metallicity_points - value).argmin()
         return self.metallicity_points[idx]
 
-    def show_dashboard(self, data=None, notebook_url="localhost:8888"):
-        """Show an interactive dashboard for interacting with the PHOENIX grid
-        Heavily inspired by the lightkurve .interact() method.
+    def show_dashboard(
+        self, data=None, notebook_url="localhost:8888"
+    ):  # pragma: no cover
+        """Show an interactive dashboard for the PHOENIX grid;
+        heavily inspired by the lightkurve .interact() method
 
         Parameters
         ----------
@@ -384,7 +318,6 @@ class PHOENIXGrid(SpectrumCollection):
             will need to supply this value for the application to display
             properly. If no protocol is supplied in the URL, e.g. if it is
             of the form "localhost:8888", then "http" will be used.
-
         """
 
         def create_interact_ui(doc):
@@ -392,34 +325,34 @@ class PHOENIXGrid(SpectrumCollection):
             # Make the spectrum source
             scalar_norm = np.percentile(self[0].flux.value, 95)
             spec_source = ColumnDataSource(
-                data=dict(
-                    wavelength=self[0].wavelength.value,
-                    flux=self[0].flux.value / scalar_norm,
-                    native_flux=self[0].flux.value / scalar_norm,
-                    native_wavelength=self[0].wavelength.value,
-                )
+                data={
+                    "wavelength": self[0].wavelength.value,
+                    "flux": self[0].flux.value / scalar_norm,
+                    "native_flux": self[0].flux.value / scalar_norm,
+                    "native_wavelength": self[0].wavelength.value,
+                }
             )
 
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
-                plot_height=340,
-                plot_width=600,
+                plot_height=500,
+                plot_width=950,
                 tools="pan,wheel_zoom,box_zoom,tap,reset",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
             )
-            fig.title.offset = -10
-            fig.yaxis.axis_label = "Flux "
-            fig.xaxis.axis_label = "Wavelength (micron)"
+            fig.title.offset = 350
+            fig.yaxis.axis_label = "Flux"
+            fig.xaxis.axis_label = "Wavelength (\u00B5m)"
             fig.y_range = Range1d(start=0, end=1.5)
 
             fig.step(
                 "wavelength",
                 "flux",
                 line_width=1,
-                color="gray",
+                color="red",
                 source=spec_source,
-                nonselection_line_color="gray",
+                nonselection_line_color="red",
                 nonselection_line_alpha=1.0,
             )
             wl_lo, wl_hi = (
@@ -427,7 +360,7 @@ class PHOENIXGrid(SpectrumCollection):
                 self[0].wavelength.value.max(),
             )
 
-            if data is not None:
+            if data:
                 assert isinstance(
                     data, Spectrum1D
                 ), "The data spectrum must be Spectrum1D-like"
@@ -441,7 +374,7 @@ class PHOENIXGrid(SpectrumCollection):
                 wl_lo, wl_hi = new_lo, new_hi
 
                 data_source = ColumnDataSource(
-                    data=dict(wavelength=data.wavelength.value, flux=data.flux.value,)
+                    data={"wavelength": data.wavelength.value, "flux": data.flux.value}
                 )
                 fig.step(
                     "wavelength", "flux", line_width=1, color="blue", source=data_source
@@ -456,7 +389,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.1,
                 step=0.1,
                 title="Rotational Broadening: v sin(i) [km/s]",
-                width=490,
+                width=700,
             )
 
             vz_slider = Slider(
@@ -465,7 +398,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.00,
                 step=0.05,
                 title="Radial Velocity: RV [km/s]",
-                width=490,
+                width=700,
                 format="0.000f",
             )
 
@@ -474,11 +407,11 @@ class PHOENIXGrid(SpectrumCollection):
                 end=max(self.teff_points),
                 value=self.teff_points[1],
                 step=100,
-                title="Effective Temperature: T_eff [Kelvin]",
-                width=490,
+                title="Effective Temperature: T_eff [K]",
+                width=700,
             )
             teff_message = Div(
-                text="Closest grid point: {}".format(1000), width=100, height=10
+                text=f"Closest point: {self.teff_points[1]}K", width=100, height=10,
             )
             logg_slider = Slider(
                 start=min(self.logg_points),
@@ -486,7 +419,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=5.0,
                 step=0.50,
                 title="Surface Gravity: log(g) [cm/s^2]",
-                width=490,
+                width=700,
             )
 
             metallicity_slider = Slider(
@@ -495,11 +428,11 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.0,
                 step=0.50,
                 title="Metallicity: Z",
-                width=490,
+                width=700,
             )
 
-            r_button = Button(label=">", button_type="default", width=30)
-            l_button = Button(label="<", button_type="default", width=30)
+            r_button = Button(label=">", button_type="default", width=32)
+            l_button = Button(label="<", button_type="default", width=32)
 
             def update_upon_smooth(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
@@ -521,13 +454,9 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when teff slider changes"""
                 teff = self.find_nearest_teff(new)
                 if teff != old:
-                    teff_message.text = "Closest grid point: {}".format(teff)
-                    logg = logg_slider.value
-                    metallicity = metallicity_slider.value
-                    grid_point = (teff, logg, metallicity)
-                    index = self.get_index(grid_point)
-
-                    native_spec = self[index].normalize(percentile=95)
+                    teff_message.text = f"Closest point: {teff}K"
+                    point = (teff, logg_slider.value, metallicity_slider.value)
+                    native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = native_spec.rotationally_broaden(
                         smoothing_slider.value
                     ).rv_shift(vz_slider.value)
@@ -538,20 +467,14 @@ class PHOENIXGrid(SpectrumCollection):
                         "wavelength": new_spec.wavelength.value,
                         "flux": new_spec.flux.value,
                     }
-
-                else:
-                    pass
 
             def update_upon_metallicity_selection(attr, old, new):
                 """Callback to take action when teff slider changes"""
                 metallicity = self.find_nearest_metallicity(new)
                 if metallicity != old:
                     teff = self.find_nearest_teff(teff_slider.value)
-                    logg = logg_slider.value
-                    grid_point = (teff, logg, metallicity)
-                    index = self.get_index(grid_point)
-
-                    native_spec = self[index].normalize(percentile=95)
+                    point = (teff, logg_slider.value, metallicity)
+                    native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = native_spec.rotationally_broaden(
                         smoothing_slider.value
                     ).rv_shift(vz_slider.value)
@@ -563,17 +486,12 @@ class PHOENIXGrid(SpectrumCollection):
                         "flux": new_spec.flux.value,
                     }
 
-                else:
-                    pass
-
             def update_upon_logg_selection(attr, old, new):
                 """Callback to take action when logg slider changes"""
                 teff = self.find_nearest_teff(teff_slider.value)
                 metallicity = self.find_nearest_metallicity(metallicity_slider.value)
-                grid_point = (teff, new, metallicity)
-                index = self.get_index(grid_point)
-
-                native_spec = self[index].normalize(percentile=95)
+                point = (teff, new, metallicity)
+                native_spec = self[self.get_index(point)].normalize(percentile=95)
                 new_spec = native_spec.rotationally_broaden(
                     smoothing_slider.value
                 ).rv_shift(vz_slider.value)
@@ -586,16 +504,14 @@ class PHOENIXGrid(SpectrumCollection):
                 }
 
             def go_right_by_one():
-                """Step forward in time by a single cadence"""
-                current_index = np.abs(self.teff_points - teff_slider.value).argmin()
-                new_index = current_index + 1
-                if new_index <= (len(self.teff_points) - 1):
+                """Step forward by a single cadence"""
+                new_index = np.abs(self.teff_points - teff_slider.value).argmin() + 1
+                if new_index < len(self.teff_points):
                     teff_slider.value = self.teff_points[new_index]
 
             def go_left_by_one():
-                """Step back in time by a single cadence"""
-                current_index = np.abs(self.teff_points - teff_slider.value).argmin()
-                new_index = current_index - 1
+                """Step backward by a single cadence"""
+                new_index = np.abs(self.teff_points - teff_slider.value).argmin() - 1
                 if new_index >= 0:
                     teff_slider.value = self.teff_points[new_index]
 
@@ -607,12 +523,7 @@ class PHOENIXGrid(SpectrumCollection):
             logg_slider.on_change("value", update_upon_logg_selection)
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
 
-            sp1, sp2, sp3, sp4 = (
-                Spacer(width=5),
-                Spacer(width=10),
-                Spacer(width=20),
-                Spacer(width=100),
-            )
+            sp1, sp2, sp3, sp4 = (Spacer(width=w) for w in (5, 10, 20, 100))
 
             widgets_and_figures = layout(
                 [fig],

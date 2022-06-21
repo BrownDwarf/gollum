@@ -11,3 +11,5 @@ tqdm
 bokeh
 importlib_resources
 ipykernel
+sphinx-gallery
+numpydoc

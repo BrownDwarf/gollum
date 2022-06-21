@@ -20,6 +20,7 @@ from astropy import units as u
 from specutils import SpectrumCollection
 import os
 from specutils.spectra.spectrum1d import Spectrum1D
+from scipy.ndimage import gaussian_filter1d
 from tqdm import tqdm
 
 from math import sqrt
@@ -45,13 +46,19 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
     A container for a single Sonora precomputed synthetic spectrum of a brown dwarfs or free-floating
     Gas Giant planet.
 
-    Args:
-        Teff (int): The Teff label of the Sonora model to read in.  Must be on the Sonora grid.
-        logg (float): The logg label of the Sonora model to read in.  Must be on the Sonora grid.
-        path (str): The path to your local Sonora grid library.  You must have the Sonora grid downloaded locally.  Default: "~/libraries/raw/Sonora/"
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
-        """
+    Parameters
+    ----------
+    teff : int
+        The teff label of the Sonora model to read in.  Must be on the Sonora grid.
+    logg : float
+        The logg label of the Sonora model to read in.  Must be on the Sonora grid.
+    path : str
+        The path to your local Sonora grid library.  You must have the Sonora grid downloaded locally.  Default: "~/libraries/raw/Sonora/"
+    wl_lo : float
+        The shortest wavelength of the models to keep (Angstroms)
+    wl_hi : float
+        The longest wavelength of the models to keep (Angstroms)
+    """
 
     def __init__(
         self, *args, teff=None, logg=None, path=None, wl_lo=8038, wl_hi=12849, **kwargs
@@ -131,13 +138,21 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
     A container for a single Sonora precomputed synthetic spectrum of a brown dwarfs or free-floating
     Gas Giant planet.
 
-    Args:
-        Teff (int): The Teff label of the Sonora model to read in.  Must be on the Sonora grid.
-        logg (float): The logg label of the Sonora model to read in.  Must be on the Sonora grid.
-        path (str): The path to your local Sonora grid library.  You must have the Sonora grid downloaded locally.  Default: "~/libraries/raw/Sonora/"
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
-        """
+    Parameters
+    ----------
+    teff : int
+        The teff label of the Sonora model to read in.  Must be on the Sonora grid.
+    logg : float
+        The logg label of the Sonora model to read in.  Must be on the Sonora grid.
+    metallicity : float
+        The metallicity label of the Sonora model to read in.  Must be on the Sonora grid.
+    path : str
+        The path to your local Sonora grid library.  You must have the Sonora grid downloaded locally.  Default: "~/libraries/raw/Sonora/"
+    wl_lo : float
+        The shortest wavelength of the models to keep (Angstroms)
+    wl_hi : float
+        The longest wavelength of the models to keep (Angstroms)
+    """
 
     def __init__(
         self,
@@ -237,16 +252,21 @@ class SonoraGrid(SpectrumCollection):
     A container for a grid of Sonora precomputed synthetic spectra of brown dwarfs and free-floating
     Gas Giant planets.
 
-    Args:
-        Teff_range (tuple): The Teff limits of the grid model to read in.
-        logg (tuple): The logg limits of the Sonora model to read in.
-        metallicity_range (tuple): The metallicity limits of the Sonora model to read in
-        path (str): The path to your local Sonora grid library.
-            You must have the Sonora grid downloaded locally.
-            Default: "~/libraries/raw/Sonora/"
-        wl_lo (float): the bluest wavelength of the models to keep (Angstroms)
-        wl_hi (float): the reddest wavelength of the models to keep (Angstroms)
-        """
+    Parameters
+    ----------
+    teff_range : tuple
+        The Teff limits of the grid model to read in.
+    logg : tuple
+        The logg limits of the Sonora model to read in.
+    metallicity_range : tuple
+        The metallicity limits of the Sonora model to read in
+    path : str
+        The path to your locally downloaded Sonora grid library. Default: "~/libraries/raw/Sonora/"
+    wl_lo : float
+        The shortest wavelength of the models to keep (Angstroms)
+    wl_hi : float
+        The longest wavelength of the models to keep (Angstroms)
+    """
 
     def __init__(
         self,
@@ -286,7 +306,9 @@ class SonoraGrid(SpectrumCollection):
                 logg_points = logg_points[subset]
 
             if metallicity_range is not None:
-                subset = (metallicity_points >= metallicity_range[0]) & (metallicity_points <= metallicity_range[1])
+                subset = (metallicity_points >= metallicity_range[0]) & (
+                    metallicity_points <= metallicity_range[1]
+                )
                 metallicity_points = metallicity_points[subset]
 
             wavelengths, fluxes = [], []
@@ -345,8 +367,7 @@ class SonoraGrid(SpectrumCollection):
         flux = self.flux[key]
         if flux.ndim != 1:
             raise ValueError(
-                "Currently only 1D data structures may be "
-                "returned from slice operations."
+                "Currently only 1D data structures may be returned from slice operations."
             )
         spectral_axis = self.spectral_axis[key]
         uncertainty = None if self.uncertainty is None else self.uncertainty[key]
@@ -408,9 +429,8 @@ class SonoraGrid(SpectrumCollection):
 
         Parameters
         ----------
-        wavelength_range: List or Tuple of Quantities
-            A pair of values that denote the shortest and longest wavelengths
-            for truncating the grid.
+        wavelength_range: list or tuple
+            A pair of values that denote the shortest and longest wavelengths for truncating the grid.
         data: Spectrum1D-like
             A spectrum to which this method will match the wavelength limits
 
@@ -441,13 +461,54 @@ class SonoraGrid(SpectrumCollection):
 
         return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
 
+    def instrumental_broaden(self, resolving_power):
+        """Instrumental broaden the grid"""
+
+        # Currently assumes they all have the same wavelength grid!
+        angstroms_per_pixel = np.median(np.diff(self.wavelength[0, :].value))
+        lam0 = np.median(self.wavelength[0, :].value)
+        delta_lam = lam0 / resolving_power
+
+        scale_factor = 2.355
+        sigma = delta_lam / scale_factor / angstroms_per_pixel
+
+        convolved_flux = (
+            gaussian_filter1d(self.flux.value, sigma, axis=1) * self.flux.unit
+        )
+        return self.__class__(
+            flux=convolved_flux, spectral_axis=self.wavelength, meta=self.meta
+        )
+
+    def decimate(self, decimation_fraction=0.1):
+        """Decimate the grid"""
+
+        ## Hmmm, this implementation may be brittle...
+        fluxes = []
+        wavelengths = []
+
+        for spec in self:
+            newspec = spec.resample_to_uniform_in_velocity(decimation_fraction)
+            fluxes.append(newspec.flux.value)
+            wavelengths.append(newspec.wavelength.value)
+
+        output = SonoraGrid(
+            flux=np.array(fluxes) * newspec.flux.unit,
+            spectral_axis=np.array(wavelengths) * newspec.wavelength.unit,
+            meta=self.meta,
+        )
+        return output
+
     def get_index(self, grid_point):
         """Get the spectrum index associated with a given grid point
         """
         return self.lookup_dict[grid_point]
 
     def get_distance(self, gridpoint1, gridpoint2):
-        return sqrt(((gridpoint1[0]-gridpoint2[0]) ** 2) + ((gridpoint1[1]-gridpoint2[1]) ** 2) + ((gridpoint1[2]-gridpoint2[2]) ** 2))
+        return sqrt(
+            ((gridpoint1[0] - gridpoint2[0]) ** 2)
+            + ((gridpoint1[1] - gridpoint2[1]) ** 2)
+            + ((gridpoint1[2] - gridpoint2[2]) ** 2)
+        )
 
     #  Need to add a function to find the near grid point in the case it doesn't exist (find nearest point in a lattice)
     def find_nearest_grid_point(self, teff, logg, metallicity):
@@ -485,7 +546,6 @@ class SonoraGrid(SpectrumCollection):
             will need to supply this value for the application to display
             properly. If no protocol is supplied in the URL, e.g. if it is
             of the form "localhost:8888", then "http" will be used.
-
         """
 
         def create_interact_ui(doc):
@@ -695,7 +755,9 @@ class SonoraGrid(SpectrumCollection):
 
                     teff_message.text = "Closest T_eff point: {}".format(teff)
                     logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(metallicity)
+                    metallicity_message.text = "Closest Metallicity point: {}".format(
+                        metallicity
+                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -727,7 +789,9 @@ class SonoraGrid(SpectrumCollection):
 
                     teff_message.text = "Closest T_eff point: {}".format(teff)
                     logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(metallicity)
+                    metallicity_message.text = "Closest Metallicity point: {}".format(
+                        metallicity
+                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -746,6 +810,7 @@ class SonoraGrid(SpectrumCollection):
 
                 else:
                     pass
+
             def update_upon_metallicity_selection(attr, old, new):
                 """Callback to take action when metallicity slider changes"""
                 teff = teff_slider.value
@@ -759,7 +824,9 @@ class SonoraGrid(SpectrumCollection):
 
                     teff_message.text = "Closest T_eff point: {}".format(teff)
                     logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(metallicity)
+                    metallicity_message.text = "Closest Metallicity point: {}".format(
+                        metallicity
+                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -806,14 +873,14 @@ class SonoraGrid(SpectrumCollection):
                 Spacer(width=10),
                 Spacer(width=20),
                 Spacer(width=100),
-                Spacer(width=25)
+                Spacer(width=25),
             )
 
             widgets_and_figures = layout(
                 [fig],
                 [l_button, sp1, r_button, sp2, teff_slider, sp5, teff_message],
                 [sp4, logg_slider, sp3, logg_message],
-                [sp4, metallicity_slider, sp3, metallicity_message], 
+                [sp4, metallicity_slider, sp3, metallicity_message],
                 [sp4, smoothing_slider],
                 [sp4, vz_slider],
                 [sp4, scale_slider],

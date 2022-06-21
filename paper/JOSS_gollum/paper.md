@@ -16,6 +16,9 @@ authors:
   - name: Jiayi Cao
     orchid: 0000-0002-2466-3816
     affiliation: 1
+  - name: Sujay Shankar
+    orcid: 0000-0002-2290-6810
+    affiliation: 1
   - name: More TBD
     affiliation: 2
 affiliations:
@@ -34,11 +37,20 @@ bibliography: paper.bib
 
 # Summary
 
-The spectra of stars, brown dwarfs, and planets are amazingly complex and information-rich.  Centuries of effort in astrophysics have distilled that complexity into the properties that control the bulk appearance of stellar and substellar spectra: effective temperature, surface gravity, iron abundance, and sometimes other compositional consituents.  Synthetic spectral models can now predict the appearance of a star's spectrum given merely these few properties.  The computational expense of modeling stars has driven practitioners to precompute the models finely in wavelength coordinates, but coarsely over trios or quartets of these fundamental properties.  Comparing these coarsely sampled grids of precomputed synthetic spectra to data remains a challenge.  The shear data volume of these grids has made it difficult for newcomers to build an intuition for how the spectra change with their inputs.  
-The `gollum` framework provides a user-friendly Application Programming Interface (API) to load, manipulate, and visualize these voluminous precomputed synthetic spectral models.  The framework provides a first-of-its-kind interactive dashboard with user-controlled sliders that instantaneously update the fundamental, extrinsic, and compositional properties of the spectra.  `gollum` currently supports the PHOENIX grid of stellar spectra, and the Sonora-Bobcat grid of substellar brown dwarf and free-floating giant exoplanet spectra.  Support for other model grids is planned.  The `specutils`-based Python 3 framework interoperates easily with the astropy ecosystem of tools, including its sibling API for échelle spectra, `muler`.
+
+The `gollum` framework provides a user-friendly Application Programming Interface (API) to load, manipulate, and visualize precomputed synthetic stellar spectral models.  The framework provides a first-of-its-kind interactive dashboard with sliders that instantaneously update the fundamental, extrinsic, and compositional properties of the spectra.  `gollum` currently supports the PHOENIX grid of stellar spectra, and the Sonora-Bobcat grid of substellar brown dwarf and free-floating giant exoplanet spectra.  Support for other model grids is planned.  This `specutils`-based Python 3 framework interoperates easily with the astropy ecosystem of tools, including its sibling API for échelle spectra, `muler`.
 
 
 # Statement of need
+
+The spectra of stars, brown dwarfs, and planets are amazingly complex and information-rich.  Centuries of effort in astrophysics have distilled that complexity into the fundamental parameters that control the bulk appearance of stellar and substellar spectra: effective temperature, surface gravity, iron abundance, and sometimes other compositional consituents.  Synthetic spectral models mimic a star's spectrum given these few properties.  The computational expense of modeling stars has driven practitioners to precompute the models finely in wavelength coordinates, but coarsely over trios or quartets of these fundamental properties.  Comparing these coarsely sampled grids of precomputed synthetic spectra to data remains a challenge.  The spectrum bandwidth, grid size, and grid dimensionality have made it difficult for newcomers to build an intuition for how the spectral appearance depends on the input physics.
+
+`gollum` resolves these challenges.  Beyond merely accessing the voluminous grid data, `gollum` provides intuition in the form of interactive visualization. One of `gollum`'s key features is its ability to visualize these grid data via a dashboard powered by `bokeh` [@bokeh2018].
+
+
+
+
+
 
 Citation to  `starfish` framework [@czekala15]
 
