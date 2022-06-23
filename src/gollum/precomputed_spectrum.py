@@ -13,16 +13,16 @@ import matplotlib.pyplot as plt
 
 from copy import deepcopy
 from logging import getLogger
-from warnings import filterwarnings, catch_warnings
+from warnings import filterwarnings
 from gollum.utilities import apply_numpy_mask
 from scipy.ndimage import gaussian_filter1d
 from scipy.signal import find_peaks
+from specutils import Spectrum1D
 from specutils.manipulation import LinearInterpolatedResampler
 from specutils.fitting import fit_generic_continuum
-from astropy import units as u
+from astropy import units as u, constants as const
 from astropy.modeling.physical_models import BlackBody
 from astropy.utils.exceptions import AstropyDeprecationWarning
-from astropy import constants as const
 
 log = getLogger(__name__)
 
@@ -30,10 +30,6 @@ log = getLogger(__name__)
 filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
-
-with catch_warnings():
-    filterwarnings("ignore")
-    from specutils import Spectrum1D
 
 
 class PrecomputedSpectrum(Spectrum1D):
