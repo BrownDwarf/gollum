@@ -396,9 +396,8 @@ class PrecomputedSpectrum(Spectrum1D):
 
         A_matrix, A_full = np.vander(x_peaks, polyorder), np.vander(x_vector, polyorder)
 
-        ATA = np.dot(A_matrix.T, A_matrix)
+        coeffs = np.linalg.lstsq(A_matrix, y_peaks)
 
-        coeffs = np.linalg.solve(ATA, np.dot(A_matrix.T, y_peaks))
         spec_out = self._copy(flux=np.dot(coeffs, A_full.T) * self.flux.unit)
 
         return (spec_out, coeffs) if return_coeffs else spec_out
@@ -412,11 +411,9 @@ class PrecomputedSpectrum(Spectrum1D):
 
         return DataFrame(
             {
-                "wavelength": self.wavelength.value,
+                "wavelength": (wl := self.wavelength.value),
                 "flux": self.flux.value,
-                "mask": self.mask
-                if self.mask
-                else np.zeros(len(self.wavelength.value), dtype=int),
+                "mask": self.mask if self.mask else np.zeros(len(wl), dtype=int),
             }
         )
 
