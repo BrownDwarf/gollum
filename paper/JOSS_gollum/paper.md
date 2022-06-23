@@ -14,7 +14,7 @@ authors:
     orcid: 0000-0002-4404-0456
     affiliation: 1
   - name: Jiayi Cao
-    orchid: 0000-0002-2466-3816
+    orcid: 0000-0002-2466-3816
     affiliation: 1
   - name: Sujay Shankar
     orcid: 0000-0002-2290-6810
@@ -38,14 +38,14 @@ bibliography: paper.bib
 # Summary
 
 
-The `gollum` framework provides a user-friendly Application Programming Interface (API) to load, manipulate, and visualize precomputed synthetic stellar spectral models.  The framework provides a first-of-its-kind interactive dashboard with sliders that instantaneously update the fundamental, extrinsic, and compositional properties of the spectra.  `gollum` currently supports the PHOENIX grid of stellar spectra, and the Sonora-Bobcat grid of substellar brown dwarf and free-floating giant exoplanet spectra.  Support for other model grids is planned.  This `specutils`-based Python 3 framework interoperates easily with the astropy ecosystem of tools, including its sibling API for échelle spectra, `muler`.
+The `gollum` framework provides a user-friendly Application Programming Interface (API) to load, manipulate, and visualize precomputed synthetic stellar spectral models.  The framework provides a first-of-its-kind interactive dashboard with sliders that instantaneously update the fundamental, extrinsic, and compositional properties of the spectra.  `gollum` currently supports the PHOENIX grid of stellar spectra, and the Sonora-Bobcat grid of substellar brown dwarf and free-floating giant exoplanet spectra.  Support for other model grids is planned.  This `specutils`-based Python 3.7+ framework interoperates easily with the astropy ecosystem of tools, including its sibling API for échelle spectra, `muler`.
 
 
 # Statement of need
 
-The spectra of stars, brown dwarfs, and planets are amazingly complex and information-rich.  Centuries of effort in astrophysics have distilled that complexity into the fundamental parameters that control the bulk appearance of stellar and substellar spectra: effective temperature, surface gravity, iron abundance, and sometimes other compositional consituents.  Synthetic spectral models mimic a star's spectrum given these few properties.  The computational expense of modeling stars has driven practitioners to precompute the models finely in wavelength coordinates, but coarsely over trios or quartets of these fundamental properties.  Comparing these coarsely sampled grids of precomputed synthetic spectra to data remains a challenge.  The spectrum bandwidth, grid size, and grid dimensionality have made it difficult for newcomers to build an intuition for how the spectral appearance depends on the input physics.
+The spectra of stars, brown dwarfs, and planets are amazingly complex and information-rich.  Centuries of effort in astrophysics have distilled that complexity into fundamental parameters that control the bulk appearance of stellar and substellar spectra: effective temperature, surface gravity, iron abundance, and sometimes other compositional consituents.  Synthetic spectral models are able to mimic a star's spectrum given only these few properties. The computational expense of modeling stars has driven practitioners to precompute the models finely in wavelength coordinates, but coarsely over tuples of the aforementioned fundamental properties. Comparing these coarsely-sampled grids of synthetic spectra to genuine data remains a challenge; the spectrum bandwidth, grid size, and grid dimensionality have made the relation between spectral appearance and their input physics rather unintuitive for newcomers.
 
-`gollum` resolves these challenges.  Beyond merely accessing the voluminous grid data, `gollum` provides intuition in the form of interactive visualization. One of `gollum`'s key features is its ability to visualize these grid data via a dashboard powered by `bokeh` [@bokeh2018].
+`gollum` resolves these challenges. Beyond merely accessing the voluminous grid data, `gollum` provides intuitive, interactive visualization: one of its flagship features is its ability to generate `bokeh`-powered dashboards that elevate spectral visualization and analysis to new heights [@bokeh2018].
 
 
 
@@ -57,9 +57,9 @@ Citation to  `starfish` framework [@czekala15]
 
 `gollum` depends on `astropy` [@astropy13; @astropy18], `numpy` [@harris2020array], `specutils`, `scipy` [@scipy2020], and others.
 
-# Interoperation with the `muler` framework
+# Integration with the `muler` framework
 
-`gollum` can interoperate with `muler` (Gully-Santiago et al. *in prep*)
+`gollum` can interoperate with `muler` (Gully-Santiago et al.)
 
 # Supported model grids
 
@@ -67,11 +67,11 @@ We currently support two precomputed synthetic spectral models: PHOENIX  (XX Cit
 
 # Dashboard
 
-We have a human-in-the-loop interactive dashboard which allows users to compare data to models. The current version of the dashboard is specifically designed to support the latest Sonora-Bobcat 2021 Models.
+We have an interactive dashboard which allows users to compare genuine data spectra to synthetic model spectra. The current version of the dashboard is specifically designed to support both the PHOENIX and Sonora-Bobcat 2021 models.
 
-This dashboard allows users to control sliders correlating with intrinsic properties (effective temperature, surface gravity, and metallicity) and extrinsic properties (rotational broadening, radial velocity, and a normalization scalar). From the selected intrinsic values, the dashboard can find the closest matching model (based on the closest existing point in a jagged 3D array of existing intrinsic values) and display it on screen so that the user can compare it with the real data. The data itself shows up as a blue plot, while the model is red, which will allow users to make by-eye fittings of the models to the data displayed.
+This dashboard allows users to control sliders correlating with intrinsic properties (effective temperature, surface gravity, and metallicity) and extrinsic properties (rotational broadening, radial velocity, and a normalization scalar). From the selected intrinsic values, the dashboard can find the closest matching model (based on the closest existing point in a jagged 3D array of existing intrinsic values) and display it  so the user can compare it with the real data. The data itself shows up as a blue plot, while the model is red, which will allow users to make by-eye fittings of the models to the data displayed.
 
-There is some latency in the updating of the model's graph when the user moves certain sliders too quickly. This latency comes from the large amount of data points and the effect of the curse of dimensionality when it comes to the search for the nearest grid point based on intrinsic values that the dashboard must do with each update of the sliders. This latency mostly only applies when the user moves the sliders very quickly, however. More gradual movement of the sliders allows for relatively smooth updating of the model spectrum with minimal latency.
+There is some latency in the updating of the model's graph when the user moves certain sliders too quickly. This latency comes from the large amount of data points and the effect of the curse of dimensionality when it comes to the search for the nearest grid point based on intrinsic values that the dashboard must do with each update of the sliders. This latency only becomes a factor when the user moves the sliders very quickly, which should not happen often. More gradual movement of the sliders allows for relatively smooth updating of the model spectrum with effectively no visible latency.
 
 # Acknowledgements
 
