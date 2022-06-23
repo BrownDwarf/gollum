@@ -21,8 +21,7 @@ from gollum.precomputed_spectrum import PrecomputedSpectrum
 from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.io import fits
 from astropy import units as u
-from specutils import SpectrumCollection
-from specutils.spectra.spectrum1d import Spectrum1D
+from specutils import SpectrumCollection, Spectrum1D
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d
