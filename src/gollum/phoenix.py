@@ -191,12 +191,13 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_lo=wl_lo,
                         wl_hi=wl_hi,
                     )
+                    wavelengths.append(spec.wavelength)
+                    fluxes.append(spec.flux)
+                    grid_points.append((teff, logg, Z))
                 except (FileNotFoundError, URLError):
                     log.info(f"No file for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}")
                     missing += 1
-                wavelengths.append(spec.wavelength)
-                fluxes.append(spec.flux)
-                grid_points.append((teff, logg, Z))
+                
             assert grid_points != [], "Empty grid; parameter limits out of range"
             print(
                 f"{missing} files not found; grid may not cover given parameter ranges fully"
