@@ -388,7 +388,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.1,
                 step=0.1,
                 title="Rotational Broadening: v sin(i) [km/s]",
-                width=700,
+                width=465,
             )
 
             vz_slider = Slider(
@@ -397,7 +397,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.00,
                 step=0.05,
                 title="Radial Velocity: RV [km/s]",
-                width=700,
+                width=465,
                 format="0.000f",
             )
 
@@ -407,18 +407,16 @@ class PHOENIXGrid(SpectrumCollection):
                 value=self.teff_points[1],
                 step=100,
                 title="Effective Temperature: T_eff [K]",
-                width=700,
+                width=465,
             )
-            teff_message = Div(
-                text=f"Closest point: {self.teff_points[1]}K", width=100, height=10,
-            )
+
             logg_slider = Slider(
                 start=min(self.logg_points),
                 end=max(self.logg_points),
                 value=5.0,
                 step=0.50,
                 title="Surface Gravity: log(g) [cm/s^2]",
-                width=700,
+                width=465,
             )
 
             metallicity_slider = Slider(
@@ -427,7 +425,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.0,
                 step=0.50,
                 title="Metallicity: Z",
-                width=700,
+                width=465,
             )
 
             scale_slider = Slider(
@@ -436,7 +434,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=1.0,
                 step=0.005,
                 title="Normalization Scalar",
-                width=700,
+                width=465,
             )
 
             def update_upon_scale(attr, old, new):
@@ -473,7 +471,6 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when teff slider changes"""
                 teff = self.find_nearest_teff(new)
                 if teff != old:
-                    teff_message.text = f"Closest point: {teff}K"
                     point = (teff, logg_slider.value, metallicity_slider.value)
                     native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = native_spec.rotationally_broaden(
@@ -486,6 +483,7 @@ class PHOENIXGrid(SpectrumCollection):
                         "wavelength": new_spec.wavelength.value,
                         "flux": new_spec.flux.value,
                     }
+                teff_slider.value = teff
 
             def update_upon_metallicity_selection(attr, old, new):
                 """Callback to take action when teff slider changes"""
@@ -522,18 +520,6 @@ class PHOENIXGrid(SpectrumCollection):
                     "flux": new_spec.flux.value,
                 }
 
-            def go_right_by_one():
-                """Step forward by a single cadence"""
-                new_index = np.abs(self.teff_points - teff_slider.value).argmin() + 1
-                if new_index < len(self.teff_points):
-                    teff_slider.value = self.teff_points[new_index]
-
-            def go_left_by_one():
-                """Step backward by a single cadence"""
-                new_index = np.abs(self.teff_points - teff_slider.value).argmin() - 1
-                if new_index >= 0:
-                    teff_slider.value = self.teff_points[new_index]
-
             smoothing_slider.on_change("value", update_upon_smooth)
             vz_slider.on_change("value", update_upon_vz)
             teff_slider.on_change("value", update_upon_teff_selection)
@@ -541,16 +527,13 @@ class PHOENIXGrid(SpectrumCollection):
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
             scale_slider.on_change("value", update_upon_scale)
 
-            sp = (Spacer(width=10))
+            sp = Spacer(width=20)
 
             widgets_and_figures = layout(
                 [fig],
-                [sp, teff_slider, Spacer(width=20), teff_message],
-                [sp, logg_slider],
-                [sp, metallicity_slider],
-                [sp, smoothing_slider],
-                [sp, vz_slider],
-                [sp, scale_slider],
+                [teff_slider, sp, smoothing_slider],
+                [logg_slider, sp, vz_slider],
+                [metallicity_slider, sp, scale_slider],
             )
             doc.add_root(widgets_and_figures)
 
