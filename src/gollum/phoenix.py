@@ -430,8 +430,31 @@ class PHOENIXGrid(SpectrumCollection):
                 width=700,
             )
 
+            scale_slider = Slider(
+                start=0.1,
+                end=2.0,
+                value=1.0,
+                step=0.005,
+                title="Normalization Scalar",
+                width=490,
+            )
+
             r_button = Button(label=">", button_type="default", width=32)
             l_button = Button(label="<", button_type="default", width=32)
+
+            def update_upon_scale(attr, old, new):
+                """Callback to take action when smoothing slider changes"""
+                new_spec = (
+                    SonoraSpectrum(
+                        spectral_axis=spec_source.data["native_wavelength"]
+                        * u.Angstrom,
+                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                    )
+                    .rotationally_broaden(smoothing_slider.value)
+                    .multiply(new * u.dimensionless_unscaled)
+                    .rv_shift(vz_slider.value)
+                )
+                spec_source.data["flux"] = new_spec.flux.value
 
             def update_upon_smooth(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
