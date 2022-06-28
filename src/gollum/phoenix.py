@@ -26,7 +26,7 @@ from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d
 from bokeh.layouts import layout, Spacer
-from bokeh.models.widgets import Button, Div
+from bokeh.models.widgets import Div
 
 log = getLogger(__name__)
 
@@ -388,7 +388,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.1,
                 step=0.1,
                 title="Rotational Broadening: v sin(i) [km/s]",
-                width=700,
+                width=465,
             )
 
             vz_slider = Slider(
@@ -397,7 +397,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.00,
                 step=0.05,
                 title="Radial Velocity: RV [km/s]",
-                width=700,
+                width=465,
                 format="0.000f",
             )
 
@@ -407,18 +407,16 @@ class PHOENIXGrid(SpectrumCollection):
                 value=self.teff_points[1],
                 step=100,
                 title="Effective Temperature: T_eff [K]",
-                width=700,
+                width=465,
             )
-            teff_message = Div(
-                text=f"Closest point: {self.teff_points[1]}K", width=100, height=10,
-            )
+
             logg_slider = Slider(
                 start=min(self.logg_points),
                 end=max(self.logg_points),
                 value=5.0,
                 step=0.50,
                 title="Surface Gravity: log(g) [cm/s^2]",
-                width=700,
+                width=465,
             )
 
             metallicity_slider = Slider(
@@ -427,7 +425,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.0,
                 step=0.50,
                 title="Metallicity: Z",
-                width=700,
+                width=465,
             )
 
             scale_slider = Slider(
@@ -436,11 +434,8 @@ class PHOENIXGrid(SpectrumCollection):
                 value=1.0,
                 step=0.005,
                 title="Normalization Scalar",
-                width=700,
+                width=465,
             )
-
-            r_button = Button(label=">", button_type="default", width=32)
-            l_button = Button(label="<", button_type="default", width=32)
 
             def update_upon_scale(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
@@ -476,7 +471,6 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when teff slider changes"""
                 teff = self.find_nearest_teff(new)
                 if teff != old:
-                    teff_message.text = f"Closest point: {teff}K"
                     point = (teff, logg_slider.value, metallicity_slider.value)
                     native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = native_spec.rotationally_broaden(
@@ -489,6 +483,7 @@ class PHOENIXGrid(SpectrumCollection):
                         "wavelength": new_spec.wavelength.value,
                         "flux": new_spec.flux.value,
                     }
+                teff_slider.value = teff
 
             def update_upon_metallicity_selection(attr, old, new):
                 """Callback to take action when teff slider changes"""
@@ -525,20 +520,6 @@ class PHOENIXGrid(SpectrumCollection):
                     "flux": new_spec.flux.value,
                 }
 
-            def go_right_by_one():
-                """Step forward by a single cadence"""
-                new_index = np.abs(self.teff_points - teff_slider.value).argmin() + 1
-                if new_index < len(self.teff_points):
-                    teff_slider.value = self.teff_points[new_index]
-
-            def go_left_by_one():
-                """Step backward by a single cadence"""
-                new_index = np.abs(self.teff_points - teff_slider.value).argmin() - 1
-                if new_index >= 0:
-                    teff_slider.value = self.teff_points[new_index]
-
-            r_button.on_click(go_right_by_one)
-            l_button.on_click(go_left_by_one)
             smoothing_slider.on_change("value", update_upon_smooth)
             vz_slider.on_change("value", update_upon_vz)
             teff_slider.on_change("value", update_upon_teff_selection)
@@ -546,16 +527,13 @@ class PHOENIXGrid(SpectrumCollection):
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
             scale_slider.on_change("value", update_upon_scale)
 
-            sp1, sp2, sp3, sp4 = (Spacer(width=w) for w in (5, 10, 20, 100))
+            sp = Spacer(width=20)
 
             widgets_and_figures = layout(
                 [fig],
-                [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
-                [sp4, logg_slider],
-                [sp4, metallicity_slider],
-                [sp4, smoothing_slider],
-                [sp4, vz_slider],
-                [sp4, scale_slider],
+                [teff_slider, sp, smoothing_slider],
+                [logg_slider, sp, vz_slider],
+                [metallicity_slider, sp, scale_slider],
             )
             doc.add_root(widgets_and_figures)
 
