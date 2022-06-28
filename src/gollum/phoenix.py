@@ -430,8 +430,31 @@ class PHOENIXGrid(SpectrumCollection):
                 width=700,
             )
 
+            scale_slider = Slider(
+                start=0.1,
+                end=2.0,
+                value=1.0,
+                step=0.005,
+                title="Normalization Scalar",
+                width=700,
+            )
+
             r_button = Button(label=">", button_type="default", width=32)
             l_button = Button(label="<", button_type="default", width=32)
+
+            def update_upon_scale(attr, old, new):
+                """Callback to take action when smoothing slider changes"""
+                new_spec = (
+                    PHOENIXSpectrum(
+                        spectral_axis=spec_source.data["native_wavelength"]
+                        * u.Angstrom,
+                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                    )
+                    .rotationally_broaden(smoothing_slider.value)
+                    .multiply(new * u.dimensionless_unscaled)
+                    .rv_shift(vz_slider.value)
+                )
+                spec_source.data["flux"] = new_spec.flux.value
 
             def update_upon_smooth(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
@@ -521,6 +544,7 @@ class PHOENIXGrid(SpectrumCollection):
             teff_slider.on_change("value", update_upon_teff_selection)
             logg_slider.on_change("value", update_upon_logg_selection)
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
+            scale_slider.on_change("value", update_upon_scale)
 
             sp1, sp2, sp3, sp4 = (Spacer(width=w) for w in (5, 10, 20, 100))
 
@@ -531,6 +555,7 @@ class PHOENIXGrid(SpectrumCollection):
                 [sp4, metallicity_slider],
                 [sp4, smoothing_slider],
                 [sp4, vz_slider],
+                [sp4, scale_slider],
             )
             doc.add_root(widgets_and_figures)
 
