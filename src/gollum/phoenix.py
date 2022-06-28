@@ -26,7 +26,7 @@ from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d
 from bokeh.layouts import layout, Spacer
-from bokeh.models.widgets import Button, Div
+from bokeh.models.widgets import Div
 
 log = getLogger(__name__)
 
@@ -439,9 +439,6 @@ class PHOENIXGrid(SpectrumCollection):
                 width=700,
             )
 
-            r_button = Button(label=">", button_type="default", width=32)
-            l_button = Button(label="<", button_type="default", width=32)
-
             def update_upon_scale(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
                 new_spec = (
@@ -537,8 +534,6 @@ class PHOENIXGrid(SpectrumCollection):
                 if new_index >= 0:
                     teff_slider.value = self.teff_points[new_index]
 
-            r_button.on_click(go_right_by_one)
-            l_button.on_click(go_left_by_one)
             smoothing_slider.on_change("value", update_upon_smooth)
             vz_slider.on_change("value", update_upon_vz)
             teff_slider.on_change("value", update_upon_teff_selection)
@@ -546,11 +541,11 @@ class PHOENIXGrid(SpectrumCollection):
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
             scale_slider.on_change("value", update_upon_scale)
 
-            sp1, sp2, sp3, sp4 = (Spacer(width=w) for w in (5, 10, 20, 100))
+            sp3, sp4 = (Spacer(width=w) for w in ( 20, 100))
 
             widgets_and_figures = layout(
                 [fig],
-                [l_button, sp1, r_button, sp2, teff_slider, sp3, teff_message],
+                [sp4, teff_slider, sp3, teff_message],
                 [sp4, logg_slider],
                 [sp4, metallicity_slider],
                 [sp4, smoothing_slider],
