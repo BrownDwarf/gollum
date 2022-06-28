@@ -445,7 +445,7 @@ class PHOENIXGrid(SpectrumCollection):
             def update_upon_scale(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
                 new_spec = (
-                    SonoraSpectrum(
+                    PHOENIXSpectrum(
                         spectral_axis=spec_source.data["native_wavelength"]
                         * u.Angstrom,
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
@@ -544,6 +544,7 @@ class PHOENIXGrid(SpectrumCollection):
             teff_slider.on_change("value", update_upon_teff_selection)
             logg_slider.on_change("value", update_upon_logg_selection)
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
+            scale_slider.on_change("value", update_upon_scale)
 
             sp1, sp2, sp3, sp4 = (Spacer(width=w) for w in (5, 10, 20, 100))
 
@@ -554,6 +555,7 @@ class PHOENIXGrid(SpectrumCollection):
                 [sp4, metallicity_slider],
                 [sp4, smoothing_slider],
                 [sp4, vz_slider],
+                [sp4, scale_slider],
             )
             doc.add_root(widgets_and_figures)
 
