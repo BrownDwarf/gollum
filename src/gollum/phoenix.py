@@ -541,16 +541,16 @@ class PHOENIXGrid(SpectrumCollection):
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
             scale_slider.on_change("value", update_upon_scale)
 
-            sp3, sp4 = (Spacer(width=w) for w in ( 20, 100))
+            sp = (Spacer(width=10))
 
             widgets_and_figures = layout(
                 [fig],
-                [sp4, teff_slider, sp3, teff_message],
-                [sp4, logg_slider],
-                [sp4, metallicity_slider],
-                [sp4, smoothing_slider],
-                [sp4, vz_slider],
-                [sp4, scale_slider],
+                [sp, teff_slider, Spacer(width=20), teff_message],
+                [sp, logg_slider],
+                [sp, metallicity_slider],
+                [sp, smoothing_slider],
+                [sp, vz_slider],
+                [sp, scale_slider],
             )
             doc.add_root(widgets_and_figures)
 
