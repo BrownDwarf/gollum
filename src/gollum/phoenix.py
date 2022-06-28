@@ -436,7 +436,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=1.0,
                 step=0.005,
                 title="Normalization Scalar",
-                width=490,
+                width=700,
             )
 
             r_button = Button(label=">", button_type="default", width=32)
