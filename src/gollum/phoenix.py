@@ -197,7 +197,7 @@ class PHOENIXGrid(SpectrumCollection):
                 except (FileNotFoundError, URLError):
                     log.info(f"No file for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}")
                     missing += 1
-                
+
             assert grid_points != [], "Empty grid; parameter limits out of range"
             print(
                 f"{missing} files not found; grid may not cover given parameter ranges fully"
@@ -216,78 +216,6 @@ class PHOENIXGrid(SpectrumCollection):
                     "lookup_dict": {value: i for i, value in enumerate(grid_points)},
                 },
             )
-
-    def __getitem__(self, key):
-        flux = self.flux[key]
-        if flux.ndim != 1:
-            raise ValueError(
-                "Currently only 1D data structures may be returned from slice operations."
-            )
-        try:
-            meta = self.meta[key]
-        except (KeyError, TypeError):
-            meta = self.meta
-
-        return PHOENIXSpectrum(
-            flux=flux,
-            spectral_axis=self.spectral_axis[key],
-            uncertainty=self.uncertainty[key] if self.uncertainty else None,
-            wcs=self.wcs[key] if self.wcs else None,
-            mask=self.mask[key] if self.mask else None,
-            meta=meta,
-        )
-
-    grid_points = property(lambda self: self.meta["grid_points"])
-    teff_points = property(lambda self: self.meta["teff_points"])
-    metallicity_points = property(lambda self: self.meta["metallicity_points"])
-    logg_points = property(lambda self: self.meta["logg_points"])
-    grid_labels = property(lambda self: self.meta["grid_labels"])
-    n_spectra = property(lambda self: self.meta["n_spectra"])
-    lookup_dict = property(lambda self: self.meta["lookup_dict"])
-
-    def truncate(self, wavelength_range=None, data=None):
-        """Truncate the wavelength range of the grid
-
-        Parameters
-        ----------
-        wavelength_range: list or tuple
-            A pair of values that denote the shortest and longest wavelengths
-            for truncating the grid.
-        data: Spectrum1D-like
-            A spectrum to which this method will match the wavelength limits
-        
-        Returns
-        -------
-        truncated_spectrum: Spectrum1D-like
-            The spectrum after being truncated to the given wavelength range
-        """
-        fiducial_spectrum = deepcopy(self[0])
-        wavelength_units = fiducial_spectrum.wavelength.unit
-        flux_units = fiducial_spectrum.flux.unit
-
-        if data and wavelength_range:
-            wavelength_range = (
-                fiducial_spectrum.wavelength.value.min() * wavelength_units,
-                fiducial_spectrum.wavelength.value.max() * wavelength_units,
-            )
-
-        shortest_wavelength, longest_wavelength = wavelength_range
-
-        wavelengths, fluxes = [], []
-        for spectrum in self:
-            mask = (spectrum.wavelength > shortest_wavelength) & (
-                spectrum.wavelength < longest_wavelength
-            )
-            wavelengths.append(spectrum.wavelength.value[mask])
-            fluxes.append(spectrum.flux.value[mask])
-
-        assert fluxes and wavelengths
-
-        return self.__class__(
-            flux=np.array(fluxes) * flux_units,
-            spectral_axis=np.array(wavelengths) * wavelength_units,
-            meta=self.meta,
-        )
 
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 

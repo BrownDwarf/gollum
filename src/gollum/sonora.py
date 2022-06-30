@@ -8,7 +8,7 @@ SonoraSpectrum
 ###############
 """
 
-import copy
+from copy import deepcopy
 import warnings
 from logging import getLogger
 from itertools import product
@@ -292,9 +292,7 @@ class SonoraGrid(SpectrumCollection):
             )
 
             for teff, logg, Z in pbar:
-                pbar.desc = f"Processing teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}"
-                # "To do": See issue 31
-                # Temporary work around: pass if we can't read the file
+                pbar.desc = f"Processing Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}"
                 try:
                     spec = SonoraSpectrum(
                         teff=teff,
@@ -311,6 +309,11 @@ class SonoraGrid(SpectrumCollection):
                     log.info(f"No file for Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}")
                     missing += 1
 
+            assert grid_points != [], "Empty grid; parameter limits out of range"
+            print(
+                f"{missing} files not found; grid may not cover given parameter ranges fully"
+            ) if missing else None
+
             super().__init__(
                 flux=np.array(fluxes) * fluxes[0].unit,
                 spectral_axis=np.array(wavelengths) * wavelengths[0].unit,
@@ -324,104 +327,6 @@ class SonoraGrid(SpectrumCollection):
                     "lookup_dict": {value: i for i, value in enumerate(grid_points)},
                 },
             )
-
-    def __getitem__(self, key):
-        flux = self.flux[key]
-        if flux.ndim != 1:
-            raise ValueError(
-                "Currently only 1D data structures may be returned from slice operations."
-            )
-        spectral_axis = self.spectral_axis[key]
-        uncertainty = None if self.uncertainty is None else self.uncertainty[key]
-        mask = None if self.mask is None else self.mask[key]
-        if self.meta is None:
-            meta = None
-        else:
-            try:
-                meta = self.meta[key]
-            except KeyError:
-                meta = self.meta
-
-        return SonoraSpectrum(
-            flux=flux,
-            spectral_axis=spectral_axis,
-            uncertainty=uncertainty,
-            wcs=None,
-            mask=mask,
-            meta=meta,
-        )
-
-    @property
-    def grid_points(self):
-        """What are the coordinates of the grid?"""
-        return self.meta["grid_points"]
-
-    @property
-    def teff_points(self):
-        """What are the Teff points of the grid?"""
-        return self.meta["teff_points"]
-
-    @property
-    def logg_points(self):
-        """What are the logg points of the grid?"""
-        return self.meta["logg_points"]
-
-    @property
-    def metallicity_points(self):
-        """What are the metallicity points of the grid?"""
-        return self.meta["metallicity_points"]
-
-    @property
-    def grid_labels(self):
-        """What are the grid labels?"""
-        return self.meta["grid_labels"]
-
-    @property
-    def n_spectra(self):
-        """How many distinct spectra are in the grid?"""
-        return self.meta["n_spectra"]
-
-    @property
-    def lookup_dict(self):
-        """Lookup dictioary for spectra from their grid coordinates"""
-        return self.meta["lookup_dict"]
-
-    def truncate(self, wavelength_range=None, data=None):
-        """Truncate the wavelength range of the grid
-
-        Parameters
-        ----------
-        wavelength_range: list or tuple
-            A pair of values that denote the shortest and longest wavelengths for truncating the grid.
-        data: Spectrum1D-like
-            A spectrum to which this method will match the wavelength limits
-
-        """
-        fiducial_spectrum = copy.deepcopy(self[0])
-        wavelength_units = fiducial_spectrum.wavelength.unit
-        flux_units = fiducial_spectrum.flux.unit
-
-        if (data is not None) and (wavelength_range is None):
-            wavelength_range = (
-                fiducial_spectrum.wavelength.value.min() * wavelength_units,
-                fiducial_spectrum.wavelength.value.max() * wavelength_units,
-            )
-        shortest_wavelength, longest_wavelength = wavelength_range
-
-        wavelengths, fluxes = [], []
-        for spectrum in self:
-            mask = (spectrum.wavelength > shortest_wavelength) & (
-                spectrum.wavelength < longest_wavelength
-            )
-            wavelengths.append(spectrum.wavelength.value[mask])
-            fluxes.append(spectrum.flux.value[mask])
-
-        fluxes = np.array(fluxes) * flux_units
-        wavelengths = np.array(wavelengths) * wavelength_units
-        assert fluxes is not None
-        assert wavelengths is not None
-
-        return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
 
     def instrumental_broaden(self, resolving_power):
         """Instrumental broaden the grid"""
