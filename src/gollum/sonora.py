@@ -327,6 +327,14 @@ class SonoraGrid(SpectrumCollection):
                     "lookup_dict": {value: i for i, value in enumerate(grid_points)},
                 },
             )
+    
+    grid_points = property(lambda self: self.meta["grid_points"])
+    teff_points = property(lambda self: self.meta["teff_points"])
+    metallicity_points = property(lambda self: self.meta["metallicity_points"])
+    logg_points = property(lambda self: self.meta["logg_points"])
+    grid_labels = property(lambda self: self.meta["grid_labels"])
+    n_spectra = property(lambda self: self.meta["n_spectra"])
+    lookup_dict = property(lambda self: self.meta["lookup_dict"])
 
     def instrumental_broaden(self, resolving_power):
         """Instrumental broaden the grid"""
