@@ -217,6 +217,14 @@ class PHOENIXGrid(SpectrumCollection):
                 },
             )
 
+    grid_points = property(lambda self: self.meta["grid_points"])
+    teff_points = property(lambda self: self.meta["teff_points"])
+    metallicity_points = property(lambda self: self.meta["metallicity_points"])
+    logg_points = property(lambda self: self.meta["logg_points"])
+    grid_labels = property(lambda self: self.meta["grid_labels"])
+    n_spectra = property(lambda self: self.meta["n_spectra"])
+    lookup_dict = property(lambda self: self.meta["lookup_dict"])
+
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
     def find_nearest_teff(self, value):

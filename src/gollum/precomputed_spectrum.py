@@ -510,10 +510,3 @@ class PrecomputedSpectrum(Spectrum1D):
             meta=self.meta,
         )
 
-    grid_points = property(lambda self: self.meta["grid_points"])
-    teff_points = property(lambda self: self.meta["teff_points"])
-    metallicity_points = property(lambda self: self.meta["metallicity_points"])
-    logg_points = property(lambda self: self.meta["logg_points"])
-    grid_labels = property(lambda self: self.meta["grid_labels"])
-    n_spectra = property(lambda self: self.meta["n_spectra"])
-    lookup_dict = property(lambda self: self.meta["lookup_dict"])
