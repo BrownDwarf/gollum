@@ -390,7 +390,7 @@ class SonoraGrid(SpectrumCollection):
         )
         return output
 
-    truncate = lambda self, wl_range, data: _truncate(self, wl_range, data)
+    truncate = _truncate
 
     def get_index(self, grid_point):
         """Get the spectrum index associated with a given grid point
