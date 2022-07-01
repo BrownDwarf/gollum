@@ -197,7 +197,7 @@ class PHOENIXGrid(SpectrumCollection):
                 except (FileNotFoundError, URLError):
                     log.info(f"No file for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}")
                     missing += 1
-                
+
             assert grid_points != [], "Empty grid; parameter limits out of range"
             print(
                 f"{missing} files not found; grid may not cover given parameter ranges fully"
@@ -261,14 +261,14 @@ class PHOENIXGrid(SpectrumCollection):
         truncated_spectrum: Spectrum1D-like
             The spectrum after being truncated to the given wavelength range
         """
-        fiducial_spectrum = deepcopy(self[0])
-        wavelength_units = fiducial_spectrum.wavelength.unit
-        flux_units = fiducial_spectrum.flux.unit
+        fiducial_spec = deepcopy(self[0])
+        wavelength_units = fiducial_spec.wavelength.unit
+        flux_units = fiducial_spec.flux.unit
 
-        if data and wavelength_range:
+        if data and not wavelength_range:
             wavelength_range = (
-                fiducial_spectrum.wavelength.value.min() * wavelength_units,
-                fiducial_spectrum.wavelength.value.max() * wavelength_units,
+                fiducial_spec.wavelength.value.min() * wavelength_units,
+                fiducial_spec.wavelength.value.max() * wavelength_units,
             )
 
         shortest_wavelength, longest_wavelength = wavelength_range

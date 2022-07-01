@@ -19,7 +19,6 @@ def apply_numpy_mask(spec, mask):
     """
 
     assert isinstance(spec, Spectrum1D), "Input must be a specutils Spectrum1D object"
-
     assert mask.any(), "The masked spectrum must have at least one pixel remaining"
 
     if (mask_length := len(mask)) != (npx := len(spec.spectral_axis.value)):
