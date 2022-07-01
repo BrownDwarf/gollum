@@ -208,7 +208,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             )
 
             # convert to Angstrom
-            df_native["wavelength"] = df_native["wavelength_um"] * 10_000.0
+            df_native["wavelength"] = df_native["wavelength_um"] * 10000.0
             mask = (df_native.wavelength > wl_lo) & (df_native.wavelength < wl_hi)
             df_trimmed = df_native[mask].reset_index(drop=True)
 
@@ -293,8 +293,6 @@ class SonoraGrid(SpectrumCollection):
 
             for teff, logg, Z in pbar:
                 pbar.desc = f"Processing teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}"
-                # "To do": See issue 31
-                # Temporary work around: pass if we can't read the file
                 try:
                     spec = SonoraSpectrum(
                         teff=teff,
@@ -311,6 +309,11 @@ class SonoraGrid(SpectrumCollection):
                     log.info(f"No file for Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}")
                     missing += 1
 
+            assert grid_points != [], "Empty grid; parameter limits out of range"
+            print(
+                f"{missing} files not found; grid may not cover given parameter ranges fully"
+            ) if missing else None
+
             super().__init__(
                 flux=np.array(fluxes) * fluxes[0].unit,
                 spectral_axis=np.array(wavelengths) * wavelengths[0].unit,
@@ -318,7 +321,7 @@ class SonoraGrid(SpectrumCollection):
                     "teff_points": teff_points,
                     "logg_points": logg_points,
                     "metallicity_points": metallicity_points,
-                    "grid_labels": ("T_eff", "log(g)"),
+                    "grid_labels": ("T_eff", "log(g)", "Z"),
                     "n_spectra": len(grid_points),
                     "grid_points": grid_points,
                     "lookup_dict": {value: i for i, value in enumerate(grid_points)},
@@ -391,31 +394,16 @@ class SonoraGrid(SpectrumCollection):
         return output
 
     truncate = _truncate
-
-    def get_index(self, grid_point):
-        """Get the spectrum index associated with a given grid point
-        """
-        return self.lookup_dict[grid_point]
-
-    def get_distance(self, gridpoint1, gridpoint2):
-        return sqrt(
-            ((gridpoint1[0] - gridpoint2[0]) ** 2)
-            + ((gridpoint1[1] - gridpoint2[1]) ** 2)
-            + ((gridpoint1[2] - gridpoint2[2]) ** 2)
-        )
+    get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
     #  Need to add a function to find the near grid point in the case it doesn't exist (find nearest point in a lattice)
     def find_nearest_grid_point(self, teff, logg, metallicity):
-        current = (teff, logg, metallicity)
-
-        distances = []
-        for point in self.grid_points:
-            distances.append(self.get_distance(current, point))
-        shortest_distance = min(distances)
-        idx = distances.index(shortest_distance)
-        nearest_point = self.grid_points[idx]
-
-        return nearest_point
+        current = np.array((teff, logg, metallicity))
+        mindist = np.Inf
+        for point in map(np.array, self.grid_points):
+            if (current_dist := np.linalg.norm(current - point)) < mindist:
+                mindist, minpoint = current_dist, point
+        return tuple(minpoint)
 
     def find_nearest_teff(self, value):
         idx = (np.abs(self.teff_points - value)).argmin()
