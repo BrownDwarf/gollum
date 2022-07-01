@@ -11,7 +11,6 @@ PHOENIXSpectrum
 import os
 import numpy as np
 
-from copy import deepcopy
 from itertools import product
 from warnings import filterwarnings
 from logging import getLogger
@@ -246,7 +245,7 @@ class PHOENIXGrid(SpectrumCollection):
     n_spectra = property(lambda self: self.meta["n_spectra"])
     lookup_dict = property(lambda self: self.meta["lookup_dict"])
 
-    truncate = lambda self, wl_range, data: _truncate(self, wl_range, data)
+    truncate = _truncate
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
     def find_nearest_teff(self, value):
