@@ -386,43 +386,6 @@ class SonoraGrid(SpectrumCollection):
         """Lookup dictioary for spectra from their grid coordinates"""
         return self.meta["lookup_dict"]
 
-    def truncate(self, wavelength_range=None, data=None):
-        """Truncate the wavelength range of the grid
-
-        Parameters
-        ----------
-        wavelength_range: list or tuple
-            A pair of values that denote the shortest and longest wavelengths for truncating the grid.
-        data: Spectrum1D-like
-            A spectrum to which this method will match the wavelength limits
-
-        """
-        fiducial_spectrum = copy.deepcopy(self[0])
-        wavelength_units = fiducial_spectrum.wavelength.unit
-        flux_units = fiducial_spectrum.flux.unit
-
-        if (data is not None) and (wavelength_range is None):
-            wavelength_range = (
-                fiducial_spectrum.wavelength.value.min() * wavelength_units,
-                fiducial_spectrum.wavelength.value.max() * wavelength_units,
-            )
-        shortest_wavelength, longest_wavelength = wavelength_range
-
-        wavelengths, fluxes = [], []
-        for spectrum in self:
-            mask = (spectrum.wavelength > shortest_wavelength) & (
-                spectrum.wavelength < longest_wavelength
-            )
-            wavelengths.append(spectrum.wavelength.value[mask])
-            fluxes.append(spectrum.flux.value[mask])
-
-        fluxes = np.array(fluxes) * flux_units
-        wavelengths = np.array(wavelengths) * wavelength_units
-        assert fluxes is not None
-        assert wavelengths is not None
-
-        return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
-
     def instrumental_broaden(self, resolving_power):
         """Instrumental broaden the grid"""
 

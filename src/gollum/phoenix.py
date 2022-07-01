@@ -245,50 +245,6 @@ class PHOENIXGrid(SpectrumCollection):
     n_spectra = property(lambda self: self.meta["n_spectra"])
     lookup_dict = property(lambda self: self.meta["lookup_dict"])
 
-    def truncate(self, wavelength_range=None, data=None):
-        """Truncate the wavelength range of the grid
-
-        Parameters
-        ----------
-        wavelength_range: list or tuple
-            A pair of values that denote the shortest and longest wavelengths
-            for truncating the grid.
-        data: Spectrum1D-like
-            A spectrum to which this method will match the wavelength limits
-        
-        Returns
-        -------
-        truncated_spectrum: Spectrum1D-like
-            The spectrum after being truncated to the given wavelength range
-        """
-        fiducial_spec = deepcopy(self[0])
-        wavelength_units = fiducial_spec.wavelength.unit
-        flux_units = fiducial_spec.flux.unit
-
-        if data and not wavelength_range:
-            wavelength_range = (
-                fiducial_spec.wavelength.value.min() * wavelength_units,
-                fiducial_spec.wavelength.value.max() * wavelength_units,
-            )
-
-        shortest_wavelength, longest_wavelength = wavelength_range
-
-        wavelengths, fluxes = [], []
-        for spectrum in self:
-            mask = (spectrum.wavelength > shortest_wavelength) & (
-                spectrum.wavelength < longest_wavelength
-            )
-            wavelengths.append(spectrum.wavelength.value[mask])
-            fluxes.append(spectrum.flux.value[mask])
-
-        assert fluxes and wavelengths
-
-        return self.__class__(
-            flux=np.array(fluxes) * flux_units,
-            spectral_axis=np.array(wavelengths) * wavelength_units,
-            meta=self.meta,
-        )
-
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
     def find_nearest_teff(self, value):
