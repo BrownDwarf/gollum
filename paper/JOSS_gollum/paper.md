@@ -38,7 +38,7 @@ bibliography: paper.bib
 # Summary
 
 
-The `gollum` framework provides a user-friendly Application Programming Interface (API) to load, manipulate, and visualize precomputed synthetic stellar spectral models.  The framework provides a first-of-its-kind interactive dashboard with sliders that instantaneously update the fundamental, extrinsic, and compositional properties of the spectra.  `gollum` currently supports the PHOENIX grid of stellar spectra, and the Sonora-Bobcat grid of substellar brown dwarf and free-floating giant exoplanet spectra.  Support for other model grids is planned.  This `specutils`-based Python 3.7+ framework interoperates easily with the astropy ecosystem of tools, including its sibling API for échelle spectra, `muler`.
+The `gollum` framework provides a user-friendly Application Programming Interface (API) to load, manipulate, and visualize precomputed synthetic stellar spectral models.  The framework provides a first-of-its-kind interactive dashboard with sliders that instantaneously update the fundamental intrinsic and extrinsic properties of the spectra.  `gollum` currently supports the PHOENIX grid of stellar spectra, as well as the Sonora-Bobcat grid of substellar brown dwarf and free-floating giant exoplanet spectra.  Support for other model grids is planned.  This `specutils`-based Python 3.7+ framework interoperates easily with the astropy ecosystem of tools, including its sibling API for échelle spectra, `muler`.
 
 
 # Statement of need
@@ -52,7 +52,7 @@ The spectra of stars, brown dwarfs, and planets are amazingly complex and inform
 
 
 
-Citation to  `starfish` framework [@czekala15]
+Citation to `starfish` framework [@czekala15]
 
 
 `gollum` depends on `astropy` [@astropy13; @astropy18], `numpy` [@harris2020array], `specutils`, `scipy` [@scipy2020], and others.
@@ -64,14 +64,16 @@ Citation to  `starfish` framework [@czekala15]
 # Supported model grids
 
 We currently support two precomputed synthetic spectral models: PHOENIX  (XX Cite Husser), and Sonora-Bobcat (Marley et al. XX).
+PHOENIX support includes a PHOENIXSpectrum class for individual PHOENIX spectra (which can be downloaded from an FTP site), as well as a PHOENIXGrid class that creates a grid of models, which can then be accessed via the PHOENIX dashboard. Sonora-Bobcat support includes two spectrum classes: Sonora2017Spectrum and Sonora2021Spectrum(which can be accessed via an alias: SonoraSpectrum). It also has a SonoraGrid class which functions in much the same way as PHOENIXGrid and is the backbone for the Sonora-Bobcat dashboard.
+Support for alpha abundances in PHOENIX and carbon abundances in Sonora-Bobcat is planned but not yet implemented.
 
 # Dashboard
 
-We have an interactive dashboard which allows users to compare genuine data spectra to synthetic model spectra. The current version of the dashboard is specifically designed to support both the PHOENIX and Sonora-Bobcat 2021 models.
+We have an interactive dashboard which allows users to compare genuine data spectra to synthetic model spectra. The current version of the dashboard has variants specifically designed to support both the PHOENIX and Sonora-Bobcat 2021 models.
 
 This dashboard allows users to control sliders correlating with intrinsic properties (effective temperature, surface gravity, and metallicity) and extrinsic properties (rotational broadening, radial velocity, and a normalization scalar). From the selected intrinsic values, the dashboard can find the closest matching model (based on the closest existing point in a jagged 3D array of existing intrinsic values) and display it  so the user can compare it with the real data. The data itself shows up as a blue plot, while the model is red, which will allow users to make by-eye fittings of the models to the data displayed.
 
-There is some latency in the updating of the model's graph when the user moves certain sliders too quickly. This latency comes from the large amount of data points and the effect of the curse of dimensionality when it comes to the search for the nearest grid point based on intrinsic values that the dashboard must do with each update of the sliders. This latency only becomes a factor when the user moves the sliders very quickly, which should not happen often. More gradual movement of the sliders allows for relatively smooth updating of the model spectrum with effectively no visible latency.
+There is some latency in the updating of the model's graph when the user moves certain sliders too quickly. This latency comes from the large amount of data points and the effect of the curse of dimensionality when it comes to the search for the nearest grid point based on intrinsic values that the dashboard must do with each update of the sliders. This latency only becomes a factor when the user moves the sliders very quickly, which should not happen often. More gradual movement of the sliders allows for relatively smooth updating of the model spectrum with virtually no latency.
 
 # Acknowledgements
 
