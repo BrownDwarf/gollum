@@ -8,12 +8,12 @@ SonoraSpectrum
 ###############
 """
 
-import copy
 import warnings
 from logging import getLogger
 from itertools import product
 from gollum.precomputed_spectrum import PrecomputedSpectrum
 from gollum.telluric import TelluricSpectrum
+from gollum.utilities import _truncate
 import numpy as np
 from pandas import read_csv
 from astropy import units as u
@@ -331,60 +331,27 @@ class SonoraGrid(SpectrumCollection):
             raise ValueError(
                 "Currently only 1D data structures may be returned from slice operations."
             )
-        spectral_axis = self.spectral_axis[key]
-        uncertainty = None if self.uncertainty is None else self.uncertainty[key]
-        mask = None if self.mask is None else self.mask[key]
-        if self.meta is None:
-            meta = None
-        else:
-            try:
-                meta = self.meta[key]
-            except KeyError:
-                meta = self.meta
+        try:
+            meta = self.meta[key]
+        except (KeyError, TypeError):
+            meta = self.meta
 
         return SonoraSpectrum(
             flux=flux,
-            spectral_axis=spectral_axis,
-            uncertainty=uncertainty,
-            wcs=None,
-            mask=mask,
+            spectral_axis=self.spectral_axis[key],
+            uncertainty=self.uncertainty[key] if self.uncertainty else None,
+            wcs=self.wcs[key] if self.wcs else None,
+            mask=self.mask[key] if self.mask else None,
             meta=meta,
         )
 
-    @property
-    def grid_points(self):
-        """What are the coordinates of the grid?"""
-        return self.meta["grid_points"]
-
-    @property
-    def teff_points(self):
-        """What are the Teff points of the grid?"""
-        return self.meta["teff_points"]
-
-    @property
-    def logg_points(self):
-        """What are the logg points of the grid?"""
-        return self.meta["logg_points"]
-
-    @property
-    def metallicity_points(self):
-        """What are the metallicity points of the grid?"""
-        return self.meta["metallicity_points"]
-
-    @property
-    def grid_labels(self):
-        """What are the grid labels?"""
-        return self.meta["grid_labels"]
-
-    @property
-    def n_spectra(self):
-        """How many distinct spectra are in the grid?"""
-        return self.meta["n_spectra"]
-
-    @property
-    def lookup_dict(self):
-        """Lookup dictioary for spectra from their grid coordinates"""
-        return self.meta["lookup_dict"]
+    grid_points = property(lambda self: self.meta["grid_points"])
+    teff_points = property(lambda self: self.meta["teff_points"])
+    metallicity_points = property(lambda self: self.meta["metallicity_points"])
+    logg_points = property(lambda self: self.meta["logg_points"])
+    grid_labels = property(lambda self: self.meta["grid_labels"])
+    n_spectra = property(lambda self: self.meta["n_spectra"])
+    lookup_dict = property(lambda self: self.meta["lookup_dict"])
 
     def instrumental_broaden(self, resolving_power):
         """Instrumental broaden the grid"""
@@ -422,6 +389,8 @@ class SonoraGrid(SpectrumCollection):
             meta=self.meta,
         )
         return output
+
+    truncate = lambda self, wl_range, data: _truncate(self, wl_range, data)
 
     def get_index(self, grid_point):
         """Get the spectrum index associated with a given grid point

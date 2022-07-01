@@ -17,6 +17,7 @@ from warnings import filterwarnings
 from logging import getLogger
 from tqdm import tqdm
 from urllib.error import URLError
+from gollum.utilities import _truncate
 from gollum.precomputed_spectrum import PrecomputedSpectrum
 from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.io import fits
@@ -245,6 +246,7 @@ class PHOENIXGrid(SpectrumCollection):
     n_spectra = property(lambda self: self.meta["n_spectra"])
     lookup_dict = property(lambda self: self.meta["lookup_dict"])
 
+    truncate = lambda self, wl_range, data: _truncate(self, wl_range, data)
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
     def find_nearest_teff(self, value):

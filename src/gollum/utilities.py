@@ -35,7 +35,8 @@ def apply_numpy_mask(spec, mask):
         meta=deepcopy(spec.meta) if spec.meta else None,
     )
 
-def truncate(grid, wavelength_range=None, data=None):
+
+def _truncate(grid, wavelength_range=None, data=None):
     """Truncate the wavelength range of the grid
 
     Parameters
