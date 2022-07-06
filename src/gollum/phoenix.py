@@ -11,12 +11,12 @@ PHOENIXSpectrum
 import os
 import numpy as np
 
-from copy import deepcopy
 from itertools import product
 from warnings import filterwarnings
 from logging import getLogger
 from tqdm import tqdm
 from urllib.error import URLError
+from gollum.utilities import _truncate
 from gollum.precomputed_spectrum import PrecomputedSpectrum
 from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.io import fits
@@ -191,12 +191,13 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_lo=wl_lo,
                         wl_hi=wl_hi,
                     )
+                    wavelengths.append(spec.wavelength)
+                    fluxes.append(spec.flux)
+                    grid_points.append((teff, logg, Z))
                 except (FileNotFoundError, URLError):
                     log.info(f"No file for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}")
                     missing += 1
-                wavelengths.append(spec.wavelength)
-                fluxes.append(spec.flux)
-                grid_points.append((teff, logg, Z))
+
             assert grid_points != [], "Empty grid; parameter limits out of range"
             print(
                 f"{missing} files not found; grid may not cover given parameter ranges fully"
@@ -244,50 +245,7 @@ class PHOENIXGrid(SpectrumCollection):
     n_spectra = property(lambda self: self.meta["n_spectra"])
     lookup_dict = property(lambda self: self.meta["lookup_dict"])
 
-    def truncate(self, wavelength_range=None, data=None):
-        """Truncate the wavelength range of the grid
-
-        Parameters
-        ----------
-        wavelength_range: list or tuple
-            A pair of values that denote the shortest and longest wavelengths
-            for truncating the grid.
-        data: Spectrum1D-like
-            A spectrum to which this method will match the wavelength limits
-        
-        Returns
-        -------
-        truncated_spectrum: Spectrum1D-like
-            The spectrum after being truncated to the given wavelength range
-        """
-        fiducial_spectrum = deepcopy(self[0])
-        wavelength_units = fiducial_spectrum.wavelength.unit
-        flux_units = fiducial_spectrum.flux.unit
-
-        if data and wavelength_range:
-            wavelength_range = (
-                fiducial_spectrum.wavelength.value.min() * wavelength_units,
-                fiducial_spectrum.wavelength.value.max() * wavelength_units,
-            )
-
-        shortest_wavelength, longest_wavelength = wavelength_range
-
-        wavelengths, fluxes = [], []
-        for spectrum in self:
-            mask = (spectrum.wavelength > shortest_wavelength) & (
-                spectrum.wavelength < longest_wavelength
-            )
-            wavelengths.append(spectrum.wavelength.value[mask])
-            fluxes.append(spectrum.flux.value[mask])
-
-        assert fluxes and wavelengths
-
-        return self.__class__(
-            flux=np.array(fluxes) * flux_units,
-            spectral_axis=np.array(wavelengths) * wavelength_units,
-            meta=self.meta,
-        )
-
+    truncate = _truncate
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
     def find_nearest_teff(self, value):

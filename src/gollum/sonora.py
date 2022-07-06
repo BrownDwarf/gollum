@@ -8,35 +8,33 @@ SonoraSpectrum
 ###############
 """
 
-import copy
 import warnings
-import logging
+from logging import getLogger
+from itertools import product
 from gollum.precomputed_spectrum import PrecomputedSpectrum
 from gollum.telluric import TelluricSpectrum
+from gollum.utilities import _truncate
 import numpy as np
-import astropy
-import pandas as pd
+from pandas import read_csv
 from astropy import units as u
-from specutils import SpectrumCollection
+from astropy.utils.exceptions import AstropyDeprecationWarning
+from specutils import SpectrumCollection, Spectrum1D
 import os
-from specutils.spectra.spectrum1d import Spectrum1D
 from scipy.ndimage import gaussian_filter1d
 from tqdm import tqdm
 
 from math import sqrt
 
-from bokeh.io import show, output_notebook, push_notebook
+from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import Slider, Span, Range1d, Dropdown
+from bokeh.models import Slider, Range1d
 from bokeh.layouts import layout, Spacer
 from bokeh.models.widgets import Button, Div
 
-log = logging.getLogger(__name__)
+log = getLogger(__name__)
 
 #  See Issue: https://github.com/astropy/specutils/issues/779
-warnings.filterwarnings(
-    "ignore", category=astropy.utils.exceptions.AstropyDeprecationWarning
-)
+warnings.filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -61,7 +59,14 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
     """
 
     def __init__(
-        self, *args, teff=None, logg=None, path=None, wl_lo=8038, wl_hi=12849, **kwargs
+        self,
+        *args,
+        teff=None,
+        logg=None,
+        path="~/libraries/raw/Sonora/",
+        wl_lo=8038,
+        wl_hi=12849,
+        **kwargs,
     ):
 
         teff_points = np.hstack(
@@ -84,30 +89,18 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
             5.5: "3160",
         }
 
-        if path is None:
-            path = "~/libraries/raw/Sonora/"
-
-        if (teff is not None) & (logg is not None):
+        if teff and logg:
             base_path = os.path.expanduser(path)
-            assert os.path.exists(
-                base_path
-            ), "You must specify the path to local Sonora models: {}".format(base_path)
+            assert os.path.exists(base_path), "Given path does not exist."
+            assert teff in teff_points, "teff must be a point on the grid"
+            assert logg in logg_points, "logg must be a point on the grid"
 
-            print("successfully found the path to Sonora models: {}".format(base_path))
-
-            assert teff in teff_points, "Teff must be on the grid points"
-            assert logg in logg_points, "logg must be on the grid points"
-
-            base_name = "sp_t{0:0>.0f}g{1:}nc_m0.0".format(
-                float(teff), logg_par_dict[logg]
-            )
-            fn = base_path + "/" + base_name + ".gz"
-
-            assert os.path.exists(fn), "Double check that the file {} exists".format(fn)
+            fn = f"{base_path}/sp_t{teff}g{logg_par_dict[logg]}nc_m0.0.gz"
+            assert os.path.exists(fn), f"Double check that the file {fn} exists"
 
             # Units: micron, erg/cm^2/s/Hz
             df_native = (
-                pd.read_csv(
+                read_csv(
                     fn,
                     skiprows=[0, 1],
                     delim_whitespace=True,
@@ -119,7 +112,7 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
             )
 
             # convert to Angstrom
-            df_native["wavelength"] = df_native["wavelength_um"] * 10_000.0
+            df_native["wavelength"] = df_native["wavelength_um"] * 10000.0
             mask = (df_native.wavelength > wl_lo) & (df_native.wavelength < wl_hi)
             df_trimmed = df_native[mask].reset_index(drop=True)
 
@@ -160,7 +153,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
         teff=None,
         logg=None,
         metallicity=0.0,
-        path=None,
+        path="~/libraries/raw/SonoraBobcat2021/",
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
@@ -192,34 +185,19 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
 
         metallicity_points = np.arange(-0.5, 0.51, 0.5)
 
-        if path is None:
-            path = "~/libraries/raw/SonoraBobcat2021/"
-
-        if (teff is not None) & (logg is not None):
+        if teff and logg:
             base_path = os.path.expanduser(path)
-            assert os.path.exists(
-                base_path
-            ), "You must specify the path to local Sonora models: {}".format(base_path)
+            assert os.path.exists(base_path), "Given path does not exist."
+            assert teff in teff_points, "teff must be a point on the grid"
+            assert logg in logg_points, "logg must be a point on the grid"
+            assert metallicity in metallicity_points, "Fe/H must be a point on the grid"
 
-            assert teff in teff_points, "Teff must be on the grid points"
-            assert logg in logg_points, "logg must be on the grid points"
-            assert metallicity in metallicity_points, "Fe/H must be a valid point"
-
-            if metallicity <= 0:
-                base_name = "sp_t{0:0>.0f}g{1:}nc_m{2:0.01f}".format(
-                    float(teff), logg_par_dict[logg], float(metallicity)
-                )
-            else:
-                base_name = "sp_t{0:0>.0f}g{1:}nc_m{2:+0.1f}".format(
-                    float(teff), logg_par_dict[logg], float(metallicity)
-                )
-            fn = base_path + "/" + base_name
-
-            assert os.path.exists(fn), "Double check that the file {} exists".format(fn)
+            fn = f"{base_path}/sp_t{teff}g{logg_par_dict[logg]}nc_m{metallicity:+0.1f}"
+            assert os.path.exists(fn), f"Double check that the file {fn} exists"
 
             # Units: micron, erg/cm^2/s/Hz
             df_native = (
-                pd.read_csv(
+                read_csv(
                     fn,
                     skiprows=[0, 1],
                     delim_whitespace=True,
@@ -230,7 +208,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             )
 
             # convert to Angstrom
-            df_native["wavelength"] = df_native["wavelength_um"] * 10_000.0
+            df_native["wavelength"] = df_native["wavelength_um"] * 10000.0
             mask = (df_native.wavelength > wl_lo) & (df_native.wavelength < wl_hi)
             df_trimmed = df_native[mask].reset_index(drop=True)
 
@@ -273,17 +251,13 @@ class SonoraGrid(SpectrumCollection):
         teff_range=None,
         logg_range=None,
         metallicity_range=None,
-        path=None,
+        path="~/libraries/raw/Sonora/",
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
     ):
 
-        if (
-            ("flux" in kwargs.keys())
-            and ("spectral_axis" in kwargs.keys())
-            and ("meta" in kwargs.keys())
-        ):
+        if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
             super().__init__(**kwargs)
         else:
             teff_points = np.hstack(
@@ -297,71 +271,62 @@ class SonoraGrid(SpectrumCollection):
 
             metallicity_points = np.arange(-0.5, 0.51, 0.5)
 
-            if teff_range is not None:
+            if teff_range:
                 subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
                 teff_points = teff_points[subset]
 
-            if logg_range is not None:
+            if logg_range:
                 subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
                 logg_points = logg_points[subset]
 
-            if metallicity_range is not None:
+            if metallicity_range:
                 subset = (metallicity_points >= metallicity_range[0]) & (
                     metallicity_points <= metallicity_range[1]
                 )
                 metallicity_points = metallicity_points[subset]
 
-            wavelengths, fluxes = [], []
-            grid_points = []
+            wavelengths, fluxes, grid_points, missing = [], [], [], 0
+            pbar = tqdm(
+                product(teff_points, logg_points, metallicity_points),
+                total=len(teff_points) * len(logg_points) * len(metallicity_points),
+            )
 
-            pbar = tqdm(teff_points)
-            for teff in pbar:
-                for logg in logg_points:
-                    for metallicity in metallicity_points:
-                        pbar.set_description(
-                            "Processing Teff={} K, logg={:0.2f}, metallicity={:0.1f}".format(
-                                teff, logg, metallicity
-                            )
-                        )
-                        grid_point = (teff, logg, metallicity)
-                        # "To do": See issue 31
-                        # Temporary work around: pass if we can't read the file
-                        try:
-                            spec = SonoraSpectrum(
-                                teff=teff,
-                                logg=logg,
-                                metallicity=metallicity,
-                                path=path,
-                                wl_lo=wl_lo,
-                                wl_hi=wl_hi,
-                            )
-                            wavelengths.append(spec.wavelength)
-                            fluxes.append(spec.flux)
-                            grid_points.append(grid_point)
-                        except:
-                            log.info(
-                                "Grid point Teff={} K, logg={:0.2f}, metallicity={:0.1f} does not exist".format(
-                                    teff, logg, metallicity
-                                )
-                                + " in Sonora library"
-                            )
-            flux_out = np.array(fluxes) * fluxes[0].unit
-            wave_out = np.array(wavelengths) * wavelengths[0].unit
+            for teff, logg, Z in pbar:
+                pbar.desc = f"Processing teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}"
+                try:
+                    spec = SonoraSpectrum(
+                        teff=teff,
+                        logg=logg,
+                        metallicity=Z,
+                        path=path,
+                        wl_lo=wl_lo,
+                        wl_hi=wl_hi,
+                    )
+                    wavelengths.append(spec.wavelength)
+                    fluxes.append(spec.flux)
+                    grid_points.append((teff, logg, Z))
+                except FileNotFoundError:
+                    log.info(f"No file for Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}")
+                    missing += 1
 
-            # Make a quick-access dictionary
-            n_spectra = len(grid_points)
-            lookup_dict = {grid_points[i]: i for i in range(n_spectra)}
-            meta = {
-                "teff_points": teff_points,
-                "logg_points": logg_points,
-                "metallicity_points": metallicity_points,
-                "grid_labels": ("T_eff", "log(g)"),
-                "n_spectra": n_spectra,
-                "grid_points": grid_points,
-                "lookup_dict": lookup_dict,
-            }
+            assert grid_points != [], "Empty grid; parameter limits out of range"
+            print(
+                f"{missing} files not found; grid may not cover given parameter ranges fully"
+            ) if missing else None
 
-            super().__init__(flux=flux_out, spectral_axis=wave_out, meta=meta)
+            super().__init__(
+                flux=np.array(fluxes) * fluxes[0].unit,
+                spectral_axis=np.array(wavelengths) * wavelengths[0].unit,
+                meta={
+                    "teff_points": teff_points,
+                    "logg_points": logg_points,
+                    "metallicity_points": metallicity_points,
+                    "grid_labels": ("T_eff", "log(g)", "Z"),
+                    "n_spectra": len(grid_points),
+                    "grid_points": grid_points,
+                    "lookup_dict": {value: i for i, value in enumerate(grid_points)},
+                },
+            )
 
     def __getitem__(self, key):
         flux = self.flux[key]
@@ -369,97 +334,27 @@ class SonoraGrid(SpectrumCollection):
             raise ValueError(
                 "Currently only 1D data structures may be returned from slice operations."
             )
-        spectral_axis = self.spectral_axis[key]
-        uncertainty = None if self.uncertainty is None else self.uncertainty[key]
-        mask = None if self.mask is None else self.mask[key]
-        if self.meta is None:
-            meta = None
-        else:
-            try:
-                meta = self.meta[key]
-            except KeyError:
-                meta = self.meta
+        try:
+            meta = self.meta[key]
+        except (KeyError, TypeError):
+            meta = self.meta
 
         return SonoraSpectrum(
             flux=flux,
-            spectral_axis=spectral_axis,
-            uncertainty=uncertainty,
-            wcs=None,
-            mask=mask,
+            spectral_axis=self.spectral_axis[key],
+            uncertainty=self.uncertainty[key] if self.uncertainty else None,
+            wcs=self.wcs[key] if self.wcs else None,
+            mask=self.mask[key] if self.mask else None,
             meta=meta,
         )
 
-    @property
-    def grid_points(self):
-        """What are the coordinates of the grid?"""
-        return self.meta["grid_points"]
-
-    @property
-    def teff_points(self):
-        """What are the Teff points of the grid?"""
-        return self.meta["teff_points"]
-
-    @property
-    def logg_points(self):
-        """What are the logg points of the grid?"""
-        return self.meta["logg_points"]
-
-    @property
-    def metallicity_points(self):
-        """What are the metallicity points of the grid?"""
-        return self.meta["metallicity_points"]
-
-    @property
-    def grid_labels(self):
-        """What are the grid labels?"""
-        return self.meta["grid_labels"]
-
-    @property
-    def n_spectra(self):
-        """How many distinct spectra are in the grid?"""
-        return self.meta["n_spectra"]
-
-    @property
-    def lookup_dict(self):
-        """Lookup dictioary for spectra from their grid coordinates"""
-        return self.meta["lookup_dict"]
-
-    def truncate(self, wavelength_range=None, data=None):
-        """Truncate the wavelength range of the grid
-
-        Parameters
-        ----------
-        wavelength_range: list or tuple
-            A pair of values that denote the shortest and longest wavelengths for truncating the grid.
-        data: Spectrum1D-like
-            A spectrum to which this method will match the wavelength limits
-
-        """
-        fiducial_spectrum = copy.deepcopy(self[0])
-        wavelength_units = fiducial_spectrum.wavelength.unit
-        flux_units = fiducial_spectrum.flux.unit
-
-        if (data is not None) and (wavelength_range is None):
-            wavelength_range = (
-                fiducial_spectrum.wavelength.value.min() * wavelength_units,
-                fiducial_spectrum.wavelength.value.max() * wavelength_units,
-            )
-        shortest_wavelength, longest_wavelength = wavelength_range
-
-        wavelengths, fluxes = [], []
-        for spectrum in self:
-            mask = (spectrum.wavelength > shortest_wavelength) & (
-                spectrum.wavelength < longest_wavelength
-            )
-            wavelengths.append(spectrum.wavelength.value[mask])
-            fluxes.append(spectrum.flux.value[mask])
-
-        fluxes = np.array(fluxes) * flux_units
-        wavelengths = np.array(wavelengths) * wavelength_units
-        assert fluxes is not None
-        assert wavelengths is not None
-
-        return self.__class__(flux=fluxes, spectral_axis=wavelengths, meta=self.meta)
+    grid_points = property(lambda self: self.meta["grid_points"])
+    teff_points = property(lambda self: self.meta["teff_points"])
+    metallicity_points = property(lambda self: self.meta["metallicity_points"])
+    logg_points = property(lambda self: self.meta["logg_points"])
+    grid_labels = property(lambda self: self.meta["grid_labels"])
+    n_spectra = property(lambda self: self.meta["n_spectra"])
+    lookup_dict = property(lambda self: self.meta["lookup_dict"])
 
     def instrumental_broaden(self, resolving_power):
         """Instrumental broaden the grid"""
@@ -498,30 +393,17 @@ class SonoraGrid(SpectrumCollection):
         )
         return output
 
-    def get_index(self, grid_point):
-        """Get the spectrum index associated with a given grid point
-        """
-        return self.lookup_dict[grid_point]
-
-    def get_distance(self, gridpoint1, gridpoint2):
-        return sqrt(
-            ((gridpoint1[0] - gridpoint2[0]) ** 2)
-            + ((gridpoint1[1] - gridpoint2[1]) ** 2)
-            + ((gridpoint1[2] - gridpoint2[2]) ** 2)
-        )
+    truncate = _truncate
+    get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
     #  Need to add a function to find the near grid point in the case it doesn't exist (find nearest point in a lattice)
     def find_nearest_grid_point(self, teff, logg, metallicity):
-        current = (teff, logg, metallicity)
-
-        distances = []
-        for point in self.grid_points:
-            distances.append(self.get_distance(current, point))
-        shortest_distance = min(distances)
-        idx = distances.index(shortest_distance)
-        nearest_point = self.grid_points[idx]
-
-        return nearest_point
+        current = np.array((teff, logg, metallicity))
+        mindist = np.Inf
+        for point in map(np.array, self.grid_points):
+            if (current_dist := np.linalg.norm(current - point)) < mindist:
+                mindist, minpoint = current_dist, point
+        return tuple(minpoint)
 
     def find_nearest_teff(self, value):
         idx = (np.abs(self.teff_points - value)).argmin()
