@@ -192,7 +192,8 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             assert logg in logg_points, "logg must be a point on the grid"
             assert metallicity in metallicity_points, "Fe/H must be a point on the grid"
 
-            fn = f"{base_path}sp_t{teff}g{logg_par_dict[logg]}nc_m{metallicity:+0.1f}"
+            Z_string = f"{metallicity:+0.1f}" if metallicity else "0.0"
+            fn = f"{base_path}sp_t{teff}g{logg_par_dict[logg]}nc_m{Z_string}"
             assert os.path.exists(fn), f"Double check that the file {fn} exists"
 
             # Units: micron, erg/cm^2/s/Hz
