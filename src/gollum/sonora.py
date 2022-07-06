@@ -250,7 +250,7 @@ class SonoraGrid(SpectrumCollection):
         teff_range=None,
         logg_range=None,
         metallicity_range=None,
-        path="~/libraries/raw/Sonora/",
+        path="~/libraries/raw/SonoraBobcat2021/",
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
