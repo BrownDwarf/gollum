@@ -192,7 +192,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             assert metallicity in metallicity_points, "Fe/H must be a point on the grid"
 
             Z_string = f"{metallicity:+0.1f}" if metallicity else "0.0"
-            fn = f"{base_path}sp_t{teff}g{logg_par_dict[logg]}nc_m{Z_string}.gz"
+            fn = f"{base_path}sp_t{teff}g{logg_par_dict[logg]}nc_m{Z_string}"
 
             # Units: micron, erg/cm^2/s/Hz
             df_native = (
@@ -233,7 +233,7 @@ class SonoraGrid(SpectrumCollection):
     ----------
     teff_range : tuple
         The Teff limits of the grid model to read in.
-    logg : tuple
+    logg_range : tuple
         The logg limits of the Sonora model to read in.
     metallicity_range : tuple
         The metallicity limits of the Sonora model to read in
