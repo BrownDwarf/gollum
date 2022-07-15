@@ -191,7 +191,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             assert logg in logg_points, "logg must be a point on the grid"
             assert metallicity in metallicity_points, "Fe/H must be a point on the grid"
 
-            Z_string = f"{metallicity:+0.1f}" if metallicity else "0.0"
+            Z_string = f"{metallicity:+0.1f}" if metallicity else "0.0.gz"
             fn = f"{base_path}sp_t{teff}g{logg_par_dict[logg]}nc_m{Z_string}"
 
             # Units: micron, erg/cm^2/s/Hz
@@ -238,7 +238,7 @@ class SonoraGrid(SpectrumCollection):
     metallicity_range : tuple
         The metallicity limits of the Sonora model to read in
     path : str
-        The path to your locally downloaded Sonora grid library. Default: "~/libraries/raw/Sonora/"
+        The path to your locally downloaded Sonora grid library. Default: "~/libraries/raw/SonoraBobcat2021/"
     wl_lo : float
         The shortest wavelength of the models to keep (Angstroms)
     wl_hi : float
