@@ -346,7 +346,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.1,
                 step=0.1,
                 title="Rotational Broadening: v sin(i) [km/s]",
-                width=465,
+                width=460,
             )
 
             vz_slider = Slider(
@@ -355,7 +355,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.00,
                 step=0.05,
                 title="Radial Velocity: RV [km/s]",
-                width=465,
+                width=460,
                 format="0.000f",
             )
 
@@ -365,7 +365,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=self.teff_points[1],
                 step=100,
                 title="Effective Temperature: T_eff [K]",
-                width=465,
+                width=460,
             )
 
             logg_slider = Slider(
@@ -374,7 +374,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=5.0,
                 step=0.50,
                 title="Surface Gravity: log(g) [cm/s^2]",
-                width=465,
+                width=460,
             )
 
             metallicity_slider = Slider(
@@ -383,7 +383,7 @@ class PHOENIXGrid(SpectrumCollection):
                 value=0.0,
                 step=0.50,
                 title="Metallicity: Z",
-                width=465,
+                width=460,
             )
 
             scale_slider = Slider(
@@ -392,11 +392,11 @@ class PHOENIXGrid(SpectrumCollection):
                 value=1.0,
                 step=0.005,
                 title="Normalization Scalar",
-                width=465,
+                width=460,
             )
 
             def update_upon_scale(attr, old, new):
-                """Callback to take action when smoothing slider changes"""
+                """Callback to take action when normalization slider changes"""
                 new_spec = (
                     PHOENIXSpectrum(
                         spectral_axis=spec_source.data["native_wavelength"]
@@ -411,10 +411,15 @@ class PHOENIXGrid(SpectrumCollection):
 
             def update_upon_smooth(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
-                new_spec = PHOENIXSpectrum(
-                    spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
-                    flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
-                ).rotationally_broaden(new)
+                new_spec = (
+                    PHOENIXSpectrum(
+                        spectral_axis=spec_source.data["native_wavelength"]
+                        * u.Angstrom,
+                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                    )
+                    .rotationally_broaden(new)
+                    .multiply(scale_slider.value * u.dimensionless_unscaled)
+                )
                 spec_source.data["flux"] = new_spec.flux.value
 
             def update_upon_vz(attr, old, new):
@@ -431,9 +436,11 @@ class PHOENIXGrid(SpectrumCollection):
                 if teff != old:
                     point = (teff, logg_slider.value, metallicity_slider.value)
                     native_spec = self[self.get_index(point)].normalize(percentile=95)
-                    new_spec = native_spec.rotationally_broaden(
-                        smoothing_slider.value
-                    ).rv_shift(vz_slider.value)
+                    new_spec = (
+                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        .rv_shift(vz_slider.value)
+                        .multiply(scale_slider.value * u.dimensionless_unscaled)
+                    )
 
                     spec_source.data = {
                         "native_wavelength": native_spec.wavelength.value,
@@ -450,9 +457,11 @@ class PHOENIXGrid(SpectrumCollection):
                     teff = self.find_nearest_teff(teff_slider.value)
                     point = (teff, logg_slider.value, metallicity)
                     native_spec = self[self.get_index(point)].normalize(percentile=95)
-                    new_spec = native_spec.rotationally_broaden(
-                        smoothing_slider.value
-                    ).rv_shift(vz_slider.value)
+                    new_spec = (
+                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        .rv_shift(vz_slider.value)
+                        .multiply(scale_slider.value * u.dimensionless_unscaled)
+                    )
 
                     spec_source.data = {
                         "native_wavelength": native_spec.wavelength.value,
@@ -467,9 +476,11 @@ class PHOENIXGrid(SpectrumCollection):
                 metallicity = self.find_nearest_metallicity(metallicity_slider.value)
                 point = (teff, new, metallicity)
                 native_spec = self[self.get_index(point)].normalize(percentile=95)
-                new_spec = native_spec.rotationally_broaden(
-                    smoothing_slider.value
-                ).rv_shift(vz_slider.value)
+                new_spec = (
+                    native_spec.rotationally_broaden(smoothing_slider.value)
+                    .rv_shift(vz_slider.value)
+                    .multiply(scale_slider.value * u.dimensionless_unscaled)
+                )
 
                 spec_source.data = {
                     "native_wavelength": native_spec.wavelength.value,
