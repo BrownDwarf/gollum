@@ -8,23 +8,21 @@ SonoraSpectrum
 ###############
 """
 
-import warnings
-from logging import getLogger
+import os
+import numpy as np
+
 from itertools import product
+from warnings import filterwarnings
+from logging import getLogger
+from tqdm import tqdm
+from gollum.utilities import _truncate
 from gollum.precomputed_spectrum import PrecomputedSpectrum
 from gollum.telluric import TelluricSpectrum
-from gollum.utilities import _truncate
-import numpy as np
-from pandas import read_csv
-from astropy import units as u
 from astropy.utils.exceptions import AstropyDeprecationWarning
+from astropy import units as u
+from pandas import read_csv
 from specutils import SpectrumCollection, Spectrum1D
-import os
 from scipy.ndimage import gaussian_filter1d
-from tqdm import tqdm
-
-from math import sqrt
-
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d
@@ -34,15 +32,14 @@ from bokeh.models.widgets import Button, Div
 log = getLogger(__name__)
 
 #  See Issue: https://github.com/astropy/specutils/issues/779
-warnings.filterwarnings("ignore", category=AstropyDeprecationWarning)
+filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
-warnings.filterwarnings("ignore", category=RuntimeWarning)
+filterwarnings("ignore", category=RuntimeWarning)
 
 
 class Sonora2017Spectrum(PrecomputedSpectrum):
     """
-    A container for a single Sonora precomputed synthetic spectrum of a brown dwarfs or free-floating
-    Gas Giant planet.
+    A container for Sonora 2017 spectra
 
     Parameters
     ----------
@@ -97,7 +94,6 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
 
             fn = f"{base_path}/sp_t{teff}g{logg_par_dict[logg]}nc_m0.0.gz"
 
-            # Units: micron, erg/cm^2/s/Hz
             df_native = (
                 read_csv(
                     fn,
@@ -110,7 +106,7 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
                 .reset_index(drop=True)
             )
 
-            # convert to Angstrom
+            # convert to Angstroms
             df_native["wavelength"] = df_native["wavelength_um"] * 10000.0
             mask = (df_native.wavelength > wl_lo) & (df_native.wavelength < wl_hi)
             df_trimmed = df_native[mask].reset_index(drop=True)
@@ -194,7 +190,6 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             Z_string = f"{metallicity:+0.1f}" if metallicity else "0.0.gz"
             fn = f"{base_path}sp_t{teff}g{logg_par_dict[logg]}nc_m{Z_string}"
 
-            # Units: micron, erg/cm^2/s/Hz
             df_native = (
                 read_csv(
                     fn,
@@ -206,7 +201,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
                 .reset_index(drop=True)
             )
 
-            # convert to Angstrom
+            # convert to Angstroms
             df_native["wavelength"] = df_native["wavelength_um"] * 10000.0
             mask = (df_native.wavelength > wl_lo) & (df_native.wavelength < wl_hi)
             df_trimmed = df_native[mask].reset_index(drop=True)
@@ -225,7 +220,7 @@ SonoraSpectrum = Sonora2021Spectrum
 
 
 class SonoraGrid(SpectrumCollection):
-    r"""
+    """
     A container for a grid of Sonora precomputed synthetic spectra of brown dwarfs and free-floating
     Gas Giant planets.
 
@@ -240,9 +235,9 @@ class SonoraGrid(SpectrumCollection):
     path : str
         The path to your locally downloaded Sonora grid library. Default: "~/libraries/raw/SonoraBobcat2021/"
     wl_lo : float
-        The shortest wavelength of the models to keep (Angstroms)
+        The shortest wavelength of the models to keep (\u212B)
     wl_hi : float
-        The longest wavelength of the models to keep (Angstroms)
+        The longest wavelength of the models to keep (\u212B)
     """
 
     def __init__(
@@ -291,7 +286,7 @@ class SonoraGrid(SpectrumCollection):
             )
 
             for teff, logg, Z in pbar:
-                pbar.desc = f"Processing teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}"
+                pbar.desc = f"Processing Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}"
                 try:
                     spec = SonoraSpectrum(
                         teff=teff,
@@ -410,9 +405,9 @@ class SonoraGrid(SpectrumCollection):
 
     def show_dashboard(
         self, data=None, notebook_url="localhost:8888", show_telluric=True
-    ):
-        """Show an interactive dashboard for interacting with the Sonora grid
-        Heavily inspired by the lightkurve .interact() method.
+    ):  # pragma: no cover
+        """Show an interactive dashboard for the Sonora grid;
+        heavily inspired by the lightkurve .interact() method.
 
         Parameters
         ----------
@@ -430,16 +425,14 @@ class SonoraGrid(SpectrumCollection):
         """
 
         def create_interact_ui(doc):
-
-            # Make the spectrum source
             scalar_norm = np.percentile(self[0].flux.value, 95)
             spec_source = ColumnDataSource(
-                data=dict(
-                    wavelength=self[0].wavelength,
-                    flux=self[0].flux.value / scalar_norm,
-                    native_flux=self[0].flux.value / scalar_norm,
-                    native_wavelength=self[0].wavelength.value,
-                )
+                data={
+                    "wavelength": self[0].wavelength,
+                    "flux": self[0].flux.value / scalar_norm,
+                    "native_flux": self[0].flux.value / scalar_norm,
+                    "native_wavelength": self[0].wavelength.value,
+                }
             )
 
             fig = figure(
@@ -460,8 +453,8 @@ class SonoraGrid(SpectrumCollection):
                 self[0].wavelength.value.max(),
             )
 
-            instrumental_resolution = 100_000
-            if data is not None:
+            instrumental_resolution = 100000
+            if data:
                 assert isinstance(
                     data, Spectrum1D
                 ), "The data spectrum must be Spectrum1D-like"

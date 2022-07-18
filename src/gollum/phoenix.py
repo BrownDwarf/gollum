@@ -26,7 +26,6 @@ from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d
 from bokeh.layouts import layout, Spacer
-from bokeh.models.widgets import Div
 
 log = getLogger(__name__)
 
@@ -148,7 +147,6 @@ class PHOENIXGrid(SpectrumCollection):
     ):
 
         if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
-            # Trigger a passthrough
             super().__init__(**kwargs)
         else:
 
