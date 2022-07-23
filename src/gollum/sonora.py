@@ -390,7 +390,6 @@ class SonoraGrid(SpectrumCollection):
     truncate = _truncate
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
-    #  Need to add a function to find the near grid point in the case it doesn't exist (find nearest point in a lattice)
     def find_nearest_grid_point(self, teff, logg, metallicity):
         current = np.array((teff, logg, metallicity))
         mindist = np.Inf

@@ -226,6 +226,7 @@ class PHOENIXGrid(SpectrumCollection):
         except (KeyError, TypeError):
             meta = self.meta
 
+        meta["teff"], meta["logg"], meta["metallicity"] = self.grid_points[key]
         return PHOENIXSpectrum(
             flux=flux,
             spectral_axis=self.spectral_axis[key],
@@ -367,7 +368,7 @@ class PHOENIXGrid(SpectrumCollection):
             logg_slider = Slider(
                 start=min(self.logg_points),
                 end=max(self.logg_points),
-                value=5.0,
+                value=min(self.logg_points),
                 step=0.50,
                 title="Surface Gravity: log(g) [cm/s^2]",
                 width=460,
@@ -375,7 +376,7 @@ class PHOENIXGrid(SpectrumCollection):
             metallicity_slider = Slider(
                 start=min(self.metallicity_points),
                 end=max(self.metallicity_points),
-                value=0.0,
+                value=min(self.metallicity_points),
                 step=0.50,
                 title="Metallicity: Z",
                 width=460,
