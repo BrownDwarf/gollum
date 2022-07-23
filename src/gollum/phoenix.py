@@ -26,7 +26,6 @@ from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d
 from bokeh.layouts import layout, Spacer
-from bokeh.models.widgets import Div
 
 log = getLogger(__name__)
 
@@ -148,7 +147,6 @@ class PHOENIXGrid(SpectrumCollection):
     ):
 
         if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
-            # Trigger a passthrough
             super().__init__(**kwargs)
         else:
 
@@ -228,6 +226,7 @@ class PHOENIXGrid(SpectrumCollection):
         except (KeyError, TypeError):
             meta = self.meta
 
+        meta["teff"], meta["logg"], meta["metallicity"] = self.grid_points[key]
         return PHOENIXSpectrum(
             flux=flux,
             spectral_axis=self.spectral_axis[key],
@@ -278,8 +277,6 @@ class PHOENIXGrid(SpectrumCollection):
         """
 
         def create_interact_ui(doc):
-
-            # Make the spectrum source
             scalar_norm = np.percentile(self[0].flux.value, 95)
             spec_source = ColumnDataSource(
                 data={
@@ -289,7 +286,10 @@ class PHOENIXGrid(SpectrumCollection):
                     "native_wavelength": self[0].wavelength.value,
                 }
             )
-
+            wl_lo, wl_hi = (
+                self[0].wavelength.value.min(),
+                self[0].wavelength.value.max(),
+            )
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
                 plot_height=500,
@@ -297,24 +297,6 @@ class PHOENIXGrid(SpectrumCollection):
                 tools="pan,wheel_zoom,box_zoom,tap,reset",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
-            )
-            fig.title.offset = 350
-            fig.yaxis.axis_label = "Flux"
-            fig.xaxis.axis_label = "Wavelength (\u00B5m)"
-            fig.y_range = Range1d(start=0, end=1.5)
-
-            fig.step(
-                "wavelength",
-                "flux",
-                line_width=1,
-                color="red",
-                source=spec_source,
-                nonselection_line_color="red",
-                nonselection_line_alpha=1.0,
-            )
-            wl_lo, wl_hi = (
-                self[0].wavelength.value.min(),
-                self[0].wavelength.value.max(),
             )
 
             if data:
@@ -330,16 +312,34 @@ class PHOENIXGrid(SpectrumCollection):
                 ), "Data should overlap the models, double check your wavelength limits."
                 wl_lo, wl_hi = new_lo, new_hi
 
-                data_source = ColumnDataSource(
-                    data={"wavelength": data.wavelength.value, "flux": data.flux.value}
-                )
                 fig.step(
-                    "wavelength", "flux", line_width=1, color="blue", source=data_source
+                    "wavelength",
+                    "flux",
+                    line_width=1,
+                    color="blue",
+                    source=ColumnDataSource(
+                        data={
+                            "wavelength": data.wavelength.value,
+                            "flux": data.flux.value,
+                        }
+                    ),
                 )
 
+            fig.title.offset = 350
+            fig.yaxis.axis_label = "Flux"
+            fig.xaxis.axis_label = "Wavelength (\u00B5m)"
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
+            fig.y_range = Range1d(start=0, end=1.5)
+            fig.step(
+                "wavelength",
+                "flux",
+                line_width=1,
+                color="red",
+                source=spec_source,
+                nonselection_line_color="red",
+                nonselection_line_alpha=1.0,
+            )
 
-            # Slider to decimate the data
             smoothing_slider = Slider(
                 start=0.1,
                 end=200,
@@ -348,7 +348,6 @@ class PHOENIXGrid(SpectrumCollection):
                 title="Rotational Broadening: v sin(i) [km/s]",
                 width=460,
             )
-
             vz_slider = Slider(
                 start=-200,
                 end=200,
@@ -358,34 +357,30 @@ class PHOENIXGrid(SpectrumCollection):
                 width=460,
                 format="0.000f",
             )
-
             teff_slider = Slider(
                 start=min(self.teff_points),
                 end=max(self.teff_points),
-                value=self.teff_points[1],
+                value=min(self.teff_points),
                 step=100,
                 title="Effective Temperature: T_eff [K]",
                 width=460,
             )
-
             logg_slider = Slider(
                 start=min(self.logg_points),
                 end=max(self.logg_points),
-                value=5.0,
+                value=min(self.logg_points),
                 step=0.50,
                 title="Surface Gravity: log(g) [cm/s^2]",
                 width=460,
             )
-
             metallicity_slider = Slider(
                 start=min(self.metallicity_points),
                 end=max(self.metallicity_points),
-                value=0.0,
+                value=min(self.metallicity_points),
                 step=0.50,
                 title="Metallicity: Z",
                 width=460,
             )
-
             scale_slider = Slider(
                 start=0.1,
                 end=2.0,
@@ -497,14 +492,14 @@ class PHOENIXGrid(SpectrumCollection):
             scale_slider.on_change("value", update_upon_scale)
 
             sp = Spacer(width=20)
-
-            widgets_and_figures = layout(
-                [fig],
-                [teff_slider, sp, smoothing_slider],
-                [logg_slider, sp, vz_slider],
-                [metallicity_slider, sp, scale_slider],
+            doc.add_root(
+                layout(
+                    [fig],
+                    [teff_slider, sp, smoothing_slider],
+                    [logg_slider, sp, vz_slider],
+                    [metallicity_slider, sp, scale_slider],
+                )
             )
-            doc.add_root(widgets_and_figures)
 
         output_notebook(verbose=False, hide_banner=True)
         return show(create_interact_ui, notebook_url=notebook_url)
