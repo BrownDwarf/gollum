@@ -18,19 +18,20 @@ from tqdm import tqdm
 from urllib.error import URLError
 from gollum.utilities import _truncate
 from gollum.precomputed_spectrum import PrecomputedSpectrum
-from astropy.utils.exceptions import AstropyDeprecationWarning
+from astropy.utils.exceptions import AstropyDeprecationWarning, AstropyWarning
 from astropy.io import fits
 from astropy import units as u
 from specutils import SpectrumCollection, Spectrum1D
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import Slider, Range1d
+from bokeh.models import Slider, Range1d, Toggle
 from bokeh.layouts import layout, Spacer
 
 log = getLogger(__name__)
 
 #  See Issue: https://github.com/astropy/specutils/issues/779
 filterwarnings("ignore", category=AstropyDeprecationWarning)
+filterwarnings("ignore", category=AstropyWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
 
@@ -389,6 +390,20 @@ class PHOENIXGrid(SpectrumCollection):
                 title="Normalization Scalar",
                 width=460,
             )
+            continuum_toggle = Toggle(label="Auto-fit to Continuum", button_type="success")
+
+            def update_to_continuum(new):
+                """Callback to take action when the continuum toggle is toggled"""
+                if new:
+                    new_spec = (
+                        PHOENIXSpectrum(
+                            spectral_axis=spec_source.data["wavelength"]
+                            * u.Angstrom,
+                            flux=spec_source.data["flux"] * u.dimensionless_unscaled,
+                        )
+                        .tilt_to_data(data)
+                    )
+                    spec_source.data["flux"] = new_spec.flux.value
 
             def update_upon_scale(attr, old, new):
                 """Callback to take action when normalization slider changes"""
@@ -484,6 +499,7 @@ class PHOENIXGrid(SpectrumCollection):
                     "flux": new_spec.flux.value,
                 }
 
+            continuum_toggle.on_click(update_to_continuum)
             smoothing_slider.on_change("value", update_upon_smooth)
             vz_slider.on_change("value", update_upon_vz)
             teff_slider.on_change("value", update_upon_teff_selection)
@@ -495,6 +511,7 @@ class PHOENIXGrid(SpectrumCollection):
             doc.add_root(
                 layout(
                     [fig],
+                    [continuum_toggle],
                     [teff_slider, sp, smoothing_slider],
                     [logg_slider, sp, vz_slider],
                     [metallicity_slider, sp, scale_slider],
