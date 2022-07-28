@@ -357,7 +357,9 @@ class PrecomputedSpectrum(Spectrum1D):
             Tilted spectrum
         """
         resampled_self = self.resample(target_spectrum)
-        model = fit_generic_continuum(target_spectrum.divide(resampled_self, handle_meta="ff"))
+        model = fit_generic_continuum(
+            target_spectrum.divide(resampled_self, handle_meta="ff")
+        )
         trend = model(self.wavelength)
         tilted_spec = self.multiply(trend)
 

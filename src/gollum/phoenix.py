@@ -390,19 +390,17 @@ class PHOENIXGrid(SpectrumCollection):
                 title="Normalization Scalar",
                 width=460,
             )
-            continuum_toggle = Toggle(label="Auto-fit to Continuum", button_type="success")
+            continuum_toggle = Toggle(
+                label="Auto-fit to Continuum", button_type="success"
+            )
 
             def update_to_continuum(new):
                 """Callback to take action when the continuum toggle is toggled"""
                 if new:
-                    new_spec = (
-                        PHOENIXSpectrum(
-                            spectral_axis=spec_source.data["wavelength"]
-                            * u.Angstrom,
-                            flux=spec_source.data["flux"] * u.dimensionless_unscaled,
-                        )
-                        .tilt_to_data(data)
-                    )
+                    new_spec = PHOENIXSpectrum(
+                        spectral_axis=spec_source.data["wavelength"] * u.Angstrom,
+                        flux=spec_source.data["flux"] * u.dimensionless_unscaled,
+                    ).tilt_to_data(data)
                     spec_source.data["flux"] = new_spec.flux.value
 
             def update_upon_scale(attr, old, new):
