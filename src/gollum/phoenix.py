@@ -444,6 +444,9 @@ class PHOENIXGrid(SpectrumCollection):
                     .rotationally_broaden(new)
                     .multiply(scale_slider.value * u.dimensionless_unscaled)
                 )
+                if continuum_toggle.active:
+                    new_spec = new_spec.tilt_to_data(data)
+
                 spec_source.data["flux"] = new_spec.flux.value
 
             def update_upon_rv(attr, old, new):
@@ -465,7 +468,8 @@ class PHOENIXGrid(SpectrumCollection):
                         .rv_shift(rv_slider.value)
                         .multiply(scale_slider.value * u.dimensionless_unscaled)
                     )
-
+                    if continuum_toggle.active:
+                        new_spec = new_spec.tilt_to_data(data)
                     spec_source.data = {
                         "native_wavelength": native_spec.wavelength.value,
                         "native_flux": native_spec.flux.value,
@@ -486,7 +490,8 @@ class PHOENIXGrid(SpectrumCollection):
                         .rv_shift(rv_slider.value)
                         .multiply(scale_slider.value * u.dimensionless_unscaled)
                     )
-
+                    if continuum_toggle.active:
+                        new_spec = new_spec.tilt_to_data(data)
                     spec_source.data = {
                         "native_wavelength": native_spec.wavelength.value,
                         "native_flux": native_spec.flux.value,
@@ -505,7 +510,8 @@ class PHOENIXGrid(SpectrumCollection):
                     .rv_shift(rv_slider.value)
                     .multiply(scale_slider.value * u.dimensionless_unscaled)
                 )
-
+                if continuum_toggle.active:
+                    new_spec = new_spec.tilt_to_data(data)
                 spec_source.data = {
                     "native_wavelength": native_spec.wavelength.value,
                     "native_flux": native_spec.flux.value,
