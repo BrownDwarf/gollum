@@ -146,7 +146,6 @@ class PHOENIXGrid(SpectrumCollection):
         wl_hi=12849,
         **kwargs,
     ):
-
         if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
             super().__init__(**kwargs)
         else:
@@ -349,7 +348,7 @@ class PHOENIXGrid(SpectrumCollection):
                 title="Rotational Broadening: v sin(i) [km/s]",
                 width=460,
             )
-            vz_slider = Slider(
+            rv_slider = Slider(
                 start=-200,
                 end=200,
                 value=0.00,
@@ -391,17 +390,34 @@ class PHOENIXGrid(SpectrumCollection):
                 width=460,
             )
             continuum_toggle = Toggle(
-                label="Auto-fit to Continuum", button_type="success"
+                label="Fit Continuum (disables normalization)", button_type="success"
             )
 
-            def update_to_continuum(new):
+            def update_to_continuum(active):
                 """Callback to take action when the continuum toggle is toggled"""
-                if new:
+                if active:
                     new_spec = PHOENIXSpectrum(
                         spectral_axis=spec_source.data["wavelength"] * u.Angstrom,
                         flux=spec_source.data["flux"] * u.dimensionless_unscaled,
                     ).tilt_to_data(data)
-                    spec_source.data["flux"] = new_spec.flux.value
+                    scale_slider.disabled = True
+                    continuum_toggle.label = "Undo Continuum (enables normalization)"
+                else:
+                    new_spec = (
+                        PHOENIXSpectrum(
+                            spectral_axis=spec_source.data["native_wavelength"]
+                            * u.Angstrom,
+                            flux=spec_source.data["native_flux"]
+                            * u.dimensionless_unscaled,
+                        )
+                        .rotationally_broaden(smoothing_slider.value)
+                        .multiply(scale_slider.value * u.dimensionless_unscaled)
+                        .rv_shift(rv_slider.value)
+                    )
+                    scale_slider.disabled = False
+                    continuum_toggle.label = "Fit Continuum (disables normalization)"
+
+                spec_source.data["flux"] = new_spec.flux.value
 
             def update_upon_scale(attr, old, new):
                 """Callback to take action when normalization slider changes"""
@@ -413,7 +429,7 @@ class PHOENIXGrid(SpectrumCollection):
                     )
                     .rotationally_broaden(smoothing_slider.value)
                     .multiply(new * u.dimensionless_unscaled)
-                    .rv_shift(vz_slider.value)
+                    .rv_shift(rv_slider.value)
                 )
                 spec_source.data["flux"] = new_spec.flux.value
 
@@ -430,8 +446,8 @@ class PHOENIXGrid(SpectrumCollection):
                 )
                 spec_source.data["flux"] = new_spec.flux.value
 
-            def update_upon_vz(attr, old, new):
-                """Callback to take action when vz slider changes"""
+            def update_upon_rv(attr, old, new):
+                """Callback to take action when RV slider changes"""
                 new_spec = PHOENIXSpectrum(
                     spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
                     flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
@@ -446,7 +462,7 @@ class PHOENIXGrid(SpectrumCollection):
                     native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = (
                         native_spec.rotationally_broaden(smoothing_slider.value)
-                        .rv_shift(vz_slider.value)
+                        .rv_shift(rv_slider.value)
                         .multiply(scale_slider.value * u.dimensionless_unscaled)
                     )
 
@@ -467,7 +483,7 @@ class PHOENIXGrid(SpectrumCollection):
                     native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = (
                         native_spec.rotationally_broaden(smoothing_slider.value)
-                        .rv_shift(vz_slider.value)
+                        .rv_shift(rv_slider.value)
                         .multiply(scale_slider.value * u.dimensionless_unscaled)
                     )
 
@@ -486,7 +502,7 @@ class PHOENIXGrid(SpectrumCollection):
                 native_spec = self[self.get_index(point)].normalize(percentile=95)
                 new_spec = (
                     native_spec.rotationally_broaden(smoothing_slider.value)
-                    .rv_shift(vz_slider.value)
+                    .rv_shift(rv_slider.value)
                     .multiply(scale_slider.value * u.dimensionless_unscaled)
                 )
 
@@ -499,7 +515,7 @@ class PHOENIXGrid(SpectrumCollection):
 
             continuum_toggle.on_click(update_to_continuum)
             smoothing_slider.on_change("value", update_upon_smooth)
-            vz_slider.on_change("value", update_upon_vz)
+            rv_slider.on_change("value", update_upon_rv)
             teff_slider.on_change("value", update_upon_teff_selection)
             logg_slider.on_change("value", update_upon_logg_selection)
             metallicity_slider.on_change("value", update_upon_metallicity_selection)
@@ -511,7 +527,7 @@ class PHOENIXGrid(SpectrumCollection):
                     [fig],
                     [continuum_toggle],
                     [teff_slider, sp, smoothing_slider],
-                    [logg_slider, sp, vz_slider],
+                    [logg_slider, sp, rv_slider],
                     [metallicity_slider, sp, scale_slider],
                 )
             )
