@@ -311,6 +311,7 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
 
             def update_spot_area(attr, old, new):
                 """"Callback to take action when spot area changes"""
+                pass
 
             smoothing_slider.on_change("value", update_upon_smooth)
             vz_slider.on_change("value", update_upon_vz)
