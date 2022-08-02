@@ -356,11 +356,14 @@ class PrecomputedSpectrum(Spectrum1D):
         tilted_spec : PrecomputedSpectrum
             Tilted spectrum
         """
-        ## Assume the template is resampled exactly to the data...
-        g1_fit = fit_generic_continuum(target_spectrum.divide(self, handle_meta="ff"))
-        tilted_spec = self.multiply(g1_fit(target_spectrum.wavelength))
+        resampled_self = self.resample(target_spectrum)
+        model = fit_generic_continuum(
+            target_spectrum.divide(resampled_self, handle_meta="ff")
+        )
+        trend = model(self.wavelength)
+        tilted_spec = self.multiply(trend)
 
-        return (tilted_spec, g1_fit) if return_model else tilted_spec
+        return (tilted_spec, model) if return_model else tilted_spec
 
     def fit_continuum(self, pixel_distance=5001, polyorder=3, return_coeffs=False):
         """Finds the low frequency continuum trend using scipy's find_peaks filter and linear algebra.

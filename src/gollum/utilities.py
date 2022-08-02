@@ -1,6 +1,6 @@
 from copy import deepcopy
 from numpy import array
-from specutils.spectra import Spectrum1D
+from specutils import Spectrum1D
 
 
 def apply_numpy_mask(spec, mask):
