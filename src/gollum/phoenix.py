@@ -349,7 +349,7 @@ class PHOENIXGrid(SpectrumCollection):
                 step=0.1,
                 title="Rotational Broadening: v sin(i) [km/s]",
                 width=460,
-                bar_color="powderblue",
+                bar_color="blue",
             )
             rv_slider = Slider(
                 start=-200,
@@ -359,7 +359,7 @@ class PHOENIXGrid(SpectrumCollection):
                 title="Radial Velocity: RV [km/s]",
                 width=460,
                 format="0.000f",
-                bar_color="crimson",
+                bar_color="blue",
             )
             teff_slider = Slider(
                 start=min(self.teff_points),
@@ -377,7 +377,7 @@ class PHOENIXGrid(SpectrumCollection):
                 step=0.50,
                 title="Surface Gravity: log(g) [cm/s^2]",
                 width=460,
-                bar_color="darkviolet",
+                bar_color="red",
             )
             metallicity_slider = Slider(
                 start=min(self.metallicity_points),
@@ -386,7 +386,7 @@ class PHOENIXGrid(SpectrumCollection):
                 step=0.50,
                 title="Metallicity: Z",
                 width=460,
-                bar_color="grey",
+                bar_color="red",
             )
             scale_slider = Slider(
                 start=0.1,
