@@ -327,7 +327,7 @@ class PHOENIXGrid(SpectrumCollection):
 
             fig.title.offset = 280
             fig.title.text_font_size = "16pt"
-            fig.yaxis.axis_label = "Flux"
+            fig.yaxis.axis_label = "Normalized Flux"
             fig.xaxis.axis_label = "Wavelength (\u00B5m)"
             fig.axis.axis_label_text_font_style = "bold"
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
