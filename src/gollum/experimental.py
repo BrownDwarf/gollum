@@ -12,7 +12,7 @@ import numpy as np
 
 from warnings import filterwarnings
 from logging import getLogger
-from gollum.phoenix import PHOENIXGrid
+from gollum.phoenix import PHOENIXGrid, PHOENIXSpectrum
 from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy import units as u
 from specutils import Spectrum1D
@@ -168,6 +168,22 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
                 title="Normalization Scalar",
                 width=460,
             )
+            spot_temp_slider = Slider(
+                start=2000,
+                end=4000,
+                value=2000,
+                step=100,
+                title="Starspot Temperature [K]",
+                width=460,
+            )
+            spot_area_slider = Slider(
+                start=0,
+                end=1,
+                value=0,
+                step=0.05,
+                title="Starspot Filling Factor",
+                width=460,
+            )
 
             def update_upon_scale(attr, old, new):
                 """Callback to take action when normalization slider changes"""
@@ -175,7 +191,8 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
                     PHOENIXSpectrum(
                         spectral_axis=spec_source.data["native_wavelength"]
                         * u.Angstrom,
-                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                        flux=spec_source.data["native_flux"] *
+                        u.dimensionless_unscaled,
                     )
                     .rotationally_broaden(smoothing_slider.value)
                     .multiply(new * u.dimensionless_unscaled)
@@ -189,7 +206,8 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
                     PHOENIXSpectrum(
                         spectral_axis=spec_source.data["native_wavelength"]
                         * u.Angstrom,
-                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                        flux=spec_source.data["native_flux"] *
+                        u.dimensionless_unscaled,
                     )
                     .rotationally_broaden(new)
                     .multiply(scale_slider.value * u.dimensionless_unscaled)
@@ -200,7 +218,8 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
                 """Callback to take action when vz slider changes"""
                 new_spec = PHOENIXSpectrum(
                     spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
-                    flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                    flux=spec_source.data["native_flux"] *
+                    u.dimensionless_unscaled,
                 ).rv_shift(new)
                 spec_source.data["wavelength"] = new_spec.wavelength.value
 
@@ -209,9 +228,28 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
                 teff = self.find_nearest_teff(new)
                 if teff != old:
                     point = (teff, logg_slider.value, metallicity_slider.value)
-                    native_spec = self[self.get_index(point)].normalize(percentile=95)
+                    native_spec = self[self.get_index(point)]
+                    # ambient absolute scalar value
+                    scalar_value_amb = np.percentile(native_spec.flux, 95)
+                    native_spec = native_spec.divide(scalar_value_amb)
+
+                    # Todo: also read in the starspot spectrum.
+                    # ...
+                    # ...
+                    # ...
+                    # ...
+                    # scalar_value_spot
+                    # absolute_ratio = scalar_value_spot / scalar_value_amb
+                    # ...
+                    # ...
+
+                    # Multiply by area ratio:
+
+                    # spot_spec = f_spot * spot_spec_abs...
+
                     new_spec = (
-                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        native_spec.rotationally_broaden(
+                            smoothing_slider.value)
                         .rv_shift(vz_slider.value)
                         .multiply(scale_slider.value * u.dimensionless_unscaled)
                     )
@@ -225,14 +263,16 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
                 teff_slider.value = teff
 
             def update_upon_metallicity_selection(attr, old, new):
-                """Callback to take action when teff slider changes"""
+                """Callback to take action when metallicity slider changes"""
                 metallicity = self.find_nearest_metallicity(new)
                 if metallicity != old:
                     teff = self.find_nearest_teff(teff_slider.value)
                     point = (teff, logg_slider.value, metallicity)
-                    native_spec = self[self.get_index(point)].normalize(percentile=95)
+                    native_spec = self[self.get_index(
+                        point)].normalize(percentile=95)
                     new_spec = (
-                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        native_spec.rotationally_broaden(
+                            smoothing_slider.value)
                         .rv_shift(vz_slider.value)
                         .multiply(scale_slider.value * u.dimensionless_unscaled)
                     )
@@ -247,9 +287,11 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
             def update_upon_logg_selection(attr, old, new):
                 """Callback to take action when logg slider changes"""
                 teff = self.find_nearest_teff(teff_slider.value)
-                metallicity = self.find_nearest_metallicity(metallicity_slider.value)
+                metallicity = self.find_nearest_metallicity(
+                    metallicity_slider.value)
                 point = (teff, new, metallicity)
-                native_spec = self[self.get_index(point)].normalize(percentile=95)
+                native_spec = self[self.get_index(
+                    point)].normalize(percentile=95)
                 new_spec = (
                     native_spec.rotationally_broaden(smoothing_slider.value)
                     .rv_shift(vz_slider.value)
@@ -263,11 +305,19 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
                     "flux": new_spec.flux.value,
                 }
 
+            def update_spot_temp(attr, old, new):
+                """Callback to take action when spot temp slider changes"""
+                pass
+
+            def update_spot_area(attr, old, new):
+                """"Callback to take action when spot area changes"""
+
             smoothing_slider.on_change("value", update_upon_smooth)
             vz_slider.on_change("value", update_upon_vz)
             teff_slider.on_change("value", update_upon_teff_selection)
             logg_slider.on_change("value", update_upon_logg_selection)
-            metallicity_slider.on_change("value", update_upon_metallicity_selection)
+            metallicity_slider.on_change(
+                "value", update_upon_metallicity_selection)
             scale_slider.on_change("value", update_upon_scale)
 
             sp = Spacer(width=20)
@@ -277,6 +327,7 @@ class ExperimentalPHOENIXGrid(PHOENIXGrid):
                     [teff_slider, sp, smoothing_slider],
                     [logg_slider, sp, vz_slider],
                     [metallicity_slider, sp, scale_slider],
+                    [spot_temp_slider, sp, spot_area_slider],
                 )
             )
 
