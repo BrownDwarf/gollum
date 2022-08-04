@@ -371,9 +371,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     wl_hi=spec_source.data["native_wavelength"][-1],
                 ).multiply((1 - fill_factor_slider.value) * u.dimensionless_unscaled)
 
-                base_new_spec = scaled_native.add(spot_spec)
                 new_spec = (
-                    base_new_spec.normalize(percentile=95)
+                    scaled_native.add(spot_spec)
+                    .normalize(percentile=95)
                     .rotationally_broaden(smoothing_slider.value)
                     .rv_shift(rv_slider.value)
                 )
