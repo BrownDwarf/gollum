@@ -317,6 +317,7 @@ class PHOENIXGrid(SpectrumCollection):
                     "flux",
                     line_width=1,
                     color="blue",
+                    legend_label=data.meta["header"]["OBJECT"],
                     source=ColumnDataSource(
                         data={
                             "wavelength": data.wavelength.value,
@@ -332,6 +333,7 @@ class PHOENIXGrid(SpectrumCollection):
             fig.axis.axis_label_text_font_style = "bold"
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
             fig.y_range = Range1d(start=0, end=1.5)
+            fig.legend.location = "top_right"
             fig.step(
                 "wavelength",
                 "flux",
@@ -340,6 +342,7 @@ class PHOENIXGrid(SpectrumCollection):
                 source=spec_source,
                 nonselection_line_color="red",
                 nonselection_line_alpha=1.0,
+                legend_label="PHOENIX Model",
             )
 
             smoothing_slider = Slider(

@@ -103,6 +103,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     "flux",
                     line_width=1,
                     color="blue",
+                    legend_label=data.meta["header"]["OBJECT"],
                     source=ColumnDataSource(
                         data={
                             "wavelength": data.wavelength.value,
@@ -118,6 +119,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             fig.axis.axis_label_text_font_style = "bold"
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
             fig.y_range = Range1d(start=0, end=1.5)
+            fig.legend.location = "top_right"
             fig.step(
                 "wavelength",
                 "flux",
@@ -126,8 +128,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 source=spec_source,
                 nonselection_line_color="red",
                 nonselection_line_alpha=1.0,
+                legend_label="PHOENIX Model",
             )
-
+            
             smoothing_slider = Slider(
                 start=0.1,
                 end=200,
@@ -381,7 +384,28 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 spec_source.data["flux"] = new_spec.flux.value
 
             def update_fill_factor(attr, old, new):
-                pass
+                point = (spot_temp_slider.value, logg_slider.value, metallicity_slider.value)
+                spot_spec = self[self.get_index(self.find_nearest_grid_point(*point))]
+                spot_spec = spot_spec.multiply(
+                    new * u.dimensionless_unscaled
+                )
+                scaled_native = PHOENIXSpectrum(
+                    teff=teff_slider.value,
+                    logg=logg_slider.value,
+                    metallicity=metallicity_slider.value,
+                    wl_lo=spec_source.data["native_wavelength"][0],
+                    wl_hi=spec_source.data["native_wavelength"][-1],
+                ).multiply((1 - new) * u.dimensionless_unscaled)
+
+                new_spec = (
+                    scaled_native.add(spot_spec)
+                    .normalize(percentile=95)
+                    .rotationally_broaden(smoothing_slider.value)
+                    .rv_shift(rv_slider.value)
+                )
+
+                spec_source.data["flux"] = new_spec.flux.value
+
 
             continuum_toggle.on_click(update_to_continuum)
             smoothing_slider.on_change("value", update_upon_smooth)
