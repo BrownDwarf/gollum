@@ -33,6 +33,14 @@ filterwarnings("ignore", category=RuntimeWarning)
 class ExpPHOENIXGrid(PHOENIXGrid):
     """A container for an experimental grid of PHOENIX precomputed synthetic spectra of stars."""
 
+    def find_nearest_grid_point(self, teff, logg, metallicity):
+        current = np.array((teff, logg, metallicity))
+        mindist = np.Inf
+        for point in map(np.array, self.grid_points):
+            if (current_dist := np.linalg.norm(current - point)) < mindist:
+                mindist, minpoint = current_dist, point
+        return tuple(minpoint)
+
     def show_dashboard(
         self, data=None, notebook_url="localhost:8888"
     ):  # pragma: no cover
@@ -351,21 +359,22 @@ class ExpPHOENIXGrid(PHOENIXGrid):
 
             def update_spot_temp(attr, old, new):
                 point = (new, logg_slider.value, metallicity_slider.value)
-                spot_spec = self[self.get_index(point)]
+                spot_spec = self[self.get_index(self.find_nearest_grid_point(*point))]
                 spot_spec = spot_spec.multiply(
-                    np.full(len(spot_spec.wavelength), fill_factor_slider.value)
+                    fill_factor_slider.value * u.dimensionless_unscaled
                 )
-                scaled_native = spec_source.data["native_flux"].multiply(
-                    np.full(len(spot_spec.wavelength), 1 - fill_factor_slider.value)
-                )
+                scaled_native = PHOENIXSpectrum(
+                    teff=teff_slider.value,
+                    logg=logg_slider.value,
+                    metallicity=metallicity_slider.value,
+                    wl_lo=spec_source.data["native_wavelength"][0],
+                    wl_hi=spec_source.data["native_wavelength"][-1],
+                ).multiply((1 - fill_factor_slider.value) * u.dimensionless_unscaled)
+
+                base_new_spec = scaled_native.add(spot_spec)
                 new_spec = (
-                    PHOENIXSpectrum(
-                        wavelength=spot_spec.wavelength,
-                        flux=spot_spec.flux + scaled_native.flux,
-                    )
-                    .normalize(percentile=95)
+                    base_new_spec.normalize(percentile=95)
                     .rotationally_broaden(smoothing_slider.value)
-                    .multiply(scale_slider.value * u.dimensionless_unscaled)
                     .rv_shift(rv_slider.value)
                 )
 

@@ -88,7 +88,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             Z_string = f"{metallicity:+0.1f}" if metallicity else "-0.0"
 
             wl_orig = fits.open(wl_file)[0].data.astype(np.float64)
-            mask = (wl_orig > wl_lo) & (wl_orig < wl_hi)
+            mask = (wl_orig >= wl_lo) & (wl_orig <= wl_hi)
             wl_out = wl_orig[mask]
 
             fn = f"{base_path}/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
