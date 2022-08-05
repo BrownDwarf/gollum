@@ -262,7 +262,8 @@ class PHOENIXGrid(SpectrumCollection):
         heavily inspired by the lightkurve .interact() method.
         
         If data is used, we recommend that the grid first be truncated to it,
-        with a margin of 20 Angstroms on either end of the spectral axis to allow for radial velocity shift.
+        with a margin of 50 Angstroms on either end of the spectral axis to allow for
+        radial velocity shift and rotational broadening to operate properly.
 
         Parameters
         ----------
