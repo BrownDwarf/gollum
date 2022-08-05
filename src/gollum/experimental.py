@@ -93,8 +93,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     data.wavelength.value.min(),
                     data.wavelength.value.max(),
                 )
-                assert (new_lo < wl_hi) & (
-                    new_hi > wl_lo
+                assert (
+                    wl_lo < new_lo < new_hi < wl_hi
                 ), "Data should overlap the models, double check your wavelength limits."
                 wl_lo, wl_hi = new_lo, new_hi
 
@@ -130,7 +130,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 nonselection_line_alpha=1.0,
                 legend_label="PHOENIX Model",
             )
-            
+
             smoothing_slider = Slider(
                 start=0.1,
                 end=200,
@@ -384,11 +384,13 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 spec_source.data["flux"] = new_spec.flux.value
 
             def update_fill_factor(attr, old, new):
-                point = (spot_temp_slider.value, logg_slider.value, metallicity_slider.value)
-                spot_spec = self[self.get_index(self.find_nearest_grid_point(*point))]
-                spot_spec = spot_spec.multiply(
-                    new * u.dimensionless_unscaled
+                point = (
+                    spot_temp_slider.value,
+                    logg_slider.value,
+                    metallicity_slider.value,
                 )
+                spot_spec = self[self.get_index(self.find_nearest_grid_point(*point))]
+                spot_spec = spot_spec.multiply(new * u.dimensionless_unscaled)
                 scaled_native = PHOENIXSpectrum(
                     teff=teff_slider.value,
                     logg=logg_slider.value,
@@ -405,7 +407,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 )
 
                 spec_source.data["flux"] = new_spec.flux.value
-
 
             continuum_toggle.on_click(update_to_continuum)
             smoothing_slider.on_change("value", update_upon_smooth)

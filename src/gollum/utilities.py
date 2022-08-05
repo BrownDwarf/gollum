@@ -1,5 +1,5 @@
 from copy import deepcopy
-from numpy import array
+from numpy import array, floor, ceil
 from specutils import Spectrum1D
 
 
@@ -42,7 +42,7 @@ def _truncate(grid, wavelength_range=None, data=None):
     Parameters
     ----------
     wavelength_range: list or tuple
-        A pair of values that denote the shortest and longest wavelengths
+        A pair of values (with units) that denote the shortest and longest wavelengths
         for truncating the grid.
     data: Spectrum1D-like
         A spectrum to which this method will match the wavelength limits
@@ -52,30 +52,24 @@ def _truncate(grid, wavelength_range=None, data=None):
     truncated_spectrum: Spectrum1D-like
         The spectrum after being truncated to the given wavelength range
     """
-    fiducial_spec = deepcopy(grid[0])
-    wavelength_units = fiducial_spec.wavelength.unit
-    flux_units = fiducial_spec.flux.unit
-
-    if data and not wavelength_range:
-        wavelength_range = (
-            fiducial_spec.wavelength.value.min() * wavelength_units,
-            fiducial_spec.wavelength.value.max() * wavelength_units,
-        )
-
-    shortest_wavelength, longest_wavelength = wavelength_range
+    assert (
+        bool(data) + bool(wavelength_range) == 1
+    ), "Please provide only one of the following: data OR wavelength_range"
+    wl_lo, wl_hi = (
+        (floor(data.wavelength.min()), ceil(data.wavelength.max()))
+        if data
+        else wavelength_range
+    )
 
     wavelengths, fluxes = [], []
-    for spectrum in grid:
-        mask = (spectrum.wavelength > shortest_wavelength) & (
-            spectrum.wavelength < longest_wavelength
-        )
-        wavelengths.append(spectrum.wavelength.value[mask])
-        fluxes.append(spectrum.flux.value[mask])
+    for spec in grid:
+        mask = (spec.wavelength >= wl_lo) & (spec.wavelength <= wl_hi)
+        wavelengths.append(spec.wavelength.value[mask])
+        fluxes.append(spec.flux.value[mask])
 
     assert fluxes and wavelengths
-
     return grid.__class__(
-        flux=array(fluxes) * flux_units,
-        spectral_axis=array(wavelengths) * wavelength_units,
+        flux=array(fluxes) * grid[0].flux.unit,
+        spectral_axis=array(wavelengths) * grid[0].wavelength.unit,
         meta=grid.meta,
     )

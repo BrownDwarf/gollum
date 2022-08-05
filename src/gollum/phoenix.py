@@ -259,7 +259,10 @@ class PHOENIXGrid(SpectrumCollection):
         self, data=None, notebook_url="localhost:8888"
     ):  # pragma: no cover
         """Show an interactive dashboard for the PHOENIX grid;
-        heavily inspired by the lightkurve .interact() method
+        heavily inspired by the lightkurve .interact() method.
+        
+        If data is used, we recommend that the grid first be truncated to it,
+        with a margin of 20 Angstroms on either end of the spectral axis to allow for radial velocity shift.
 
         Parameters
         ----------
@@ -307,8 +310,8 @@ class PHOENIXGrid(SpectrumCollection):
                     data.wavelength.value.min(),
                     data.wavelength.value.max(),
                 )
-                assert (new_lo < wl_hi) & (
-                    new_hi > wl_lo
+                assert (
+                    wl_lo < new_lo < new_hi < wl_hi
                 ), "Data should overlap the models, double check your wavelength limits."
                 wl_lo, wl_hi = new_lo, new_hi
 
