@@ -35,6 +35,12 @@ def test_spectrum():
     assert len(new_spec.flux) == len(new_spec.wavelength) == len(spec.wavelength)
     assert isinstance(spec, PHOENIXSpectrum)
 
+    mask = (spec.wavelength.value < 14000) & (spec.wavelength.value > 12000)
+    masked_spec = spec.apply_boolean_mask(mask)
+    assert masked_spec.wavelength.value.min() > 12000
+    assert masked_spec.wavelength.value.max() < 14000
+
+
 
 def test_resample():
     """Testing resampling methods"""
@@ -69,3 +75,4 @@ def test_grid():
     assert grid.find_nearest_teff(5080) == 5100
     assert grid.find_nearest_metallicity(0.4) == 0.5
     assert grid.find_nearest_teff(6000) == 5100
+    assert isinstance(grid.truncate(wavelength_range=(10000*u.AA, 10500*u.AA)), PHOENIXGrid)
