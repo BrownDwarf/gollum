@@ -412,7 +412,7 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when the continuum toggle is toggled"""
                 if active:
                     new_spec = PHOENIXSpectrum(
-                        spectral_axis=spec_source.data["wavelength"] * u.Angstrom,
+                        spectral_axis=spec_source.data["wavelength"] * u.AA,
                         flux=spec_source.data["flux"] * u.dimensionless_unscaled,
                     ).tilt_to_data(data)
                     scale_slider.disabled = True
@@ -420,8 +420,7 @@ class PHOENIXGrid(SpectrumCollection):
                 else:
                     new_spec = (
                         PHOENIXSpectrum(
-                            spectral_axis=spec_source.data["native_wavelength"]
-                            * u.Angstrom,
+                            spectral_axis=spec_source.data["native_wavelength"] * u.AA,
                             flux=spec_source.data["native_flux"]
                             * u.dimensionless_unscaled,
                         )
@@ -438,8 +437,7 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when normalization slider changes"""
                 new_spec = (
                     PHOENIXSpectrum(
-                        spectral_axis=spec_source.data["native_wavelength"]
-                        * u.Angstrom,
+                        spectral_axis=spec_source.data["native_wavelength"] * u.AA,
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                     )
                     .rotationally_broaden(smoothing_slider.value)
@@ -451,7 +449,7 @@ class PHOENIXGrid(SpectrumCollection):
             def update_upon_smooth(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
                 new_spec = PHOENIXSpectrum(
-                    spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
+                    spectral_axis=spec_source.data["native_wavelength"] * u.AA,
                     flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                 ).rotationally_broaden(new)
                 new_spec = (
@@ -467,7 +465,7 @@ class PHOENIXGrid(SpectrumCollection):
             def update_upon_rv(attr, old, new):
                 """Callback to take action when RV slider changes"""
                 new_spec = PHOENIXSpectrum(
-                    spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
+                    spectral_axis=spec_source.data["native_wavelength"] * u.AA,
                     flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                 ).rv_shift(new)
                 spec_source.data["wavelength"] = new_spec.wavelength.value

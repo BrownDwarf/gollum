@@ -112,7 +112,7 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
             df_trimmed = df_native[mask].reset_index(drop=True)
 
             super().__init__(
-                spectral_axis=df_trimmed.wavelength.values * u.Angstrom,
+                spectral_axis=df_trimmed.wavelength.values * u.AA,
                 flux=df_trimmed.flux.values * u.erg / u.s / u.cm ** 2 / u.Hz,
                 **kwargs,
             )
@@ -207,7 +207,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
             df_trimmed = df_native[mask].reset_index(drop=True)
 
             super().__init__(
-                spectral_axis=df_trimmed.wavelength.values * u.Angstrom,
+                spectral_axis=df_trimmed.wavelength.values * u.AA,
                 flux=df_trimmed.flux.values * u.erg / u.s / u.cm ** 2 / u.Hz,
                 **kwargs,
             )
@@ -583,8 +583,7 @@ class SonoraGrid(SpectrumCollection):
                 """Callback to take action when smoothing slider changes"""
                 new_spec = (
                     SonoraSpectrum(
-                        spectral_axis=spec_source.data["native_wavelength"]
-                        * u.Angstrom,
+                        spectral_axis=spec_source.data["native_wavelength"] * u.AA,
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                     )
                     .rotationally_broaden(smoothing_slider.value)
@@ -597,8 +596,7 @@ class SonoraGrid(SpectrumCollection):
                 """Callback to take action when smoothing slider changes"""
                 new_spec = (
                     SonoraSpectrum(
-                        spectral_axis=spec_source.data["native_wavelength"]
-                        * u.Angstrom,
+                        spectral_axis=spec_source.data["native_wavelength"] * u.AA,
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                     )
                     .rotationally_broaden(new)
@@ -610,7 +608,7 @@ class SonoraGrid(SpectrumCollection):
             def update_upon_vz(attr, old, new):
                 """Callback to take action when vz slider changes"""
                 new_spec = SonoraSpectrum(
-                    spectral_axis=spec_source.data["native_wavelength"] * u.Angstrom,
+                    spectral_axis=spec_source.data["native_wavelength"] * u.AA,
                     flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                 ).rv_shift(new)
                 spec_source.data["wavelength"] = new_spec.wavelength.value
