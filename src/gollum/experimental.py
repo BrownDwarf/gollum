@@ -378,6 +378,13 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     .rv_shift(rv_slider.value)
                 )
 
+                new_spec = (
+                    new_spec.tilt_to_data(data)
+                    if continuum_toggle.active
+                    else new_spec.multiply(
+                        scale_slider.value * u.dimensionless_unscaled
+                    )
+                )
                 spec_source.data["flux"] = new_spec.flux.value
 
             def update_fill_factor(attr, old, new):
@@ -403,6 +410,13 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     .rv_shift(rv_slider.value)
                 )
 
+                new_spec = (
+                    new_spec.tilt_to_data(data)
+                    if continuum_toggle.active
+                    else new_spec.multiply(
+                        scale_slider.value * u.dimensionless_unscaled
+                    )
+                )
                 spec_source.data["flux"] = new_spec.flux.value
 
             continuum_toggle.on_click(update_to_continuum)
