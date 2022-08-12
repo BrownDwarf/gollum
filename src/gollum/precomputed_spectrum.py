@@ -65,15 +65,7 @@ class PrecomputedSpectrum(Spectrum1D):
             )
         return np.median(per_pixel_velocity_sampling) * u.km / u.s
 
-    def apply_boolean_mask(self, mask):
-        """Apply a boolean mask to the spectrum
-
-        Parameters
-        ----------
-        mask : boolean mask
-            The numpy-style boolean mask: True means keep that index and False means discard it.
-        """
-        return apply_numpy_mask(self, mask)
+    apply_boolean_mask = apply_numpy_mask
 
     def normalize(self, percentile=50):
         """Normalize spectrum by some given percentile
@@ -134,16 +126,16 @@ class PrecomputedSpectrum(Spectrum1D):
         kernel = kernel / np.sum(kernel, axis=0)
         positive_elements = kernel > 0
         if positive_elements.any():
-            kernel = kernel[positive_elements]
             convolved_flux = (
-                np.convolve(self.flux.value, kernel, mode="same") * self.flux.unit
+                np.convolve(self.flux.value, kernel[positive_elements], mode="same")
+                * self.flux.unit
             )
             return self._copy(flux=convolved_flux)
         else:
             return self
 
     def instrumental_broaden(self, resolving_power=55000):
-        r"""Instrumentally broaden the spectrum for a given instrumental resolution R
+        r"""Instrumentally broaden the spectrum for a given instrumental resolution
 
         Known limitation: If the wavelength sampling changes with wavelength,
           the convolution becomes inaccurate.  It may be better to FFT,
@@ -235,12 +227,12 @@ class PrecomputedSpectrum(Spectrum1D):
         """
 
         c_kmps = const.c.to(u.km / u.s).value
-        lambda_0 = np.min(self.wavelength.value)
-        lambda_max = np.max(self.wavelength.value)
+        lambda_0 = self.wavelength.value.min()
+        lambda_max = self.wavelength.value.max()
 
         # Compute the per pixel resolving power
-        ## Note: assumes a reasonably contiguous sampling in wavelength
-        ## Major gaps in wavelength will mess up this approach.
+        # Note: assumes a reasonably contiguous sampling in wavelength
+        # Major gaps in wavelength will mess up this approach.
         per_pixel_resolution = self.wavelength.value[1:] / np.diff(
             self.wavelength.value
         )
@@ -296,13 +288,12 @@ class PrecomputedSpectrum(Spectrum1D):
     def get_blackbody_spectrum(self, teff=None):
         """Get the blackbody spectrum associated with the input model"""
         if not teff:
-            if hasattr(self, "teff"):  # Try to look for a teff attribute
-                if self.teff:
-                    teff = self.teff
-                else:
-                    raise NotImplementedError(
-                        "Your subclass may not have implemented the teff attribute yet."
-                    )
+            if hasattr(self, "teff") and self.teff:
+                teff = self.teff
+            else:
+                raise NotImplementedError(
+                    "Your subclass may not have implemented the teff attribute yet."
+                )
 
         blackbody_model = BlackBody(temperature=teff * u.Kelvin)
         blackbody_flux_per_Hz = blackbody_model(self.wavelength) * np.pi * u.steradian
@@ -367,6 +358,7 @@ class PrecomputedSpectrum(Spectrum1D):
 
     def fit_continuum(self, pixel_distance=5001, polyorder=3, return_coeffs=False):
         """Finds the low frequency continuum trend using scipy's find_peaks filter and linear algebra.
+        Currently broken
 
         Parameters
         ----------
@@ -389,7 +381,7 @@ class PrecomputedSpectrum(Spectrum1D):
         x_vector, y_vector = self.wavelength.value, self.flux.value
 
         if pixel_distance > len(x_vector):
-            raise IndexError(
+            raise ValueError(
                 "Please provide a pixel_distance smaller than the spectrum length."
             )
 
@@ -399,7 +391,7 @@ class PrecomputedSpectrum(Spectrum1D):
 
         A_matrix, A_full = np.vander(x_peaks, polyorder), np.vander(x_vector, polyorder)
 
-        coeffs = np.linalg.lstsq(A_matrix, y_peaks)
+        coeffs = np.linalg.lstsq(A_matrix, y_peaks, rcond=None)
 
         spec_out = self._copy(flux=np.dot(coeffs, A_full.T) * self.flux.unit)
 

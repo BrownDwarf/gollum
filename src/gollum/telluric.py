@@ -65,7 +65,7 @@ class TelluricSpectrum(PrecomputedSpectrum):
             df_trimmed = df_native[mask].reset_index(drop=True)
 
             super().__init__(
-                spectral_axis=df_trimmed.wavelength.values * u.Angstrom,
+                spectral_axis=df_trimmed.wavelength.values * u.AA,
                 flux=df_trimmed.transmittance.values * u.dimensionless_unscaled,
                 **kwargs,
             )
@@ -113,7 +113,7 @@ class TelFitSpectrum(PrecomputedSpectrum):
             )
 
             super().__init__(
-                spectral_axis=df_native.wavelength.values[good_mask] * u.Angstrom,
+                spectral_axis=df_native.wavelength.values[good_mask] * u.AA,
                 flux=flux_out.values[good_mask] * u.dimensionless_unscaled,
                 **kwargs,
             )
@@ -130,7 +130,7 @@ class TelFitSpectrum(PrecomputedSpectrum):
         vaccum_spectrum: TelFitSpectrum
             The spectrum in vacuum
         """
-        wave_A = self.wavelength.to(u.Angstrom).value
+        wave_A = self.wavelength.to(u.AA).value
         n_air = (
             1.0
             + 2.735182e-4
