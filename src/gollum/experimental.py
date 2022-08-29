@@ -63,18 +63,17 @@ class ExpPHOENIXGrid(PHOENIXGrid):
         """
 
         def create_interact_ui(doc):
-            scalar_norm = np.percentile(self[0].flux.value, 95)
             spec_source = ColumnDataSource(
                 data={
                     "wavelength": self[0].wavelength.value,
-                    "flux": self[0].flux.value / scalar_norm,
+                    "flux": self[0].flux.value / np.percentile(self[0].flux.value, 95),
                     "native_flux": self[0].flux.value,
                     "native_wavelength": self[0].wavelength.value,
                 }
             )
             wl_lo, wl_hi = (
-                self[0].wavelength.value.min(),
-                self[0].wavelength.value.max(),
+                self[0].wavelength.value[0],
+                self[0].wavelength.value[-1],
             )
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
@@ -90,8 +89,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     data, Spectrum1D
                 ), "The data spectrum must be Spectrum1D-like"
                 new_lo, new_hi = (
-                    data.wavelength.value.min(),
-                    data.wavelength.value.max(),
+                    data.wavelength.value[0],
+                    data.wavelength.value[-1],
                 )
                 assert (
                     wl_lo < new_lo < new_hi < wl_hi
@@ -102,7 +101,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     "wavelength",
                     "flux",
                     line_width=1,
-                    color="blue",
+                    color="black",
                     legend_label=data.meta["header"]["OBJECT"],
                     source=ColumnDataSource(
                         data={
@@ -124,9 +123,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 "wavelength",
                 "flux",
                 line_width=1,
-                color="red",
+                color="crimson",
                 source=spec_source,
-                nonselection_line_color="red",
+                nonselection_line_color="crimson",
                 nonselection_line_alpha=1.0,
                 legend_label="PHOENIX Model",
             )
@@ -158,6 +157,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 title="Effective Temperature: T_eff [K]",
                 width=460,
                 bar_color="red",
+                margin=(0, 20, 0, 0),
             )
             logg_slider = Slider(
                 start=min(self.logg_points),
@@ -167,6 +167,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 title="Surface Gravity: log(g) [cm/s^2]",
                 width=460,
                 bar_color="red",
+                margin=(0, 20, 0, 0),
             )
             metallicity_slider = Slider(
                 start=min(self.metallicity_points),
@@ -176,6 +177,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 title="Metallicity: Z",
                 width=460,
                 bar_color="red",
+                margin=(0, 20, 0, 0),
             )
             scale_slider = Slider(
                 start=0.1,
@@ -194,6 +196,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 title="Starspot Temperature [K]",
                 width=460,
                 bar_color="maroon",
+                margin=(0, 20, 0, 0),
             )
             fill_factor_slider = Slider(
                 start=0,
@@ -241,11 +244,14 @@ class ExpPHOENIXGrid(PHOENIXGrid):
 
             def update_rv(attr, old, new):
                 """Callback for RV slider"""
-                spec = PHOENIXSpectrum(
-                    spectral_axis=spec_source.data["native_wavelength"] * u.AA,
-                    flux=spec_source.data["flux"] * u.dimensionless_unscaled,
-                ).rv_shift(new)
-                spec_source.data["wavelength"] = spec.wavelength.value
+                spec_source.data["wavelength"] = (
+                    PHOENIXSpectrum(
+                        spectral_axis=spec_source.data["native_wavelength"] * u.AA,
+                        flux=spec_source.data["flux"] * u.dimensionless_unscaled,
+                    )
+                    .rv_shift(new)
+                    .wavelength.value
+                )
 
             def update_smoothing(attr, old, new):
                 """Callback for smoothing slider"""
@@ -318,12 +324,13 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             sp = Spacer(width=20)
             doc.add_root(
                 layout(
-                    [fig],
-                    [continuum_toggle],
-                    [teff_slider, sp, smoothing_slider],
-                    [logg_slider, sp, rv_slider],
-                    [metallicity_slider, sp, scale_slider],
-                    [spot_temp_slider, sp, fill_factor_slider],
+                    [sp, fig],
+                    [sp, continuum_toggle],
+                    [sp, teff_slider, smoothing_slider],
+                    [sp, logg_slider, rv_slider],
+                    [sp, metallicity_slider, scale_slider],
+                    [sp, spot_temp_slider, fill_factor_slider],
+                    background="whitesmoke",
                 )
             )
 
