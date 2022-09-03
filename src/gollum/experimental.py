@@ -135,8 +135,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 end=200,
                 value=0.1,
                 step=0.1,
-                title="Rotational Broadening: v sin(i) [km/s]",
+                title="Rotational Broadening [km/s]",
                 width=460,
+                format='0.f',
                 bar_color="blue",
             )
             rv_slider = Slider(
@@ -144,37 +145,36 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 end=200,
                 value=0.00,
                 step=0.05,
-                title="Radial Velocity: RV [km/s]",
+                title="Radial Velocity [km/s]",
                 width=460,
-                format="0.000f",
                 bar_color="blue",
             )
             teff_slider = Slider(
-                start=min(self.teff_points),
-                end=max(self.teff_points),
-                value=min(self.teff_points),
+                start=self.teff_points[0],
+                end=self.teff_points[-1],
+                value=self.teff_points[0],
                 step=100,
-                title="Effective Temperature: T_eff [K]",
+                title="Effective Temperature [K]",
                 width=460,
                 bar_color="red",
                 margin=(0, 20, 0, 0),
             )
             logg_slider = Slider(
-                start=min(self.logg_points),
-                end=max(self.logg_points),
-                value=min(self.logg_points),
+                start=self.logg_points[0],
+                end=self.logg_points[-1],
+                value=self.logg_points[0],
                 step=0.50,
-                title="Surface Gravity: log(g) [cm/s^2]",
+                title="Surface Gravity [cm/s\u00b2]",
                 width=460,
                 bar_color="red",
                 margin=(0, 20, 0, 0),
             )
             metallicity_slider = Slider(
-                start=min(self.metallicity_points),
-                end=max(self.metallicity_points),
-                value=min(self.metallicity_points),
+                start=self.metallicity_points[0],
+                end=self.metallicity_points[-1],
+                value=self.metallicity_points[0],
                 step=0.50,
-                title="Metallicity: Z",
+                title="Metallicity [dex]",
                 width=460,
                 bar_color="red",
                 margin=(0, 20, 0, 0),
@@ -210,26 +210,22 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             continuum_toggle = Toggle(
                 label="Fit Continuum (disables normalization)", button_type="success"
             )
-            self.current_point = (
-                teff_slider.value,
-                logg_slider.value,
-                metallicity_slider.value,
-                fill_factor_slider.value,
-                spot_temp_slider.value,
-            )
 
             def update_continuum(active):
-                """Callback to take action when the continuum toggle is toggled"""
+                """Callback that toggles continuum auto-fit"""
                 if active:
-                    spec = PHOENIXSpectrum(
-                        spectral_axis=spec_source.data["wavelength"] * u.AA,
-                        flux=spec_source.data["flux"] * u.dimensionless_unscaled,
-                    ).tilt_to_data(data)
-                    spec_source.data["flux"] = spec.flux.value
+                    spec_source.data["flux"] = (
+                        PHOENIXSpectrum(
+                            spectral_axis=spec_source.data["wavelength"] * u.AA,
+                            flux=spec_source.data["flux"] * u.dimensionless_unscaled,
+                        )
+                        .tilt_to_data(data)
+                        .flux.value
+                    )
                     scale_slider.disabled = True
                     continuum_toggle.label = "Undo Continuum (enables normalization)"
                 else:
-                    spec = (
+                    spec_source.data["flux"] = (
                         PHOENIXSpectrum(
                             spectral_axis=spec_source.data["wavelength"] * u.AA,
                             flux=spec_source.data["native_flux"]
@@ -237,13 +233,14 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         )
                         .normalize(percentile=95)
                         .rotationally_broaden(smoothing_slider.value)
+                        .flux.value
+                        * scale_slider.value
                     )
-                    spec_source.data["flux"] = spec.flux.value * scale_slider.value
                     scale_slider.disabled = False
                     continuum_toggle.label = "Fit Continuum (disables normalization)"
 
             def update_rv(attr, old, new):
-                """Callback for RV slider"""
+                """Callback that RV shifts the spectrum"""
                 spec_source.data["wavelength"] = (
                     PHOENIXSpectrum(
                         spectral_axis=spec_source.data["native_wavelength"] * u.AA,
@@ -254,7 +251,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 )
 
             def update_smoothing(attr, old, new):
-                """Callback for smoothing slider"""
+                """Callback that rotationally broadens the spectrum"""
                 spec = (
                     PHOENIXSpectrum(
                         spectral_axis=spec_source.data["wavelength"] * u.AA,
@@ -270,10 +267,11 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 )
 
             def update_scale(attr, old, new):
-                """Callback for normalization slider"""
+                """Callback that scales the spectrum"""
                 spec_source.data["flux"] *= new / old
 
             def update_native(attr, old, new):
+                """Callback that updates the intrinsic parameters behind the spectrum"""
                 teff_slider.value = self.find_nearest_teff(teff_slider.value)
                 spot_temp_slider.value = self.find_nearest_teff(spot_temp_slider.value)
                 metallicity_slider.value = self.find_nearest_metallicity(
