@@ -32,9 +32,8 @@ filterwarnings("ignore", category=RuntimeWarning)
 
 class ExpPHOENIXGrid(PHOENIXGrid):
     """A container for an experimental grid of PHOENIX precomputed synthetic spectra of stars."""
-    def show_dashboard(
-        self, data=None, notebook_url="localhost:8888"
-    ):  # pragma: no cover
+
+    def show_dashboard(self, data=None, url="localhost:8888"):  # pragma: no cover
         """Show an interactive dashboard for the experimental PHOENIX grid;
         heavily inspired by the lightkurve .interact() method
 
@@ -42,12 +41,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
         ----------
         data: Spectrum1D-like
             A normalized data spectrum over which to plot the models
-        notebook_url: str
+        url: str
             Location of the Jupyter notebook page (default: "localhost:8888")
-            When showing Bokeh applications, the Bokeh server must be
-            explicitly configured to allow connections originating from
-            different URLs. This parameter defaults to the standard notebook
-            host and port. If you are running on a different location, you
+            If you are running on a different location, you
             will need to supply this value for the application to display
             properly. If no protocol is supplied in the URL, e.g. if it is
             of the form "localhost:8888", then "http" will be used.
@@ -60,6 +56,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     "flux": self[0].flux.value / np.percentile(self[0].flux.value, 95),
                     "native_flux": self[0].flux.value,
                     "native_wavelength": self[0].wavelength.value,
+                    "photo_flux": self[0].flux.value,
+                    "spot_flux": self[0].flux.value * 0,
                 }
             )
             wl_lo, wl_hi = (
@@ -118,7 +116,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 source=spec_source,
                 nonselection_line_color="crimson",
                 nonselection_line_alpha=1.0,
-                legend_label="PHOENIX Model",
+                legend_label="PHOENIX Model Total",
             )
 
             smoothing_slider = Slider(
@@ -128,7 +126,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 step=0.1,
                 title="Rotational Broadening [km/s]",
                 width=460,
-                format='0.f',
+                format="0.f",
                 bar_color="blue",
             )
             rv_slider = Slider(
@@ -268,23 +266,26 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 metallicity_slider.value = self.find_nearest_metallicity(
                     metallicity_slider.value
                 )
-                spot = PHOENIXSpectrum(
-                    teff=spot_temp_slider.value,
-                    logg=logg_slider.value,
-                    metallicity=metallicity_slider.value,
-                    wl_lo=spec_source.data["native_wavelength"][0],
-                    wl_hi=spec_source.data["native_wavelength"][-1],
-                )
-                base = PHOENIXSpectrum(
+                spec_source["photo_flux"] = PHOENIXSpectrum(
                     teff=teff_slider.value,
                     logg=logg_slider.value,
                     metallicity=metallicity_slider.value,
                     wl_lo=spec_source.data["native_wavelength"][0],
                     wl_hi=spec_source.data["native_wavelength"][-1],
+                ).flux.value * (1 - fill_factor_slider.value)
+
+                spec_source["spot_flux"] = (
+                    PHOENIXSpectrum(
+                        teff=spot_temp_slider.value,
+                        logg=logg_slider.value,
+                        metallicity=metallicity_slider.value,
+                        wl_lo=spec_source.data["native_wavelength"][0],
+                        wl_hi=spec_source.data["native_wavelength"][-1],
+                    ).flux.value
+                    * fill_factor_slider.value
                 )
                 spec_source.data["native_flux"] = (
-                    base.flux.value * (1 - fill_factor_slider.value)
-                    + spot.flux.value * fill_factor_slider.value
+                    spec_source["photo_flux"] + spec_source["spot_flux"]
                 )
                 final = (
                     PHOENIXSpectrum(
@@ -324,4 +325,4 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             )
 
         output_notebook(verbose=False, hide_banner=True)
-        return show(create_interact_ui, notebook_url=notebook_url)
+        return show(create_interact_ui, notebook_url=url)
