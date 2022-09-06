@@ -32,15 +32,6 @@ filterwarnings("ignore", category=RuntimeWarning)
 
 class ExpPHOENIXGrid(PHOENIXGrid):
     """A container for an experimental grid of PHOENIX precomputed synthetic spectra of stars."""
-
-    def find_nearest_grid_point(self, teff, logg, metallicity):
-        current = np.array((teff, logg, metallicity))
-        mindist = np.Inf
-        for point in map(np.array, self.grid_points):
-            if (current_dist := np.linalg.norm(current - point)) < mindist:
-                mindist, minpoint = current_dist, point
-        return tuple(minpoint)
-
     def show_dashboard(
         self, data=None, notebook_url="localhost:8888"
     ):  # pragma: no cover
