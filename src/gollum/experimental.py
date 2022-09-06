@@ -63,18 +63,17 @@ class ExpPHOENIXGrid(PHOENIXGrid):
         """
 
         def create_interact_ui(doc):
-            scalar_norm = np.percentile(self[0].flux.value, 95)
             spec_source = ColumnDataSource(
                 data={
                     "wavelength": self[0].wavelength.value,
-                    "flux": self[0].flux.value / scalar_norm,
-                    "native_flux": self[0].flux.value / scalar_norm,
+                    "flux": self[0].flux.value / np.percentile(self[0].flux.value, 95),
+                    "native_flux": self[0].flux.value,
                     "native_wavelength": self[0].wavelength.value,
                 }
             )
             wl_lo, wl_hi = (
-                self[0].wavelength.value.min(),
-                self[0].wavelength.value.max(),
+                self[0].wavelength.value[0],
+                self[0].wavelength.value[-1],
             )
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
@@ -90,8 +89,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     data, Spectrum1D
                 ), "The data spectrum must be Spectrum1D-like"
                 new_lo, new_hi = (
-                    data.wavelength.value.min(),
-                    data.wavelength.value.max(),
+                    data.wavelength.value[0],
+                    data.wavelength.value[-1],
                 )
                 assert (
                     wl_lo < new_lo < new_hi < wl_hi
@@ -102,7 +101,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     "wavelength",
                     "flux",
                     line_width=1,
-                    color="blue",
+                    color="black",
                     legend_label=data.meta["header"]["OBJECT"],
                     source=ColumnDataSource(
                         data={
@@ -124,9 +123,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 "wavelength",
                 "flux",
                 line_width=1,
-                color="red",
+                color="crimson",
                 source=spec_source,
-                nonselection_line_color="red",
+                nonselection_line_color="crimson",
                 nonselection_line_alpha=1.0,
                 legend_label="PHOENIX Model",
             )
@@ -136,8 +135,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 end=200,
                 value=0.1,
                 step=0.1,
-                title="Rotational Broadening: v sin(i) [km/s]",
+                title="Rotational Broadening [km/s]",
                 width=460,
+                format='0.f',
                 bar_color="blue",
             )
             rv_slider = Slider(
@@ -145,37 +145,39 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 end=200,
                 value=0.00,
                 step=0.05,
-                title="Radial Velocity: RV [km/s]",
+                title="Radial Velocity [km/s]",
                 width=460,
-                format="0.000f",
                 bar_color="blue",
             )
             teff_slider = Slider(
-                start=min(self.teff_points),
-                end=max(self.teff_points),
-                value=min(self.teff_points),
+                start=self.teff_points[0],
+                end=self.teff_points[-1],
+                value=self.teff_points[0],
                 step=100,
-                title="Effective Temperature: T_eff [K]",
+                title="Effective Temperature [K]",
                 width=460,
                 bar_color="red",
+                margin=(0, 20, 0, 0),
             )
             logg_slider = Slider(
-                start=min(self.logg_points),
-                end=max(self.logg_points),
-                value=min(self.logg_points),
+                start=self.logg_points[0],
+                end=self.logg_points[-1],
+                value=self.logg_points[0],
                 step=0.50,
-                title="Surface Gravity: log(g) [cm/s^2]",
+                title="Surface Gravity [cm/s\u00b2]",
                 width=460,
                 bar_color="red",
+                margin=(0, 20, 0, 0),
             )
             metallicity_slider = Slider(
-                start=min(self.metallicity_points),
-                end=max(self.metallicity_points),
-                value=min(self.metallicity_points),
+                start=self.metallicity_points[0],
+                end=self.metallicity_points[-1],
+                value=self.metallicity_points[0],
                 step=0.50,
-                title="Metallicity: Z",
+                title="Metallicity [dex]",
                 width=460,
                 bar_color="red",
+                margin=(0, 20, 0, 0),
             )
             scale_slider = Slider(
                 start=0.1,
@@ -187,13 +189,14 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="black",
             )
             spot_temp_slider = Slider(
-                start=2000,
+                start=2300,
                 end=4000,
-                value=2000,
+                value=2300,
                 step=100,
                 title="Starspot Temperature [K]",
                 width=460,
                 bar_color="maroon",
+                margin=(0, 20, 0, 0),
             )
             fill_factor_slider = Slider(
                 start=0,
@@ -208,236 +211,124 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 label="Fit Continuum (disables normalization)", button_type="success"
             )
 
-            def update_to_continuum(active):
-                """Callback to take action when the continuum toggle is toggled"""
+            def update_continuum(active):
+                """Callback that toggles continuum auto-fit"""
                 if active:
-                    new_spec = PHOENIXSpectrum(
-                        spectral_axis=spec_source.data["wavelength"] * u.AA,
-                        flux=spec_source.data["flux"] * u.dimensionless_unscaled,
-                    ).tilt_to_data(data)
+                    spec_source.data["flux"] = (
+                        PHOENIXSpectrum(
+                            spectral_axis=spec_source.data["wavelength"] * u.AA,
+                            flux=spec_source.data["flux"] * u.dimensionless_unscaled,
+                        )
+                        .tilt_to_data(data)
+                        .flux.value
+                    )
                     scale_slider.disabled = True
                     continuum_toggle.label = "Undo Continuum (enables normalization)"
                 else:
-                    new_spec = (
+                    spec_source.data["flux"] = (
                         PHOENIXSpectrum(
-                            spectral_axis=spec_source.data["native_wavelength"] * u.AA,
+                            spectral_axis=spec_source.data["wavelength"] * u.AA,
                             flux=spec_source.data["native_flux"]
                             * u.dimensionless_unscaled,
                         )
                         .normalize(percentile=95)
                         .rotationally_broaden(smoothing_slider.value)
-                        .multiply(scale_slider.value * u.dimensionless_unscaled)
-                        .rv_shift(rv_slider.value)
+                        .flux.value
+                        * scale_slider.value
                     )
                     scale_slider.disabled = False
                     continuum_toggle.label = "Fit Continuum (disables normalization)"
 
-                spec_source.data["flux"] = new_spec.flux.value
-
-            def update_upon_scale(attr, old, new):
-                """Callback to take action when normalization slider changes"""
-                new_spec = (
+            def update_rv(attr, old, new):
+                """Callback that RV shifts the spectrum"""
+                spec_source.data["wavelength"] = (
                     PHOENIXSpectrum(
                         spectral_axis=spec_source.data["native_wavelength"] * u.AA,
-                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                        flux=spec_source.data["flux"] * u.dimensionless_unscaled,
                     )
-                    .normalize(percentile=95)
-                    .rotationally_broaden(smoothing_slider.value)
-                    .multiply(new * u.dimensionless_unscaled)
-                    .rv_shift(rv_slider.value)
+                    .rv_shift(new)
+                    .wavelength.value
                 )
-                spec_source.data["flux"] = new_spec.flux.value
 
-            def update_upon_smooth(attr, old, new):
-                """Callback to take action when smoothing slider changes"""
-                new_spec = (
+            def update_smoothing(attr, old, new):
+                """Callback that rotationally broadens the spectrum"""
+                spec = (
                     PHOENIXSpectrum(
-                        spectral_axis=spec_source.data["native_wavelength"] * u.AA,
+                        spectral_axis=spec_source.data["wavelength"] * u.AA,
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                     )
                     .normalize(percentile=95)
                     .rotationally_broaden(new)
                 )
-                new_spec = (
-                    new_spec.tilt_to_data(data)
+                spec_source.data["flux"] = (
+                    spec.tilt_to_data(data).flux.value
                     if continuum_toggle.active
-                    else new_spec.multiply(
-                        scale_slider.value * u.dimensionless_unscaled
-                    )
+                    else spec.flux.value * scale_slider.value
                 )
 
-                spec_source.data["flux"] = new_spec.flux.value
+            def update_scale(attr, old, new):
+                """Callback that scales the spectrum"""
+                spec_source.data["flux"] *= new / old
 
-            def update_upon_rv(attr, old, new):
-                """Callback to take action when RV slider changes"""
-                new_spec = PHOENIXSpectrum(
-                    spectral_axis=spec_source.data["native_wavelength"] * u.AA,
-                    flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
-                ).rv_shift(new)
-                spec_source.data["wavelength"] = new_spec.wavelength.value
-
-            def update_upon_teff_selection(attr, old, new):
-                """Callback to take action when teff slider changes"""
-                teff = self.find_nearest_teff(new)
-                if teff != old:
-                    point = (teff, logg_slider.value, metallicity_slider.value)
-                    native_spec = self[self.get_index(point)]
-                    new_spec = (
-                        native_spec.normalize(percentile=95)
-                        .rotationally_broaden(smoothing_slider.value)
-                        .rv_shift(rv_slider.value)
-                    )
-
-                    new_spec = (
-                        new_spec.tilt_to_data(data)
-                        if continuum_toggle.active
-                        else new_spec.multiply(
-                            scale_slider.value * u.dimensionless_unscaled
-                        )
-                    )
-
-                    spec_source.data = {
-                        "native_wavelength": native_spec.wavelength.value,
-                        "native_flux": native_spec.flux.value,
-                        "wavelength": new_spec.wavelength.value,
-                        "flux": new_spec.flux.value,
-                    }
-                teff_slider.value = teff
-
-            def update_upon_metallicity_selection(attr, old, new):
-                """Callback to take action when metallicity slider changes"""
-                metallicity = self.find_nearest_metallicity(new)
-                if metallicity != old:
-                    point = (teff_slider.value, logg_slider.value, metallicity)
-                    native_spec = self[self.get_index(point)]
-                    new_spec = (
-                        native_spec.normalize(percentile=95)
-                        .rotationally_broaden(smoothing_slider.value)
-                        .rv_shift(rv_slider.value)
-                    )
-
-                    new_spec = (
-                        new_spec.tilt_to_data(data)
-                        if continuum_toggle.active
-                        else new_spec.multiply(
-                            scale_slider.value * u.dimensionless_unscaled
-                        )
-                    )
-
-                    spec_source.data = {
-                        "native_wavelength": native_spec.wavelength.value,
-                        "native_flux": native_spec.flux.value,
-                        "wavelength": new_spec.wavelength.value,
-                        "flux": new_spec.flux.value,
-                    }
-
-            def update_upon_logg_selection(attr, old, new):
-                """Callback to take action when logg slider changes"""
-                metallicity = self.find_nearest_metallicity(metallicity_slider.value)
-                point = (teff_slider.value, new, metallicity)
-                native_spec = self[self.get_index(point)]
-                new_spec = (
-                    native_spec.normalize(percentile=95)
-                    .rotationally_broaden(smoothing_slider.value)
-                    .rv_shift(rv_slider.value)
+            def update_native(attr, old, new):
+                """Callback that updates the intrinsic parameters behind the spectrum"""
+                teff_slider.value = self.find_nearest_teff(teff_slider.value)
+                spot_temp_slider.value = self.find_nearest_teff(spot_temp_slider.value)
+                metallicity_slider.value = self.find_nearest_metallicity(
+                    metallicity_slider.value
                 )
-
-                new_spec = (
-                    new_spec.tilt_to_data(data)
-                    if continuum_toggle.active
-                    else new_spec.multiply(
-                        scale_slider.value * u.dimensionless_unscaled
-                    )
+                spot = PHOENIXSpectrum(
+                    teff=spot_temp_slider.value,
+                    logg=logg_slider.value,
+                    metallicity=metallicity_slider.value,
+                    wl_lo=spec_source.data["native_wavelength"][0],
+                    wl_hi=spec_source.data["native_wavelength"][-1],
                 )
-
-                spec_source.data = {
-                    "native_wavelength": native_spec.wavelength.value,
-                    "native_flux": native_spec.flux.value,
-                    "wavelength": new_spec.wavelength.value,
-                    "flux": new_spec.flux.value,
-                }
-
-            def update_spot_temp(attr, old, new):
-                point = (new, logg_slider.value, metallicity_slider.value)
-                spot_spec = self[self.get_index(self.find_nearest_grid_point(*point))]
-                spot_spec = spot_spec.multiply(
-                    fill_factor_slider.value * u.dimensionless_unscaled
-                )
-                scaled_native = PHOENIXSpectrum(
+                base = PHOENIXSpectrum(
                     teff=teff_slider.value,
                     logg=logg_slider.value,
                     metallicity=metallicity_slider.value,
                     wl_lo=spec_source.data["native_wavelength"][0],
                     wl_hi=spec_source.data["native_wavelength"][-1],
-                ).multiply((1 - fill_factor_slider.value) * u.dimensionless_unscaled)
-
-                new_spec = (
-                    scaled_native.add(spot_spec)
+                )
+                spec_source.data["native_flux"] = (
+                    base.flux.value * (1 - fill_factor_slider.value)
+                    + spot.flux.value * fill_factor_slider.value
+                )
+                final = (
+                    PHOENIXSpectrum(
+                        spectral_axis=spec_source.data["wavelength"] * u.AA,
+                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                    )
                     .normalize(percentile=95)
                     .rotationally_broaden(smoothing_slider.value)
-                    .rv_shift(rv_slider.value)
                 )
-
-                new_spec = (
-                    new_spec.tilt_to_data(data)
+                spec_source.data["flux"] = (
+                    final.tilt_to_data(data).flux.value
                     if continuum_toggle.active
-                    else new_spec.multiply(
-                        scale_slider.value * u.dimensionless_unscaled
-                    )
-                )
-                spec_source.data["flux"] = new_spec.flux.value
-
-            def update_fill_factor(attr, old, new):
-                point = (
-                    spot_temp_slider.value,
-                    logg_slider.value,
-                    metallicity_slider.value,
-                )
-                spot_spec = self[self.get_index(self.find_nearest_grid_point(*point))]
-                spot_spec = spot_spec.multiply(new * u.dimensionless_unscaled)
-                scaled_native = PHOENIXSpectrum(
-                    teff=teff_slider.value,
-                    logg=logg_slider.value,
-                    metallicity=metallicity_slider.value,
-                    wl_lo=spec_source.data["native_wavelength"][0],
-                    wl_hi=spec_source.data["native_wavelength"][-1],
-                ).multiply((1 - new) * u.dimensionless_unscaled)
-
-                new_spec = (
-                    scaled_native.add(spot_spec)
-                    .normalize(percentile=95)
-                    .rotationally_broaden(smoothing_slider.value)
-                    .rv_shift(rv_slider.value)
+                    else final.flux.value * scale_slider.value
                 )
 
-                new_spec = (
-                    new_spec.tilt_to_data(data)
-                    if continuum_toggle.active
-                    else new_spec.multiply(
-                        scale_slider.value * u.dimensionless_unscaled
-                    )
-                )
-                spec_source.data["flux"] = new_spec.flux.value
-
-            continuum_toggle.on_click(update_to_continuum)
-            smoothing_slider.on_change("value", update_upon_smooth)
-            rv_slider.on_change("value", update_upon_rv)
-            teff_slider.on_change("value", update_upon_teff_selection)
-            logg_slider.on_change("value", update_upon_logg_selection)
-            metallicity_slider.on_change("value", update_upon_metallicity_selection)
-            scale_slider.on_change("value", update_upon_scale)
-            spot_temp_slider.on_change("value", update_spot_temp)
-            fill_factor_slider.on_change("value", update_fill_factor)
+            continuum_toggle.on_click(update_continuum)
+            rv_slider.on_change("value", update_rv)
+            smoothing_slider.on_change("value", update_smoothing)
+            scale_slider.on_change("value", update_scale)
+            teff_slider.on_change("value", update_native)
+            logg_slider.on_change("value", update_native)
+            metallicity_slider.on_change("value", update_native)
+            spot_temp_slider.on_change("value", update_native)
+            fill_factor_slider.on_change("value", update_native)
 
             sp = Spacer(width=20)
             doc.add_root(
                 layout(
-                    [fig],
-                    [continuum_toggle],
-                    [teff_slider, sp, smoothing_slider],
-                    [logg_slider, sp, rv_slider],
-                    [metallicity_slider, sp, scale_slider],
-                    [spot_temp_slider, sp, fill_factor_slider],
+                    [sp, fig],
+                    [sp, continuum_toggle],
+                    [sp, teff_slider, smoothing_slider],
+                    [sp, logg_slider, rv_slider],
+                    [sp, metallicity_slider, scale_slider],
+                    [sp, spot_temp_slider, fill_factor_slider],
+                    background="whitesmoke",
                 )
             )
 
