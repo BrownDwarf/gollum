@@ -50,20 +50,18 @@ class ExpPHOENIXGrid(PHOENIXGrid):
         """
 
         def create_interact_ui(doc):
+            scale = np.percentile(self[0].flux.value, 95)
             spec_source = ColumnDataSource(
                 data={
                     "wavelength": self[0].wavelength.value,
-                    "flux": self[0].flux.value / np.percentile(self[0].flux.value, 95),
+                    "flux": self[0].flux.value / scale,
                     "native_flux": self[0].flux.value,
                     "native_wavelength": self[0].wavelength.value,
-                    "photo_flux": self[0].flux.value,
+                    "photo_flux": self[0].flux.value / scale,
                     "spot_flux": self[0].flux.value * 0,
                 }
             )
-            wl_lo, wl_hi = (
-                self[0].wavelength.value[0],
-                self[0].wavelength.value[-1],
-            )
+            wl_lo, wl_hi = self[0].wavelength.value[0], self[0].wavelength.value[-1]
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
                 plot_height=500,
@@ -77,19 +75,15 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 assert isinstance(
                     data, Spectrum1D
                 ), "The data spectrum must be Spectrum1D-like"
-                new_lo, new_hi = (
-                    data.wavelength.value[0],
-                    data.wavelength.value[-1],
-                )
+                new_lo, new_hi = data.wavelength.value[0], data.wavelength.value[-1]
                 assert (
                     wl_lo < new_lo < new_hi < wl_hi
                 ), "Data should overlap the models, double check your wavelength limits."
                 wl_lo, wl_hi = new_lo, new_hi
 
                 fig.step(
-                    "wavelength",
-                    "flux",
-                    line_width=1,
+                    x="wavelength",
+                    y="flux",
                     color="black",
                     legend_label=data.meta["header"]["OBJECT"],
                     source=ColumnDataSource(
@@ -99,7 +93,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         }
                     ),
                 )
-
             fig.title.offset = 280
             fig.title.text_font_size = "16pt"
             fig.yaxis.axis_label = "Normalized Flux"
@@ -109,16 +102,28 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             fig.y_range = Range1d(start=0, end=1.5)
             fig.legend.location = "top_right"
             fig.step(
-                "wavelength",
-                "flux",
-                line_width=1,
+                x="wavelength",
+                y="flux",
                 color="crimson",
                 source=spec_source,
-                nonselection_line_color="crimson",
-                nonselection_line_alpha=1.0,
-                legend_label="PHOENIX Model Total",
+                legend_label="PHOENIX Model: Total Flux",
             )
-
+            fig.step(
+                x="wavelength",
+                y="photo_flux",
+                color="magenta",
+                source=spec_source,
+                legend_label="PHOENIX Model: Photosphere Flux",
+                level="underlay",
+            )
+            fig.step(
+                x="wavelength",
+                y="spot_flux",
+                color="orange",
+                source=spec_source,
+                legend_label="PHOENIX Model: Starspot Flux",
+                level="underlay",
+            )
             smoothing_slider = Slider(
                 start=0.1,
                 end=200,
@@ -220,7 +225,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                             flux=spec_source.data["native_flux"]
                             * u.dimensionless_unscaled,
                         )
-                        .normalize(percentile=95)
+                        .normalize(95)
                         .rotationally_broaden(smoothing_slider.value)
                         .flux.value
                         * scale_slider.value
@@ -246,7 +251,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         spectral_axis=spec_source.data["wavelength"] * u.AA,
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                     )
-                    .normalize(percentile=95)
+                    .normalize(95)
                     .rotationally_broaden(new)
                 )
                 spec_source.data["flux"] = (
@@ -266,35 +271,34 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 metallicity_slider.value = self.find_nearest_metallicity(
                     metallicity_slider.value
                 )
-                spec_source["photo_flux"] = PHOENIXSpectrum(
+                spec_source.data["photo_flux"] = PHOENIXSpectrum(
                     teff=teff_slider.value,
                     logg=logg_slider.value,
                     metallicity=metallicity_slider.value,
                     wl_lo=spec_source.data["native_wavelength"][0],
                     wl_hi=spec_source.data["native_wavelength"][-1],
-                ).flux.value * (1 - fill_factor_slider.value)
+                ).normalize(95).flux.value * (1 - fill_factor_slider.value)
 
-                spec_source["spot_flux"] = (
+                spec_source.data["spot_flux"] = (
                     PHOENIXSpectrum(
                         teff=spot_temp_slider.value,
                         logg=logg_slider.value,
                         metallicity=metallicity_slider.value,
                         wl_lo=spec_source.data["native_wavelength"][0],
                         wl_hi=spec_source.data["native_wavelength"][-1],
-                    ).flux.value
+                    )
+                    .normalize(95)
+                    .flux.value
                     * fill_factor_slider.value
                 )
+
                 spec_source.data["native_flux"] = (
-                    spec_source["photo_flux"] + spec_source["spot_flux"]
+                    spec_source.data["photo_flux"] + spec_source.data["spot_flux"]
                 )
-                final = (
-                    PHOENIXSpectrum(
-                        spectral_axis=spec_source.data["wavelength"] * u.AA,
-                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
-                    )
-                    .normalize(percentile=95)
-                    .rotationally_broaden(smoothing_slider.value)
-                )
+                final = PHOENIXSpectrum(
+                    spectral_axis=spec_source.data["wavelength"] * u.AA,
+                    flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                ).rotationally_broaden(smoothing_slider.value)
                 spec_source.data["flux"] = (
                     final.tilt_to_data(data).flux.value
                     if continuum_toggle.active
