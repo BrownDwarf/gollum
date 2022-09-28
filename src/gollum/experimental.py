@@ -108,21 +108,23 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 source=spec_source,
                 legend_label="PHOENIX Model: Total Flux",
             )
-            fig.step(
+            photo = fig.step(
                 x="wavelength",
                 y="photo_flux",
                 color="magenta",
                 source=spec_source,
                 legend_label="PHOENIX Model: Photosphere Flux",
                 level="underlay",
+                visible=False,
             )
-            fig.step(
+            spot = fig.step(
                 x="wavelength",
                 y="spot_flux",
                 color="orange",
                 source=spec_source,
                 legend_label="PHOENIX Model: Starspot Flux",
                 level="underlay",
+                visible=False,
             )
             smoothing_slider = Slider(
                 start=0.1,
@@ -204,6 +206,14 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             continuum_toggle = Toggle(
                 label="Fit Continuum (disables normalization)", button_type="success"
             )
+            component_toggle = Toggle(
+                label="Show Component Spectra", button_type="success"
+            )
+            def toggle_components(active):
+                """Callback that toggles visibility of the component spectra"""
+                photo.visible = spot.visible = True if active else False
+                component_toggle.label = "Hide Component Spectra" if active else "Show Component Spectra"
+
 
             def update_continuum(active):
                 """Callback that toggles continuum auto-fit"""
@@ -306,6 +316,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 )
 
             continuum_toggle.on_click(update_continuum)
+            component_toggle.on_click(toggle_components)
             rv_slider.on_change("value", update_rv)
             smoothing_slider.on_change("value", update_smoothing)
             scale_slider.on_change("value", update_scale)
@@ -319,7 +330,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             doc.add_root(
                 layout(
                     [sp, fig],
-                    [sp, continuum_toggle],
+                    [sp, continuum_toggle, component_toggle],
                     [sp, teff_slider, smoothing_slider],
                     [sp, logg_slider, rv_slider],
                     [sp, metallicity_slider, scale_slider],
