@@ -23,10 +23,8 @@ from bokeh.layouts import layout, Spacer
 
 log = getLogger(__name__)
 
-#  See Issue: https://github.com/astropy/specutils/issues/779
 filterwarnings("ignore", category=AstropyDeprecationWarning)
 filterwarnings("ignore", category=AstropyWarning)
-# See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -111,7 +109,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             photo = fig.step(
                 x="wavelength",
                 y="photo_flux",
-                color="magenta",
+                color="violet",
                 source=spec_source,
                 legend_label="PHOENIX Model: Photosphere Flux",
                 level="underlay",
@@ -120,7 +118,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             spot = fig.step(
                 x="wavelength",
                 y="spot_flux",
-                color="orange",
+                color="lavender",
                 source=spec_source,
                 legend_label="PHOENIX Model: Starspot Flux",
                 level="underlay",
@@ -209,13 +207,17 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             component_toggle = Toggle(
                 label="Show Component Spectra", button_type="success"
             )
+
             def toggle_components(active):
                 """Callback that toggles visibility of the component spectra"""
-                photo.visible = spot.visible = True if active else False
-                component_toggle.label = "Hide Component Spectra" if active else "Show Component Spectra"
+                if active:
+                    photo.visible = spot.visible = True
+                    component_toggle.label = "Hide Component Spectra"
+                else:
+                    photo.visible = spot.visible = False
+                    component_toggle.label = "Show Component Spectra"
 
-
-            def update_continuum(active):
+            def toggle_continuum(active):
                 """Callback that toggles continuum auto-fit"""
                 if active:
                     spec_source.data["flux"] = (
@@ -264,6 +266,11 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     .normalize(95)
                     .rotationally_broaden(new)
                 )
+                spec_source.data["photo_flux"] = (
+                    spec.flux.value
+                    * (1 - fill_factor_slider.value)
+                    * (1 if continuum_toggle.active else scale_slider.value)
+                )
                 spec_source.data["flux"] = (
                     spec.tilt_to_data(data).flux.value
                     if continuum_toggle.active
@@ -271,7 +278,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 )
 
             def update_scale(attr, old, new):
-                """Callback that scales the spectrum"""
+                """Callback that scales the spectra"""
+                spec_source.data["photo_flux"] *= new / old
+                spec_source.data["spot_flux"] *= new / old
                 spec_source.data["flux"] *= new / old
 
             def update_native(attr, old, new):
@@ -315,7 +324,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     else final.flux.value * scale_slider.value
                 )
 
-            continuum_toggle.on_click(update_continuum)
+            continuum_toggle.on_click(toggle_continuum)
             component_toggle.on_click(toggle_components)
             rv_slider.on_change("value", update_rv)
             smoothing_slider.on_change("value", update_smoothing)
