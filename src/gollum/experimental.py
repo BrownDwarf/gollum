@@ -266,21 +266,30 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     .normalize(95)
                     .rotationally_broaden(new)
                 )
-                spec_source.data["photo_flux"] = (
-                    spec.flux.value
-                    * (1 - fill_factor_slider.value)
-                    * (1 if continuum_toggle.active else scale_slider.value)
-                )
                 spec_source.data["flux"] = (
                     spec.tilt_to_data(data).flux.value
                     if continuum_toggle.active
                     else spec.flux.value * scale_slider.value
                 )
+                spec_source.data["photo_flux"] = (
+                    PHOENIXSpectrum(
+                        teff=teff_slider.value,
+                        logg=logg_slider.value,
+                        metallicity=metallicity_slider.value,
+                        wl_lo=spec_source.data["native_wavelength"][0],
+                        wl_hi=spec_source.data["native_wavelength"][-1],
+                    )
+                    .normalize(95)
+                    .rv_shift(rv_slider.value)
+                    .rotationally_broaden(new)
+                    .flux.value
+                ) * (1 - fill_factor_slider.value)
+                spec_source.data["spot_flux"] = (
+                    spec.flux.value - spec_source.data["photo_flux"]
+                )
 
             def update_scale(attr, old, new):
                 """Callback that scales the spectra"""
-                spec_source.data["photo_flux"] *= new / old
-                spec_source.data["spot_flux"] *= new / old
                 spec_source.data["flux"] *= new / old
 
             def update_native(attr, old, new):
@@ -296,7 +305,11 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     metallicity=metallicity_slider.value,
                     wl_lo=spec_source.data["native_wavelength"][0],
                     wl_hi=spec_source.data["native_wavelength"][-1],
-                ).normalize(95).flux.value * (1 - fill_factor_slider.value)
+                ).normalize(95).rv_shift(rv_slider.value).rotationally_broaden(
+                    smoothing_slider.value
+                ).flux.value * (
+                    1 - fill_factor_slider.value
+                )
 
                 spec_source.data["spot_flux"] = (
                     PHOENIXSpectrum(
@@ -307,6 +320,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         wl_hi=spec_source.data["native_wavelength"][-1],
                     )
                     .normalize(95)
+                    .rv_shift(rv_slider.value)
+                    .rotationally_broaden(smoothing_slider.value)
                     .flux.value
                     * fill_factor_slider.value
                 )
@@ -317,7 +332,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 final = PHOENIXSpectrum(
                     spectral_axis=spec_source.data["wavelength"] * u.AA,
                     flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
-                ).rotationally_broaden(smoothing_slider.value)
+                )
                 spec_source.data["flux"] = (
                     final.tilt_to_data(data).flux.value
                     if continuum_toggle.active
