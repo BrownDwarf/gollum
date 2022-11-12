@@ -323,7 +323,7 @@ class PHOENIXGrid(SpectrumCollection):
                     "wavelength",
                     "flux",
                     line_width=1,
-                    color="blue",
+                    color="black",
                     legend_label=data.meta["header"]["OBJECT"],
                     source=ColumnDataSource(
                         data={
@@ -345,7 +345,7 @@ class PHOENIXGrid(SpectrumCollection):
                 "wavelength",
                 "flux",
                 line_width=1,
-                color="red",
+                color="crimson",
                 source=spec_source,
                 nonselection_line_color="red",
                 nonselection_line_alpha=1.0,
@@ -564,6 +564,7 @@ class PHOENIXGrid(SpectrumCollection):
                     [teff_slider, sp, smoothing_slider],
                     [logg_slider, sp, rv_slider],
                     [metallicity_slider, sp, scale_slider],
+                    background='whitesmoke',
                 )
             )
 
