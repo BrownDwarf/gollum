@@ -69,7 +69,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
-    ): 
+    ):
         if teff and logg:
             if not download:
                 base_path = os.path.expanduser(path)
@@ -109,7 +109,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
 
         else:
             super().__init__(*args, **kwargs)
-        
+
     teff = property(lambda self: self.meta.get("teff"))
     logg = property(lambda self: self.meta.get("logg"))
     metallicity = property(lambda self: self.meta.get("metallicity"))
@@ -216,6 +216,7 @@ class PHOENIXGrid(SpectrumCollection):
             )
             if experimental:
                 from gollum.experimental import ExpPHOENIXGrid
+
                 self.__class__ = ExpPHOENIXGrid
 
     def __getitem__(self, key):
@@ -564,7 +565,7 @@ class PHOENIXGrid(SpectrumCollection):
                     [teff_slider, sp, smoothing_slider],
                     [logg_slider, sp, rv_slider],
                     [metallicity_slider, sp, scale_slider],
-                    background='whitesmoke',
+                    background="whitesmoke",
                 )
             )
 

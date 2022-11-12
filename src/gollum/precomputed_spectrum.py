@@ -114,25 +114,24 @@ class PrecomputedSpectrum(Spectrum1D):
             Rotationally Broadened Spectrum
         """
         lam0 = np.median(self.wavelength.value)
-        velocity_grid = 299792.458 * (self.wavelength.value - lam0) / lam0
-        x = velocity_grid / vsini
-        x2 = x * x
+        x2 = (299792.458 * (self.wavelength.value - lam0) / (lam0 * vsini)) ** 2
         kernel = np.where(
-            x2 < 1.0,
-            np.pi / 2.0 * u1 * (1.0 - x2)
-            - 2.0 / 3.0 * np.sqrt(1.0 - x2) * (-3.0 + 3.0 * u1 + u2 * 2.0 * u2 * x2),
-            0.0,
+            x2 < 1,
+            np.pi / 2 * u1 * (1 - x2)
+            + np.sqrt(1 - x2) * (2 - 2 * u1 - 4 / 3 * u2 * u2 * x2),
+            0,
         )
-        kernel = kernel / np.sum(kernel, axis=0)
-        positive_elements = kernel > 0
-        if positive_elements.any():
-            convolved_flux = (
-                np.convolve(self.flux.value, kernel[positive_elements], mode="same")
+        kernel, positive_elements = kernel / np.sum(kernel, axis=0), kernel > 0
+        return (
+            self._copy(
+                flux=np.convolve(
+                    self.flux.value, kernel[positive_elements], mode="same"
+                )
                 * self.flux.unit
             )
-            return self._copy(flux=convolved_flux)
-        else:
-            return self
+            if positive_elements.any()
+            else self
+        )
 
     def instrumental_broaden(self, resolving_power=55000):
         r"""Instrumentally broaden the spectrum for a given instrumental resolution
@@ -176,17 +175,11 @@ class PrecomputedSpectrum(Spectrum1D):
         shifted_spec : PrecomputedSpectrum
             RV-Shifted Spectrum
         """
-        try:
-            output = deepcopy(self)
-            output.radial_velocity = rv * u.km / u.s
-            return self._copy(
-                spectral_axis=output.wavelength.value * output.wavelength.unit, wcs=None
-            )
-        except:
-            log.error(
-                f"rv_shift requires specutils version >= 1.2, you have: {specutils.__version__}"
-            )
-            assert False, "Specutils out of date; update to version 1.2 or higher"
+        output = deepcopy(self)
+        output.radial_velocity = rv * u.km / u.s
+        return self._copy(
+            spectral_axis=output.wavelength.value * output.wavelength.unit, wcs=None
+        )
 
     def resample(self, target_spectrum):
         """Resample spectrum at the wavelength points of another spectrum
