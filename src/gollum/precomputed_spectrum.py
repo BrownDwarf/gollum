@@ -7,7 +7,6 @@ A container for a single precomputed synthetic model spectrum at a single grid-p
 PrecomputedSpectrum
 ###############
 """
-import specutils
 import numpy as np
 import matplotlib.pyplot as plt
 

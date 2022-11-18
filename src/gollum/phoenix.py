@@ -9,19 +9,15 @@ PHOENIXSpectrum
 """
 
 import os
-import numpy as np
 
 from itertools import product
-from warnings import filterwarnings
-from logging import getLogger
 from tqdm import tqdm
 from urllib.error import URLError
 from gollum.utilities import _truncate
-from gollum.precomputed_spectrum import PrecomputedSpectrum
-from astropy.utils.exceptions import AstropyDeprecationWarning, AstropyWarning
+from gollum.precomputed_spectrum import *
+from astropy.utils.exceptions import AstropyWarning
 from astropy.io import fits
-from astropy import units as u
-from specutils import SpectrumCollection, Spectrum1D
+from specutils import SpectrumCollection
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d, Toggle
@@ -216,7 +212,6 @@ class PHOENIXGrid(SpectrumCollection):
             )
             if experimental:
                 from gollum.experimental import ExpPHOENIXGrid
-
                 self.__class__ = ExpPHOENIXGrid
 
     def __getitem__(self, key):
