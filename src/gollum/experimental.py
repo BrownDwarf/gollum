@@ -65,14 +65,14 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 new_lo, new_hi = data.wavelength.value[0], data.wavelength.value[-1]
                 assert (
                     wl_lo < new_lo < new_hi < wl_hi
-                ), "Data should overlap the models, double check your wavelength limits."
+                ), "Data must overlap models, expand your wavelength range."
                 wl_lo, wl_hi = new_lo, new_hi
 
                 fig.step(
                     x="wavelength",
                     y="flux",
                     color="black",
-                    legend_label=data.meta["header"]["OBJECT"],
+                    legend_label=data.meta.get("header").get("OBJECT"),
                     source=ColumnDataSource(
                         data={
                             "wavelength": data.wavelength.value,
