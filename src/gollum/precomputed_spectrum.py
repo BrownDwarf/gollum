@@ -385,16 +385,14 @@ class PrecomputedSpectrum(Spectrum1D):
 
     def to_pandas(self):
         """Export the spectrum to a pandas dataframe"""
-        try:
-            from pandas import DataFrame
-        except ImportError:
-            log.error("The to_pandas method requires the optional dependency pandas")
+        from pandas import DataFrame
 
+        wl = self.wavelength.value
         return DataFrame(
             {
-                "wavelength": (wl := self.wavelength.value),
+                "wavelength": wl,
                 "flux": self.flux.value,
-                "mask": self.mask if self.mask else np.zeros(len(wl), dtype=int),
+                "mask": self.mask if self.mask else np.zeros_like(wl, dtype=int),
             }
         )
 
