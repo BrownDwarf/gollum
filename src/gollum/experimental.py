@@ -264,7 +264,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     PHOENIXSpectrum(
                         teff=teff_slider.value,
                         logg=logg_slider.value,
-                        metallicity=Z_slider.value,
+                        Z=Z_slider.value,
                         wl_lo=spec_source.data["native_wavelength"][0],
                         wl_hi=spec_source.data["native_wavelength"][-1],
                     )
@@ -302,7 +302,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     PHOENIXSpectrum(
                         teff=spot_temp_slider.value,
                         logg=logg_slider.value,
-                        metallicity=Z_slider.value,
+                        Z=Z_slider.value,
                         wl_lo=spec_source.data["native_wavelength"][0],
                         wl_hi=spec_source.data["native_wavelength"][-1],
                     )
