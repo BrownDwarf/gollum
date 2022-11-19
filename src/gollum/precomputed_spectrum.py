@@ -82,12 +82,7 @@ class PrecomputedSpectrum(Spectrum1D):
         spec = self._copy(
             spectral_axis=self.wavelength.value * self.wavelength.unit, wcs=None
         )
-        scalar_flux = (
-            np.nanpercentile(spec.flux.value, percentile) * spec.flux.unit
-            if percentile
-            else np.nanmedian(spec.flux.value) * spec.flux.unit
-        )
-
+        scalar_flux = np.nanpercentile(spec.flux.value, percentile) * spec.flux.unit
         return spec.divide(scalar_flux, handle_meta="first_found")
 
     def rotationally_broaden(self, vsini, u1=0.0, u2=0.0):
