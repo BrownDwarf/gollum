@@ -13,6 +13,7 @@ import os
 from itertools import product
 from tqdm import tqdm
 from urllib.error import URLError
+from numpy.ma import compressed, masked_outside
 from gollum.utilities import _truncate
 from gollum.precomputed_spectrum import *
 from astropy.utils.exceptions import AstropyWarning
@@ -155,16 +156,13 @@ class PHOENIXGrid(SpectrumCollection):
             Z_points = np.array([-4, -3, -2, -1.5, -1, -0.5, 0, 0.5, 1])
 
             if teff_range:
-                subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
-                teff_points = teff_points[subset]
+                teff_points = compressed(masked_outside(teff_points, *teff_range))
 
             if logg_range:
-                subset = (logg_points >= logg_range[0]) & (logg_points <= logg_range[1])
-                logg_points = logg_points[subset]
+                logg_points = compressed(masked_outside(logg_points, *logg_range))
 
             if Z_range:
-                subset = (Z_points >= Z_range[0]) & (Z_points <= Z_range[1])
-                Z_points = Z_points[subset]
+                Z_points = compressed(masked_outside(Z_points, *Z_range))
 
             wavelengths, fluxes, grid_points = [], [], []
             iterlen = len(teff_points) * len(logg_points) * len(Z_points)
