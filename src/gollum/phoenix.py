@@ -166,11 +166,9 @@ class PHOENIXGrid(SpectrumCollection):
                 subset = (Z_points >= Z_range[0]) & (Z_points <= Z_range[1])
                 Z_points = Z_points[subset]
 
-            wavelengths, fluxes, grid_points, missing = [], [], [], 0
-            pbar = tqdm(
-                product(teff_points, logg_points, Z_points),
-                total=len(teff_points) * len(logg_points) * len(Z_points),
-            )
+            wavelengths, fluxes, grid_points = [], [], []
+            iterlen = len(teff_points) * len(logg_points) * len(Z_points)
+            pbar = tqdm(product(teff_points, logg_points, Z_points), total=iterlen)
 
             for teff, logg, Z in pbar:
                 pbar.desc = f"Processing Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
@@ -183,13 +181,8 @@ class PHOENIXGrid(SpectrumCollection):
                     grid_points.append((teff, logg, Z))
                 except (FileNotFoundError, URLError):
                     log.info(f"No file for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}")
-                    missing += 1
 
             assert grid_points != [], "Empty grid; parameter limits out of range"
-            print(
-                f"{missing} files not found; grid may not cover given parameter ranges fully"
-            ) if missing else None
-
             super().__init__(
                 flux=np.array(fluxes) * fluxes[0].unit,
                 spectral_axis=np.array(wavelengths) * wavelengths[0].unit,
@@ -203,6 +196,8 @@ class PHOENIXGrid(SpectrumCollection):
                     "lookup_dict": {value: i for i, value in enumerate(grid_points)},
                 },
             )
+            if iterlen != len(self):
+                print(f"{iterlen - len(self)} files not found; grid may be incomplete")
             if experimental:
                 from gollum.experimental import ExpPHOENIXGrid
 
