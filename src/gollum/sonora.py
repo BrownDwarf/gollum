@@ -9,20 +9,14 @@ SonoraSpectrum
 """
 
 import os
-import numpy as np
 
 from itertools import product
-from warnings import filterwarnings
-from logging import getLogger
 from tqdm import tqdm
 from gollum.utilities import _truncate
-from gollum.precomputed_spectrum import PrecomputedSpectrum
+from gollum.precomputed_spectrum import *
 from gollum.telluric import TelluricSpectrum
-from astropy.utils.exceptions import AstropyDeprecationWarning
-from astropy import units as u
 from pandas import read_csv
-from specutils import SpectrumCollection, Spectrum1D
-from scipy.ndimage import gaussian_filter1d
+from specutils import SpectrumCollection
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d
