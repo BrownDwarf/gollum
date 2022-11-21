@@ -28,6 +28,8 @@ def test_basic():
     assert np.all(tilted_spec.flux == spec.multiply(model(spec.wavelength)).flux)
     assert isinstance(spec.to_pandas(), DataFrame)
 
+    assert isinstance(spec.fit_continuum(), PrecomputedSpectrum)
+
 
 def test_resampling():
     """Does resampling work?"""

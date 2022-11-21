@@ -377,7 +377,7 @@ class PrecomputedSpectrum(Spectrum1D):
 
         A_matrix, A_full = np.vander(x_peaks, polyorder), np.vander(x_vector, polyorder)
 
-        coeffs = np.linalg.lstsq(A_matrix, y_peaks, rcond=None)
+        coeffs = np.linalg.lstsq(A_matrix, y_peaks, rcond=None)[0]
 
         spec_out = self._copy(flux=np.dot(coeffs, A_full.T) * self.flux.unit)
 
