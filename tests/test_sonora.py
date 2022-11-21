@@ -9,7 +9,7 @@ from specutils.spectra.spectrum_collection import SpectrumCollection
 def test_basic():
     """Do the basic methods work?"""
 
-    spec = SonoraSpectrum(teff=1200, logg=4.5, path=None)
+    spec = SonoraSpectrum(teff=1200, logg=4.5)
 
     assert spec is not None
     assert isinstance(spec, Spectrum1D)
@@ -24,13 +24,13 @@ def test_basic():
     assert np.median(new_spec.flux) == 1
 
     ax = new_spec.plot(label="demo", color="r")
-    assert ax is not None
+    assert ax
 
     new_spec = (
         spec.rotationally_broaden(28.8).rv_shift(10.1).instrumental_broaden(55_000)
     )
 
-    assert new_spec is not None
+    assert new_spec
     assert isinstance(new_spec, Spectrum1D)
     assert isinstance(new_spec.flux, np.ndarray)
     assert len(new_spec.flux) == len(new_spec.wavelength)
@@ -41,9 +41,9 @@ def test_basic():
 def test_resample():
     """Do the basic methods work?"""
 
-    spec = SonoraSpectrum(teff=850, logg=4.25, path=None)
+    spec = SonoraSpectrum(teff=850, logg=4.25)
 
-    assert spec is not None
+    assert spec
 
     target_wavelength = [1.0, 1.01, 1.02, 1.04, 1.05] * u.micron
     target = Spectrum1D(
@@ -52,7 +52,7 @@ def test_resample():
     )
     resampled_spec = spec.resample(target)
 
-    assert resampled_spec is not None
+    assert resampled_spec
     assert isinstance(resampled_spec, Spectrum1D)
     assert isinstance(resampled_spec.flux, np.ndarray)
     assert len(resampled_spec.flux) == len(target.wavelength)
@@ -66,10 +66,9 @@ def test_grid():
         teff_range=(950, 1020),
         logg_range=(4.25, 4.75),
         metallicity_range=(0.0, 0.5),
-        path=None,
     )
 
-    assert grid is not None
+    assert grid
     assert isinstance(grid, SpectrumCollection)
     assert grid.nspectral > 0
 
@@ -87,7 +86,7 @@ def test_grid():
     assert teff_point == grid.teff_points.max()
 
     newgrid = grid.truncate(wavelength_range=(10800.0 * u.Angstrom, 11800 * u.Angstrom))
-    assert newgrid is not None
+    assert newgrid
     assert isinstance(newgrid, SpectrumCollection)
     assert newgrid.grid_points == grid.grid_points
     assert len(newgrid[0].wavelength.value) < len(grid[0].wavelength.value)
@@ -101,17 +100,9 @@ def test_nearest_gridpoint():
         teff_range=(950, 1200),
         logg_range=(4.25, 4.75),
         metallicity_range=(0.0, 0.5),
-        path=None,
     )
 
-    assert grid is not None
-    # Test same gridpoint has zero distance
-    distance = grid.get_distance((1900, 4.0, 0.0), (1900, 4.0, 0.0))
-    assert distance == 0
-
-    # Test different gridpoints give you a positive distance
-    distance = grid.get_distance((1900, 4.0, 0.0), (1950, 4.5, 0.5))
-    assert distance > 0
+    assert grid
 
     # Test if get_nearest_grid_point returns a valid point (itself)
     assert grid.find_nearest_grid_point(1100, 4.5, 0.0) == (1100, 4.5, 0.0)
