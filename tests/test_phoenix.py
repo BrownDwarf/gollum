@@ -8,7 +8,7 @@ import astropy.units as u
 def test_spectrum():
     """Testing the PHOENIXSpectrum class"""
     with raises(FileNotFoundError):
-        PHOENIXSpectrum(teff=7000, logg=2, metallicity=2.0)
+        PHOENIXSpectrum(teff=7000, logg=2, Z=2.0)
 
     spec = PHOENIXSpectrum(teff=5000, logg=4)
 
@@ -41,7 +41,6 @@ def test_spectrum():
     assert masked_spec.wavelength.value.max() < 14000
 
 
-
 def test_resample():
     """Testing resampling methods"""
 
@@ -67,12 +66,14 @@ def test_grid():
     """Testing the PHOENIXGrid methods"""
 
     grid = PHOENIXGrid(
-        teff_range=(5000, 5100), logg_range=(1, 2), metallicity_range=(0, 1)
+        teff_range=(5000, 5100), logg_range=(1, 2), Z_range=(0, 1), experimental=True
     )
     assert grid
     assert len(grid)
     assert isinstance(grid[0], PHOENIXSpectrum)
     assert grid.find_nearest_teff(5080) == 5100
-    assert grid.find_nearest_metallicity(0.4) == 0.5
+    assert grid.find_nearest_Z(0.4) == 0.5
     assert grid.find_nearest_teff(6000) == 5100
-    assert isinstance(grid.truncate(wavelength_range=(10000*u.AA, 10500*u.AA)), PHOENIXGrid)
+    assert isinstance(
+        grid.truncate(wavelength_range=(10000 * u.AA, 10500 * u.AA)), PHOENIXGrid
+    )

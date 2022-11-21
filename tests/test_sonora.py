@@ -118,4 +118,3 @@ def test_nearest_gridpoint():
 
     # Test if get_nearest_grid_point return a valid point for an invalid input
     assert grid.find_nearest_grid_point(1100.1, 4.501, 0.001) == (1100, 4.5, 0.0)
-
