@@ -13,6 +13,7 @@ import os
 from itertools import product
 from tqdm import tqdm
 from urllib.error import URLError
+from contextlib import suppress
 from numpy.ma import compressed, masked_outside
 from gollum.utilities import _truncate
 from gollum.precomputed_spectrum import *
@@ -170,15 +171,13 @@ class PHOENIXGrid(SpectrumCollection):
 
             for teff, logg, Z in pbar:
                 pbar.desc = f"Processing Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
-                try:
+                with suppress(FileNotFoundError, URLError):
                     spec = PHOENIXSpectrum(
                         teff=teff, logg=logg, Z=Z, path=path, wl_lo=wl_lo, wl_hi=wl_hi,
                     )
                     wavelengths.append(spec.wavelength)
                     fluxes.append(spec.flux)
                     grid_points.append((teff, logg, Z))
-                except (FileNotFoundError, URLError):
-                    log.info(f"No file for Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}")
 
             assert grid_points != [], "Empty grid; parameter limits out of range"
             super().__init__(
@@ -194,8 +193,6 @@ class PHOENIXGrid(SpectrumCollection):
                     "lookup_dict": {value: i for i, value in enumerate(grid_points)},
                 },
             )
-            if iterlen != len(self):
-                print(f"{iterlen - len(self)} files not found; grid may be incomplete")
             if experimental:
                 from gollum.experimental import ExpPHOENIXGrid
 
