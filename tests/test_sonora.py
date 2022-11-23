@@ -11,7 +11,7 @@ def test_basic():
 
     spec = SonoraSpectrum(teff=1200, logg=4.5)
 
-    assert spec is not None
+    assert spec
     assert isinstance(spec, Spectrum1D)
     assert isinstance(spec, PrecomputedSpectrum)
     assert isinstance(spec, SonoraSpectrum)
@@ -23,8 +23,7 @@ def test_basic():
     assert new_spec.shape[0] == spec.shape[0]
     assert np.median(new_spec.flux) == 1
 
-    ax = new_spec.plot(label="demo", color="r")
-    assert ax
+    assert new_spec.plot(label="demo", color="r")
 
     new_spec = (
         spec.rotationally_broaden(28.8).rv_shift(10.1).instrumental_broaden(55_000)
@@ -104,8 +103,8 @@ def test_nearest_gridpoint():
 
     assert grid
 
-    # Test if get_nearest_grid_point returns a valid point (itself)
+    # Test if get_nearest_grid_point returns itself
     assert grid.find_nearest_grid_point(1100, 4.5, 0.0) == (1100, 4.5, 0.0)
 
-    # Test if get_nearest_grid_point return a valid point for an invalid input
+    # Test if get_nearest_grid_point returns a valid point for an invalid input
     assert grid.find_nearest_grid_point(1100.1, 4.501, 0.001) == (1100, 4.5, 0.0)
