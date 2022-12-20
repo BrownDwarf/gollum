@@ -12,7 +12,7 @@ jobs:
         python-version: [3.8, 3.9]
         specutils-version: [1.5, 1.6, 1.7]
         astropy-version: [5.2]
-        numpy-version: [1.18, 1.24]
+        numpy-version: [1.20, 1.24]
 
     steps:
       - uses: actions/checkout@v2
