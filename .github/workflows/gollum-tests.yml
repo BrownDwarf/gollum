@@ -42,5 +42,5 @@ jobs:
           python -c "import sys; print('Python version: ', sys.version)"
           python -c "import specutils; print('specutils version: ', specutils.__version__)"
           python -c "import astropy; print('astropy version: ', astropy.__version__)"
-          pytest test_phoenix.py
-          pytest test_precomputed.py
+          pytest tests/test_phoenix.py
+          pytest tests/test_precomputed.py
