@@ -10,9 +10,9 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.8, 3.9]
-        specutils-version: [1.5, 1.6, 1.7]
-        astropy-version: [5.2]
-        numpy-version: [1.20.0, 1.24]
+        specutils-version: [1.6, 1.7]
+        astropy-version: [4.3.1, 5.2]
+        numpy-version: [1.21.5, 1.24]
 
     steps:
       - uses: actions/checkout@v2
