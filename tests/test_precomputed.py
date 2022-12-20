@@ -10,7 +10,7 @@ def test_basic():
     assert PrecomputedSpectrum(
         spectral_axis=np.ones(5) * u.AA, flux=np.ones(5) * u.dimensionless_unscaled
     )
-    spec = PHOENIXSpectrum(teff=7000, logg=4, metallicity=0.5)
+    spec = PHOENIXSpectrum(teff=7000, logg=4, Z=0.5)
 
     assert isinstance(spec.velocity_spacing, np.ndarray)
     assert np.median(spec.normalize().flux.value) == 1
@@ -23,11 +23,13 @@ def test_basic():
     assert isinstance(spec.divide_by_blackbody(spec.teff), PHOENIXSpectrum)
 
     tilted_spec, model = spec.tilt_to_data(
-        target_spectrum=PHOENIXSpectrum(teff=3000, logg=4, metallicity=0.5),
-        return_model=True,
+        target_spectrum=PHOENIXSpectrum(teff=3000, logg=4, Z=0.5), return_model=True,
     )
     assert np.all(tilted_spec.flux == spec.multiply(model(spec.wavelength)).flux)
     assert isinstance(spec.to_pandas(), DataFrame)
+
+    assert isinstance(spec.fit_continuum(), PrecomputedSpectrum)
+
 
 def test_resampling():
     """Does resampling work?"""

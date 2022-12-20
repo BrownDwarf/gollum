@@ -7,7 +7,6 @@ A container for a single precomputed synthetic model spectrum at a single grid-p
 PrecomputedSpectrum
 ###############
 """
-import specutils
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -83,12 +82,7 @@ class PrecomputedSpectrum(Spectrum1D):
         spec = self._copy(
             spectral_axis=self.wavelength.value * self.wavelength.unit, wcs=None
         )
-        scalar_flux = (
-            np.nanpercentile(spec.flux.value, percentile) * spec.flux.unit
-            if percentile
-            else np.nanmedian(spec.flux.value) * spec.flux.unit
-        )
-
+        scalar_flux = np.nanpercentile(spec.flux.value, percentile) * spec.flux.unit
         return spec.divide(scalar_flux, handle_meta="first_found")
 
     def rotationally_broaden(self, vsini, u1=0.0, u2=0.0):
@@ -114,25 +108,24 @@ class PrecomputedSpectrum(Spectrum1D):
             Rotationally Broadened Spectrum
         """
         lam0 = np.median(self.wavelength.value)
-        velocity_grid = 299792.458 * (self.wavelength.value - lam0) / lam0
-        x = velocity_grid / vsini
-        x2 = x * x
+        x2 = (299792.458 * (self.wavelength.value - lam0) / (lam0 * vsini)) ** 2
         kernel = np.where(
-            x2 < 1.0,
-            np.pi / 2.0 * u1 * (1.0 - x2)
-            - 2.0 / 3.0 * np.sqrt(1.0 - x2) * (-3.0 + 3.0 * u1 + u2 * 2.0 * u2 * x2),
-            0.0,
+            x2 < 1,
+            np.pi / 2 * u1 * (1 - x2)
+            + np.sqrt(1 - x2) * (2 - 2 * u1 - 4 / 3 * u2 * u2 * x2),
+            0,
         )
-        kernel = kernel / np.sum(kernel, axis=0)
-        positive_elements = kernel > 0
-        if positive_elements.any():
-            convolved_flux = (
-                np.convolve(self.flux.value, kernel[positive_elements], mode="same")
+        kernel, positive_elements = kernel / np.sum(kernel, axis=0), kernel > 0
+        return (
+            self._copy(
+                flux=np.convolve(
+                    self.flux.value, kernel[positive_elements], mode="same"
+                )
                 * self.flux.unit
             )
-            return self._copy(flux=convolved_flux)
-        else:
-            return self
+            if positive_elements.any()
+            else self
+        )
 
     def instrumental_broaden(self, resolving_power=55000):
         r"""Instrumentally broaden the spectrum for a given instrumental resolution
@@ -176,17 +169,11 @@ class PrecomputedSpectrum(Spectrum1D):
         shifted_spec : PrecomputedSpectrum
             RV-Shifted Spectrum
         """
-        try:
-            output = deepcopy(self)
-            output.radial_velocity = rv * u.km / u.s
-            return self._copy(
-                spectral_axis=output.wavelength.value * output.wavelength.unit, wcs=None
-            )
-        except:
-            log.error(
-                f"rv_shift requires specutils version >= 1.2, you have: {specutils.__version__}"
-            )
-            assert False, "Specutils out of date; update to version 1.2 or higher"
+        output = deepcopy(self)
+        output.radial_velocity = rv * u.km / u.s
+        return self._copy(
+            spectral_axis=output.wavelength.value * output.wavelength.unit, wcs=None
+        )
 
     def resample(self, target_spectrum):
         """Resample spectrum at the wavelength points of another spectrum
@@ -390,9 +377,7 @@ class PrecomputedSpectrum(Spectrum1D):
 
         A_matrix, A_full = np.vander(x_peaks, polyorder), np.vander(x_vector, polyorder)
 
-        solution = np.linalg.lstsq(A_matrix, y_peaks, rcond=None)
-
-        coeffs = solution[0]
+        coeffs = np.linalg.lstsq(A_matrix, y_peaks, rcond=None)[0]
         smooth_flux = np.dot(coeffs, A_full.T) * self.flux.unit
         spec_out = self._copy(flux=smooth_flux)
 
@@ -400,16 +385,14 @@ class PrecomputedSpectrum(Spectrum1D):
 
     def to_pandas(self):
         """Export the spectrum to a pandas dataframe"""
-        try:
-            from pandas import DataFrame
-        except ImportError:
-            log.error("The to_pandas method requires the optional dependency pandas")
+        from pandas import DataFrame
 
+        wl = self.wavelength.value
         return DataFrame(
             {
-                "wavelength": (wl := self.wavelength.value),
+                "wavelength": wl,
                 "flux": self.flux.value,
-                "mask": self.mask if self.mask else np.zeros(len(wl), dtype=int),
+                "mask": self.mask if self.mask else np.zeros_like(wl, dtype=int),
             }
         )
 

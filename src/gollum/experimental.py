@@ -8,18 +8,7 @@ ExpPHOENIXSpectrum
 ###############
 """
 
-import numpy as np
-
-from warnings import filterwarnings
-from logging import getLogger
-from gollum.phoenix import PHOENIXSpectrum, PHOENIXGrid
-from astropy.utils.exceptions import AstropyDeprecationWarning, AstropyWarning
-from astropy import units as u
-from specutils import Spectrum1D
-from bokeh.io import show, output_notebook
-from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import Slider, Range1d, Toggle
-from bokeh.layouts import layout, Spacer
+from gollum.phoenix import *
 
 log = getLogger(__name__)
 
@@ -76,14 +65,14 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 new_lo, new_hi = data.wavelength.value[0], data.wavelength.value[-1]
                 assert (
                     wl_lo < new_lo < new_hi < wl_hi
-                ), "Data should overlap the models, double check your wavelength limits."
+                ), "Data must overlap models, expand your wavelength range."
                 wl_lo, wl_hi = new_lo, new_hi
 
                 fig.step(
                     x="wavelength",
                     y="flux",
                     color="black",
-                    legend_label=data.meta["header"]["OBJECT"],
+                    legend_label=data.meta.get("header").get("OBJECT"),
                     source=ColumnDataSource(
                         data={
                             "wavelength": data.wavelength.value,
@@ -163,10 +152,10 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="red",
                 margin=(0, 20, 0, 0),
             )
-            metallicity_slider = Slider(
-                start=self.metallicity_points[0],
-                end=self.metallicity_points[-1],
-                value=self.metallicity_points[0],
+            Z_slider = Slider(
+                start=self.Z_points[0],
+                end=self.Z_points[-1],
+                value=self.Z_points[0],
                 step=0.50,
                 title="Metallicity [dex]",
                 width=460,
@@ -275,7 +264,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     PHOENIXSpectrum(
                         teff=teff_slider.value,
                         logg=logg_slider.value,
-                        metallicity=metallicity_slider.value,
+                        Z=Z_slider.value,
                         wl_lo=spec_source.data["native_wavelength"][0],
                         wl_hi=spec_source.data["native_wavelength"][-1],
                     )
@@ -296,13 +285,11 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 """Callback that updates the intrinsic parameters behind the spectrum"""
                 teff_slider.value = self.find_nearest_teff(teff_slider.value)
                 spot_temp_slider.value = self.find_nearest_teff(spot_temp_slider.value)
-                metallicity_slider.value = self.find_nearest_metallicity(
-                    metallicity_slider.value
-                )
+                Z_slider.value = self.find_nearest_Z(Z_slider.value)
                 spec_source.data["photo_flux"] = PHOENIXSpectrum(
                     teff=teff_slider.value,
                     logg=logg_slider.value,
-                    metallicity=metallicity_slider.value,
+                    Z=Z_slider.value,
                     wl_lo=spec_source.data["native_wavelength"][0],
                     wl_hi=spec_source.data["native_wavelength"][-1],
                 ).normalize(95).rv_shift(rv_slider.value).rotationally_broaden(
@@ -315,7 +302,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     PHOENIXSpectrum(
                         teff=spot_temp_slider.value,
                         logg=logg_slider.value,
-                        metallicity=metallicity_slider.value,
+                        Z=Z_slider.value,
                         wl_lo=spec_source.data["native_wavelength"][0],
                         wl_hi=spec_source.data["native_wavelength"][-1],
                     )
@@ -346,7 +333,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             scale_slider.on_change("value", update_scale)
             teff_slider.on_change("value", update_native)
             logg_slider.on_change("value", update_native)
-            metallicity_slider.on_change("value", update_native)
+            Z_slider.on_change("value", update_native)
             spot_temp_slider.on_change("value", update_native)
             fill_factor_slider.on_change("value", update_native)
 
@@ -357,7 +344,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     [sp, continuum_toggle, component_toggle],
                     [sp, teff_slider, smoothing_slider],
                     [sp, logg_slider, rv_slider],
-                    [sp, metallicity_slider, scale_slider],
+                    [sp, Z_slider, scale_slider],
                     [sp, spot_temp_slider, fill_factor_slider],
                     background="whitesmoke",
                 )
