@@ -8,7 +8,7 @@ import astropy.units as u
 def test_spectrum():
     """Testing the PHOENIXSpectrum class"""
     with raises(AssertionError):
-        PHOENIXSpectrum(teff=-5.28, logg=2, Z=2.0, download=True)
+        PHOENIXSpectrum(teff=5, logg=2, Z=2.0, download=True)
 
     spec = PHOENIXSpectrum(teff=5000, logg=4, download=True)
 
