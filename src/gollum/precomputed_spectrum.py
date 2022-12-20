@@ -43,7 +43,7 @@ class PrecomputedSpectrum(Spectrum1D):
     @property
     def velocity_spacing(self):
         """The velocity sampling of the spectrum
-        
+
         Returns
         -------
         velocity_spacing : np.array
@@ -378,8 +378,8 @@ class PrecomputedSpectrum(Spectrum1D):
         A_matrix, A_full = np.vander(x_peaks, polyorder), np.vander(x_vector, polyorder)
 
         coeffs = np.linalg.lstsq(A_matrix, y_peaks, rcond=None)[0]
-
-        spec_out = self._copy(flux=np.dot(coeffs, A_full.T) * self.flux.unit)
+        smooth_flux = np.dot(coeffs, A_full.T) * self.flux.unit
+        spec_out = self._copy(flux=smooth_flux)
 
         return (spec_out, coeffs) if return_coeffs else spec_out
 

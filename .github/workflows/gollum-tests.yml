@@ -11,7 +11,8 @@ jobs:
       matrix:
         python-version: [3.8, 3.9]
         specutils-version: [1.5, 1.6, 1.7]
-        astropy-version: [4.3, 5.0]
+        astropy-version: [5.2]
+        numpy-version: [1.20, 1.24]
 
     steps:
       - uses: actions/checkout@v2
@@ -28,7 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt; fi
-          pip install astropy==${{ matrix.astropy-version }} specutils==${{ matrix.specutils-version }} 
+          pip install astropy==${{ matrix.astropy-version }} specutils==${{ matrix.specutils-version }} numpy==${{ matrix.numpy-version }}
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
