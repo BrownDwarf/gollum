@@ -1,5 +1,6 @@
 from gollum.phoenix import PHOENIXSpectrum, PHOENIXGrid
 from pytest import raises
+from urllib.error import URLError
 from specutils import Spectrum1D
 import numpy as np
 import astropy.units as u
@@ -7,7 +8,7 @@ import astropy.units as u
 
 def test_spectrum():
     """Testing the PHOENIXSpectrum class"""
-    with raises(AssertionError):
+    with raises(URLError):
         PHOENIXSpectrum(teff=5, logg=2, Z=2.0, download=True)
 
     spec = PHOENIXSpectrum(teff=5000, logg=4, download=True)
