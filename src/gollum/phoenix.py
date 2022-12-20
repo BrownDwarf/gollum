@@ -92,6 +92,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         wl_out = wl_orig[mask]
 
         fn = f"{base_path}/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
+        #If downloading, save to path
         flux_orig = fits.open(fn)[0].data.astype(np.float64)
         flux_native = flux_orig[mask]
         native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
