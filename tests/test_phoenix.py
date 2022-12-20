@@ -10,10 +10,9 @@ def test_spectrum():
     with raises(FileNotFoundError):
         PHOENIXSpectrum(teff=7000, logg=2, Z=2.0)
 
-    spec = PHOENIXSpectrum(teff=5000, logg=4)
+    spec = PHOENIXSpectrum(teff=5000, logg=4, download=True)
 
     assert spec
-    assert PHOENIXSpectrum(teff=5000, logg=4, download=True)
     assert isinstance(spec, Spectrum1D)
     assert isinstance(spec.flux, np.ndarray)
     assert len(spec.flux) == len(spec.wavelength)
@@ -44,7 +43,7 @@ def test_spectrum():
 def test_resample():
     """Testing resampling methods"""
 
-    spec = PHOENIXSpectrum(teff=5000, logg=4)
+    spec = PHOENIXSpectrum(teff=5000, logg=4, download=True)
 
     assert spec
 
@@ -66,7 +65,7 @@ def test_grid():
     """Testing the PHOENIXGrid methods"""
 
     grid = PHOENIXGrid(
-        teff_range=(5000, 5100), logg_range=(1, 2), Z_range=(0, 1), experimental=True
+        teff_range=(5000, 5100), logg_range=(2, 2.5), Z_range=(0, 0.5), experimental=True, download=True
     )
     assert grid
     assert len(grid)
