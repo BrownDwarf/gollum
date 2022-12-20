@@ -141,6 +141,7 @@ class PHOENIXGrid(SpectrumCollection):
         path="~/libraries/raw/PHOENIX/",
         wl_lo=8038,
         wl_hi=12849,
+        download=False,
         experimental=False,
         **kwargs,
     ):
@@ -173,7 +174,7 @@ class PHOENIXGrid(SpectrumCollection):
                 pbar.desc = f"Processing Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
                 with suppress(FileNotFoundError, URLError):
                     spec = PHOENIXSpectrum(
-                        teff=teff, logg=logg, Z=Z, path=path, wl_lo=wl_lo, wl_hi=wl_hi,
+                        teff=teff, logg=logg, Z=Z, path=path, wl_lo=wl_lo, wl_hi=wl_hi, download=download
                     )
                     wavelengths.append(spec.wavelength)
                     fluxes.append(spec.flux)
