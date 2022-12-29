@@ -39,8 +39,8 @@ jobs:
       - name: Test with pytest
         run: |
           python setup.py develop
-          python -c "import sys; print('Python version: ', sys.version)"
-          python -c "import specutils; print('specutils version: ', specutils.__version__)"
-          python -c "import astropy; print('astropy version: ', astropy.__version__)"
+          python -c "import sys; print(f'Python version: {sys.version}')"
+          python -c "import specutils; print(f'specutils version: {specutils.__version__}')"
+          python -c "import astropy; print(f'astropy version: {astropy.__version__}')"
           pytest tests/test_phoenix.py
           pytest tests/test_precomputed.py
