@@ -47,4 +47,6 @@ jobs:
           timeout_seconds: 15
           max_attempts: 5
           retry_on: error
-          command: npm run pytest tests/test_precomputed.py
+          shell: bash
+          command: |
+            npm run pytest tests/test_precomputed.py
