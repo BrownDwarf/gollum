@@ -47,6 +47,4 @@ jobs:
           timeout_seconds: 15
           max_attempts: 5
           retry_on: error
-          command: |
-            echo "Hello"
-            #npm run pytest tests/test_precomputed.py
+          command: pytest tests/test_precomputed.py
