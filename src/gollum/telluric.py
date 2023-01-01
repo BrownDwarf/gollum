@@ -26,7 +26,7 @@ filterwarnings("ignore", category=RuntimeWarning)
 ## TODO: rename this to SkyCalc??
 class TelluricSpectrum(PrecomputedSpectrum):
     r"""
-    A container for a single Telluric precomputed synthetic spectrum, currently from the skycalc website at eso.org. 
+    A container for a single Telluric precomputed synthetic spectrum, currently from the skycalc website at eso.org.
 
     Parameters
     ----------
@@ -76,7 +76,7 @@ class TelluricSpectrum(PrecomputedSpectrum):
 
 class TelFitSpectrum(PrecomputedSpectrum):
     r"""
-    A container for a single TelFit precomputed synthetic spectrum. 
+    A container for a single TelFit precomputed synthetic spectrum.
 
     Parameters
     ----------
@@ -122,7 +122,7 @@ class TelFitSpectrum(PrecomputedSpectrum):
             super().__init__(*args, **kwargs)
 
     def air_to_vacuum(self):
-        """Converts a spectrum from air to vacuum  
+        """Converts a spectrum from air to vacuum
 
         Based on Morton, D. C. 1991, ApJS, 77, 119
         Returns

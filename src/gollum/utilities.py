@@ -12,7 +12,7 @@ def apply_numpy_mask(spec, mask):
         Object containing a spectrum
     mask : boolean mask, typically a numpy array
         The mask to apply to the spectrum
-    
+
     Returns
     -------
     masked_spec: Spectrum1D object
@@ -46,7 +46,7 @@ def _truncate(grid, wavelength_range=None, data=None):
         for truncating the grid.
     data: Spectrum1D-like
         A spectrum to which this method will match the wavelength limits
-        
+
     Returns
     -------
     truncated_spectrum: Spectrum1D-like
