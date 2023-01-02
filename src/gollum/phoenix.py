@@ -283,8 +283,8 @@ class PHOENIXGrid(SpectrumCollection):
             )
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
-                plot_height=500,
-                plot_width=950,
+                height=500,
+                width=950,
                 tools="pan,wheel_zoom,box_zoom,tap,reset",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
