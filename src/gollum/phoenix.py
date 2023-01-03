@@ -92,10 +92,9 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         wl_out = wl_orig[mask]
 
         fn = f"{base_path}/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
-        #If downloading, save to path
         flux_orig = fits.open(fn)[0].data.astype(np.float64)
         flux_native = flux_orig[mask]
-        native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
+        native_flux_unit = u.erg / u.s / u.cm**2 / u.cm
 
         super().__init__(
             spectral_axis=wl_out * u.AA,
@@ -175,7 +174,13 @@ class PHOENIXGrid(SpectrumCollection):
                 pbar.desc = f"Processing Teff={teff}K|log(g)={logg:0.2f}|Z={Z:+0.1f}"
                 with suppress(FileNotFoundError, URLError):
                     spec = PHOENIXSpectrum(
-                        teff=teff, logg=logg, Z=Z, path=path, wl_lo=wl_lo, wl_hi=wl_hi, download=download
+                        teff=teff,
+                        logg=logg,
+                        Z=Z,
+                        path=path,
+                        wl_lo=wl_lo,
+                        wl_hi=wl_hi,
+                        download=download,
                     )
                     wavelengths.append(spec.wavelength)
                     fluxes.append(spec.flux)
@@ -242,7 +247,7 @@ class PHOENIXGrid(SpectrumCollection):
     ):  # pragma: no cover
         """Show an interactive dashboard for the PHOENIX grid;
         heavily inspired by the lightkurve .interact() method.
-        
+
         If data is used, we recommend that the grid first be truncated to it,
         with a margin of 50 Angstroms on either end of the spectral axis to allow for
         radial velocity shift and rotational broadening to operate properly.
@@ -278,8 +283,8 @@ class PHOENIXGrid(SpectrumCollection):
             )
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
-                plot_height=500,
-                plot_width=950,
+                height=500,
+                width=950,
                 tools="pan,wheel_zoom,box_zoom,tap,reset",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",

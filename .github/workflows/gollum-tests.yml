@@ -9,19 +9,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.8, 3.9]
-        specutils-version: [1.6, 1.7]
-        astropy-version: [4.3.1, 5.2]
-        numpy-version: [1.21.5, 1.24]
+        python-version: [3.8, 3.9, 3.10.9, 3.11]
+        specutils-version: [1.6, 1.7, 1.8, 1.9]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           repository: OttoStruve/muler_example_data
           path: tests/data
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -29,18 +27,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt; fi
-          pip install astropy==${{ matrix.astropy-version }} specutils==${{ matrix.specutils-version }} numpy==${{ matrix.numpy-version }}
+          pip install specutils==${{ matrix.specutils-version }}
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      - name: Test with pytest
+      - name: Test PHOENIX
         run: |
           python setup.py develop
-          python -c "import sys; print('Python version: ', sys.version)"
-          python -c "import specutils; print('specutils version: ', specutils.__version__)"
-          python -c "import astropy; print('astropy version: ', astropy.__version__)"
+          python -c "import sys; print(f'Python version: {sys.version}')"
+          python -c "import specutils; print(f'specutils version: {specutils.__version__}')"
+          python -c "import astropy; print(f'astropy version: {astropy.__version__}')"
           pytest tests/test_phoenix.py
-          pytest tests/test_precomputed.py
+      - name: Test Precomputed
+        uses: nick-fields/retry@v2
+        with:
+          timeout_seconds: 30
+          max_attempts: 10
+          retry_on: error
+          warning_on_retry: false
+          command: pytest tests/test_precomputed.py

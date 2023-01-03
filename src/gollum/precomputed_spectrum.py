@@ -344,7 +344,6 @@ class PrecomputedSpectrum(Spectrum1D):
 
     def fit_continuum(self, pixel_distance=5001, polyorder=3, return_coeffs=False):
         """Finds the low frequency continuum trend using scipy's find_peaks filter and linear algebra.
-        Currently broken
 
         Parameters
         ----------
@@ -359,7 +358,7 @@ class PrecomputedSpectrum(Spectrum1D):
         -------
         spec_out : PrecomputedSpectrum
             New Spectrum object representing a fit of the continuum.
-        If ``return_coeffs`` is set to ``True``, this method will also return:
+        If `return_coeffs` is set to `True`, this method will also return:
             coeffs : np.array
                 New vector of polynomial coefficients that reproduce the trend.
         """
@@ -378,8 +377,7 @@ class PrecomputedSpectrum(Spectrum1D):
         A_matrix, A_full = np.vander(x_peaks, polyorder), np.vander(x_vector, polyorder)
 
         coeffs = np.linalg.lstsq(A_matrix, y_peaks, rcond=None)[0]
-        smooth_flux = np.dot(coeffs, A_full.T) * self.flux.unit
-        spec_out = self._copy(flux=smooth_flux)
+        spec_out = self._copy(flux=np.dot(coeffs, A_full.T) * self.flux.unit)
 
         return (spec_out, coeffs) if return_coeffs else spec_out
 
