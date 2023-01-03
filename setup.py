@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
     name="gollum",
-    version="0.2.1",
+    version="0.3.0",
     author="gully",
     author_email="igully@gmail.com",
     description="A Python package for working with precomputed synthetic spectral models",
@@ -14,11 +14,12 @@ setuptools.setup(
         "numpy",
         "scipy",
         "astropy",
-        "specutils>=1.5",
+        "specutils>=1.6",
         "importlib_resources",
         "pandas",
         "matplotlib",
         "tqdm",
+        "bokeh<=2.4.3",
     ],
     packages=setuptools.find_packages(where="src"),
     package_dir={"": "src"},
