@@ -51,8 +51,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             wl_lo, wl_hi = self[0].wavelength.value[0], self[0].wavelength.value[-1]
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
-                height=500,
                 width=950,
+                height=500,
                 tools="pan,wheel_zoom,box_zoom,tap,reset",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
@@ -80,7 +80,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         }
                     ),
                 )
-            fig.title.offset = 280
+            fig.title.align = "center"
             fig.title.text_font_size = "16pt"
             fig.yaxis.axis_label = "Normalized Flux"
             fig.xaxis.axis_label = "Wavelength (\u212B)"
@@ -88,6 +88,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
             fig.y_range = Range1d(start=0, end=1.5)
             fig.legend.location = "top_right"
+            fig.legend.click_policy = "hide"
             fig.step(
                 x="wavelength",
                 y="flux",
@@ -102,8 +103,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 source=spec_source,
                 legend_label="PHOENIX Model: Photosphere Flux",
                 level="underlay",
-                visible=False,
             )
+            photo.visible = False
             spot = fig.step(
                 x="wavelength",
                 y="spot_flux",
@@ -111,8 +112,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 source=spec_source,
                 legend_label="PHOENIX Model: Starspot Flux",
                 level="underlay",
-                visible=False,
             )
+            spot.visible = False
             smoothing_slider = Slider(
                 start=0.1,
                 end=200,
@@ -191,20 +192,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="maroon",
             )
             continuum_toggle = Toggle(
-                label="Fit Continuum (disables normalization)", button_type="success"
+                label="Fit Continuum (disables normalization)",
+                button_type="success",
             )
-            component_toggle = Toggle(
-                label="Show Component Spectra", button_type="success"
-            )
-
-            def toggle_components(active):
-                """Callback that toggles visibility of the component spectra"""
-                if active:
-                    photo.visible = spot.visible = True
-                    component_toggle.label = "Hide Component Spectra"
-                else:
-                    photo.visible = spot.visible = False
-                    component_toggle.label = "Show Component Spectra"
 
             def toggle_continuum(active):
                 """Callback that toggles continuum auto-fit"""
@@ -327,7 +317,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 )
 
             continuum_toggle.on_click(toggle_continuum)
-            component_toggle.on_click(toggle_components)
             rv_slider.on_change("value", update_rv)
             smoothing_slider.on_change("value", update_smoothing)
             scale_slider.on_change("value", update_scale)
@@ -341,7 +330,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             doc.add_root(
                 layout(
                     [sp, fig],
-                    [sp, continuum_toggle, component_toggle],
+                    [sp, continuum_toggle],
                     [sp, teff_slider, smoothing_slider],
                     [sp, logg_slider, rv_slider],
                     [sp, Z_slider, scale_slider],

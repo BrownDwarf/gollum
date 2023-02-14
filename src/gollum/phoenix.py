@@ -283,8 +283,8 @@ class PHOENIXGrid(SpectrumCollection):
             )
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
-                height=500,
                 width=950,
+                height=500,
                 tools="pan,wheel_zoom,box_zoom,tap,reset",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
@@ -317,7 +317,7 @@ class PHOENIXGrid(SpectrumCollection):
                     ),
                 )
 
-            fig.title.offset = 280
+            fig.title.align = "center"
             fig.title.text_font_size = "16pt"
             fig.yaxis.axis_label = "Normalized Flux"
             fig.xaxis.axis_label = "Wavelength (\u212B)"
@@ -325,6 +325,7 @@ class PHOENIXGrid(SpectrumCollection):
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
             fig.y_range = Range1d(start=0, end=1.5)
             fig.legend.location = "top_right"
+            fig.legend.click_policy = "hide"
             fig.step(
                 "wavelength",
                 "flux",
