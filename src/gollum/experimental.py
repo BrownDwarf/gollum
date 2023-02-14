@@ -104,7 +104,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 legend_label="PHOENIX Model: Photosphere Flux",
                 level="underlay",
             )
-            photo.visible = False
             spot = fig.step(
                 x="wavelength",
                 y="spot_flux",
@@ -113,7 +112,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 legend_label="PHOENIX Model: Starspot Flux",
                 level="underlay",
             )
-            spot.visible = False
+            spot.visible = photo.visible = False
+            
             smoothing_slider = Slider(
                 start=0.1,
                 end=200,
