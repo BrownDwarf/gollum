@@ -308,7 +308,7 @@ class PHOENIXGrid(SpectrumCollection):
                     "flux",
                     line_width=1,
                     color="black",
-                    legend_label=data.meta["header"]["OBJECT"],
+                    legend_label="Object",
                     source=ColumnDataSource(
                         data={
                             "wavelength": data.wavelength.value,

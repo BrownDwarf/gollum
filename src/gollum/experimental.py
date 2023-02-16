@@ -72,7 +72,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     x="wavelength",
                     y="flux",
                     color="black",
-                    legend_label=data.meta.get("header").get("OBJECT"),
+                    legend_label="Object",
                     source=ColumnDataSource(
                         data={
                             "wavelength": data.wavelength.value,
