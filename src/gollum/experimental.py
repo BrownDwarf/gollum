@@ -96,24 +96,23 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 source=spec_source,
                 legend_label="PHOENIX Model: Total Flux",
             )
-            photo = fig.step(
+            fig.step(
                 x="wavelength",
                 y="photo_flux",
                 color="violet",
                 source=spec_source,
                 legend_label="PHOENIX Model: Photosphere Flux",
                 level="underlay",
-            )
-            spot = fig.step(
+            ).visible = False
+            fig.step(
                 x="wavelength",
                 y="spot_flux",
                 color="lavender",
                 source=spec_source,
                 legend_label="PHOENIX Model: Starspot Flux",
                 level="underlay",
-            )
-            spot.visible = photo.visible = False
-            
+            ).visible = False
+
             smoothing_slider = Slider(
                 start=0.1,
                 end=200,
@@ -192,8 +191,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="maroon",
             )
             continuum_toggle = Toggle(
-                label="Fit Continuum (disables normalization)",
-                button_type="success",
+                label="Fit Continuum (disables normalization)", button_type="success",
             )
 
             def toggle_continuum(active):
