@@ -20,6 +20,7 @@ from specutils import Spectrum1D
 from specutils.manipulation import LinearInterpolatedResampler
 from specutils.fitting import fit_generic_continuum
 from astropy import units as u, constants as const
+from astropy.units import dimensionless_unscaled as DV
 from astropy.modeling.physical_models import BlackBody
 from astropy.utils.exceptions import AstropyDeprecationWarning
 
@@ -287,7 +288,7 @@ class PrecomputedSpectrum(Spectrum1D):
 
         flux_unit = self.flux.unit
         normalize = False
-        if flux_unit == u.dimensionless_unscaled:
+        if flux_unit == DV:
             if "native_flux_unit" in self.meta:
                 flux_unit = self.meta["native_flux_unit"]
                 normalize = True
