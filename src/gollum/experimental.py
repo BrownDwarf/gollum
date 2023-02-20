@@ -59,9 +59,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             )
 
             if data:
-                assert isinstance(
-                    data, Spectrum1D
-                ), "The data spectrum must be Spectrum1D-like"
                 new_lo, new_hi = data.wavelength.value[0], data.wavelength.value[-1]
                 assert (
                     wl_lo < new_lo < new_hi < wl_hi
@@ -81,7 +78,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     ),
                 )
             fig.title.align = "center"
-            fig.title.text_font_size = "16pt"
+            fig.title.text_font_size = "18pt"
             fig.yaxis.axis_label = "Normalized Flux"
             fig.xaxis.axis_label = "Wavelength (\u212B)"
             fig.axis.axis_label_text_font_style = "bold"
