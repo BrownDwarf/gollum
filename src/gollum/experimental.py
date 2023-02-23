@@ -166,9 +166,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="black",
             )
             spot_temp_slider = Slider(
-                start=2300,
-                end=4000,
-                value=2300,
+                start=self.teff_points[0],
+                end=self.teff_points[-1],
+                value=self.teff_points[0],
                 step=100,
                 title="Starspot Temperature [K]",
                 width=460,
