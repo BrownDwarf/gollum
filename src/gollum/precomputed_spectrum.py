@@ -170,11 +170,9 @@ class PrecomputedSpectrum(Spectrum1D):
         shifted_spec : PrecomputedSpectrum
             RV-Shifted Spectrum
         """
-        output = deepcopy(self)
-        output.radial_velocity = rv * u.km / u.s
-        return self._copy(
-            spectral_axis=output.wavelength.value * output.wavelength.unit, wcs=None
-        )
+        shifted_spec = deepcopy(self)
+        shifted_spec.radial_velocity = rv * u.km / u.s
+        return shifted_spec
 
     def resample(self, target_spectrum):
         """Resample spectrum at the wavelength points of another spectrum
