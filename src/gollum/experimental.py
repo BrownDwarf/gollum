@@ -192,7 +192,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 """Callback that toggles continuum auto-fit"""
                 if active:
                     cds.data["flux"] = (
-                        PHOENIXSpectrum(
+                        PrecomputedSpectrum(
                             spectral_axis=cds.data["wl"] * u.AA,
                             flux=cds.data["flux"] * DV,
                         )
@@ -203,7 +203,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     continuum_toggle.label = "Undo Continuum (enables normalization)"
                 else:
                     cds.data["flux"] = (
-                        PHOENIXSpectrum(
+                        PrecomputedSpectrum(
                             spectral_axis=cds.data["wl"] * u.AA,
                             flux=cds.data["native_flux"] * DV,
                         )
@@ -218,7 +218,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             def update_rv(attr, old, new):
                 """Callback that RV shifts the spectrum"""
                 cds.data["wl"] = (
-                    PHOENIXSpectrum(
+                    PrecomputedSpectrum(
                         spectral_axis=cds.data["native_wl"] * u.AA,
                         flux=cds.data["flux"] * DV,
                     )
@@ -229,7 +229,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             def update_smoothing(attr, old, new):
                 """Callback that rotationally broadens the spectrum"""
                 spec = (
-                    PHOENIXSpectrum(
+                    PrecomputedSpectrum(
                         spectral_axis=cds.data["wl"] * u.AA,
                         flux=cds.data["native_flux"] * DV,
                     )
@@ -293,7 +293,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 )
 
                 cds.data["native_flux"] = cds.data["photo_flux"] + cds.data["spot_flux"]
-                final = PHOENIXSpectrum(
+                final = PrecomputedSpectrum(
                     spectral_axis=cds.data["wl"] * u.AA,
                     flux=cds.data["native_flux"] * DV,
                 )
