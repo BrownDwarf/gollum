@@ -181,7 +181,7 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_lo=wl_lo,
                         wl_hi=wl_hi,
                         download=download,
-                    ).normalize(95)
+                    )
                     wavelengths.append(spec.wavelength)
                     fluxes.append(spec.flux)
                     grid_points.append((teff, logg, Z))
@@ -268,11 +268,12 @@ class PHOENIXGrid(SpectrumCollection):
         """
 
         def create_interact_ui(doc):
+            scalar_norm = np.percentile(self[0].flux.value, 95)
             spec_source = ColumnDataSource(
                 data={
                     "wavelength": self[0].wavelength.value,
-                    "flux": self[0].flux.value,
-                    "native_flux": self[0].flux.value,
+                    "flux": self[0].flux.value / scalar_norm,
+                    "native_flux": self[0].flux.value / scalar_norm,
                     "native_wavelength": self[0].wavelength.value,
                 }
             )
@@ -459,7 +460,7 @@ class PHOENIXGrid(SpectrumCollection):
                 teff = self.find_nearest_teff(new)
                 if teff != old:
                     point = (teff, logg_slider.value, Z_slider.value)
-                    native_spec = self[self.get_index(point)]
+                    native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = native_spec.rotationally_broaden(
                         smoothing_slider.value
                     ).rv_shift(rv_slider.value)
@@ -483,7 +484,7 @@ class PHOENIXGrid(SpectrumCollection):
                 Z = self.find_nearest_Z(new)
                 if Z != old:
                     point = (teff_slider.value, logg_slider.value, Z)
-                    native_spec = self[self.get_index(point)]
+                    native_spec = self[self.get_index(point)].normalize(percentile=95)
                     new_spec = native_spec.rotationally_broaden(
                         smoothing_slider.value
                     ).rv_shift(rv_slider.value)
@@ -505,7 +506,7 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when logg slider changes"""
                 Z = self.find_nearest_Z(Z_slider.value)
                 point = (teff_slider.value, new, Z)
-                native_spec = self[self.get_index(point)]
+                native_spec = self[self.get_index(point)].normalize(percentile=95)
                 new_spec = native_spec.rotationally_broaden(
                     smoothing_slider.value
                 ).rv_shift(rv_slider.value)
