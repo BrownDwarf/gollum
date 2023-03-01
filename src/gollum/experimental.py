@@ -37,15 +37,14 @@ class ExpPHOENIXGrid(PHOENIXGrid):
         """
 
         def create_interact_ui(doc):
-            scale = np.percentile(self[0].flux.value, 95)
             cds = ColumnDataSource(
                 data={
                     "wl": self[0].wavelength.value,
-                    "flux": self[0].flux.value / scale,
+                    "flux": self[0].flux.value,
                     "native_flux": self[0].flux.value,
                     "native_wl": self[0].wavelength.value,
-                    "photo_flux": self[0].flux.value / scale,
-                    "spot_flux": self[0].flux.value * 0,
+                    "photo_flux": self[0].flux.value,
+                    "spot_flux": np.zeros_like(self[0].flux.value),
                 }
             )
             wl_lo, wl_hi = self[0].wavelength.value[0], self[0].wavelength.value[-1]
@@ -207,7 +206,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                             spectral_axis=cds.data["wl"] * u.AA,
                             flux=cds.data["native_flux"] * DV,
                         )
-                        .normalize(95)
                         .rotationally_broaden(smoothing_slider.value)
                         .flux.value
                         * scale_slider.value
@@ -228,14 +226,10 @@ class ExpPHOENIXGrid(PHOENIXGrid):
 
             def update_smoothing(attr, old, new):
                 """Callback that rotationally broadens the spectrum"""
-                spec = (
-                    PrecomputedSpectrum(
-                        spectral_axis=cds.data["wl"] * u.AA,
-                        flux=cds.data["native_flux"] * DV,
-                    )
-                    .normalize(95)
-                    .rotationally_broaden(new)
-                )
+                spec = PrecomputedSpectrum(
+                    spectral_axis=cds.data["wl"] * u.AA,
+                    flux=cds.data["native_flux"] * DV,
+                ).rotationally_broaden(new)
                 cds.data["flux"] = (
                     spec.tilt_to_data(data).flux.value
                     if continuum_toggle.active
@@ -249,7 +243,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         wl_lo=cds.data["native_wl"][0],
                         wl_hi=cds.data["native_wl"][-1],
                     )
-                    .normalize(95)
                     .rv_shift(rv_slider.value)
                     .rotationally_broaden(new)
                     .flux.value
@@ -271,7 +264,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     Z=Z_slider.value,
                     wl_lo=cds.data["native_wl"][0],
                     wl_hi=cds.data["native_wl"][-1],
-                ).normalize(95).rv_shift(rv_slider.value).rotationally_broaden(
+                ).rv_shift(rv_slider.value).rotationally_broaden(
                     smoothing_slider.value
                 ).flux.value * (
                     1 - fill_factor_slider.value
@@ -285,7 +278,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         wl_lo=cds.data["native_wl"][0],
                         wl_hi=cds.data["native_wl"][-1],
                     )
-                    .normalize(95)
                     .rv_shift(rv_slider.value)
                     .rotationally_broaden(smoothing_slider.value)
                     .flux.value
