@@ -388,12 +388,12 @@ class PHOENIXGrid(SpectrumCollection):
                 end=2.0,
                 value=1.0,
                 step=0.005,
-                title="Normalization Scalar",
+                title="Scale Factor",
                 width=460,
                 bar_color="black",
             )
             continuum_toggle = Toggle(
-                label="Fit Continuum (disables normalization)", button_type="success"
+                label="Fit Continuum (disables scaling)", button_type="success"
             )
 
             def update_to_continuum(active):
@@ -404,7 +404,7 @@ class PHOENIXGrid(SpectrumCollection):
                         flux=spec_source.data["flux"] * DV,
                     ).tilt_to_data(data)
                     scale_slider.disabled = True
-                    continuum_toggle.label = "Undo Continuum (enables normalization)"
+                    continuum_toggle.label = "Undo Continuum (enables scaling)"
                 else:
                     new_spec = (
                         PHOENIXSpectrum(
@@ -416,7 +416,7 @@ class PHOENIXGrid(SpectrumCollection):
                         .rv_shift(rv_slider.value)
                     )
                     scale_slider.disabled = False
-                    continuum_toggle.label = "Fit Continuum (disables normalization)"
+                    continuum_toggle.label = "Fit Continuum (disables scaling)"
 
                 spec_source.data["flux"] = new_spec.flux.value
 
