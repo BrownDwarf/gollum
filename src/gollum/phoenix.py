@@ -242,7 +242,9 @@ class PHOENIXGrid(SpectrumCollection):
         idx = np.abs(self.Z_points - value).argmin()
         return self.Z_points[idx]
 
-    def show_dashboard(self, data=None, url="localhost:8888"):  # pragma: no cover
+    def show_dashboard(
+        self, data=None, notebook_url="localhost:8888"
+    ):  # pragma: no cover
         """Show an interactive dashboard for the PHOENIX grid;
         heavily inspired by the lightkurve .interact() method.
 
@@ -542,4 +544,4 @@ class PHOENIXGrid(SpectrumCollection):
             )
 
         output_notebook(verbose=False, hide_banner=True)
-        return show(create_interact_ui, notebook_url=url)
+        return show(create_interact_ui, notebook_url=notebook_url)
