@@ -266,21 +266,25 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             def update_spot(attr, old, new):
                 """Callback that updates the starspot's temperature"""
                 spot_temp_slider.value = self.find_nearest_teff(new)
-                spot = PHOENIXSpectrum(
-                    teff=spot_temp_slider.value,
-                    logg=logg_slider.value,
-                    Z=Z_slider.value,
-                    wl_lo=cds.data["nat_wl"][0],
-                    wl_hi=cds.data["nat_wl"][-1],
-                ).normalize(95) * fill_factor_slider.value
-                spot.radial_velocity = rv_slider.value * u.km/u.s
+                spot = (
+                    PHOENIXSpectrum(
+                        teff=spot_temp_slider.value,
+                        logg=logg_slider.value,
+                        Z=Z_slider.value,
+                        wl_lo=cds.data["nat_wl"][0],
+                        wl_hi=cds.data["nat_wl"][-1],
+                    ).normalize(95)
+                    * fill_factor_slider.value
+                )
+                spot.radial_velocity = rv_slider.value * u.km / u.s
                 cds.data["spot_nat"] = spot.flux.value
                 cds.data["spot_flux"] = spot.rotationally_broaden(
                     smoothing_slider.value
                 ).flux.value
                 cds.data["nat_flux"] = cds.data["photo_nat"] + cds.data["spot_nat"]
                 spec = PrecomputedSpectrum(
-                    spectral_axis=cds.data["wl"] * u.AA, flux=(cds.data["spot_flux"] + cds.data["photo_flux"])* DV,
+                    spectral_axis=cds.data["wl"] * u.AA,
+                    flux=(cds.data["spot_flux"] + cds.data["photo_flux"]) * DV,
                 )
                 cds.data["flux"] = (
                     spec.tilt_to_data(data).flux.value

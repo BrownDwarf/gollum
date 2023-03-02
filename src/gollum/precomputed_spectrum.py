@@ -80,11 +80,10 @@ class PrecomputedSpectrum(Spectrum1D):
         normalized_spec : PrecomputedSpectrum
             Normalized spectrum
         """
-        spec = self._copy(
-            spectral_axis=self.wavelength.value * self.wavelength.unit, wcs=None
+        return self.divide(
+            np.nanpercentile(self.flux.value, percentile) * self.flux.unit,
+            handle_meta="first_found",
         )
-        scalar_flux = np.nanpercentile(spec.flux.value, percentile) * spec.flux.unit
-        return spec.divide(scalar_flux, handle_meta="first_found")
 
     def rotationally_broaden(self, vsini, u1=0.0, u2=0.0):
         r"""Rotationally broaden the spectrum for a given :math:`v\sin{i}`
