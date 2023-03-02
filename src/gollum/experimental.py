@@ -38,17 +38,20 @@ class ExpPHOENIXGrid(PHOENIXGrid):
 
         def create_interact_ui(doc):
             scale = np.percentile(self[0].flux.value, 95)
+            wl_i, flux_i = (self[0].wavelength.value, self[0].flux.value / scale)
             cds = ColumnDataSource(
                 data={
-                    "wl": self[0].wavelength.value,
-                    "flux": self[0].flux.value / scale,
-                    "native_flux": self[0].flux.value,
-                    "native_wl": self[0].wavelength.value,
-                    "photo_flux": self[0].flux.value / scale,
-                    "spot_flux": self[0].flux.value * 0,
+                    "wl": wl_i,
+                    "flux": flux_i,
+                    "nat_flux": self[0].flux.value,
+                    "nat_wl": wl_i,
+                    "photo_flux": flux_i,
+                    "photo_nat": flux_i,
+                    "spot_flux": flux_i * 0,
+                    "spot_nat": flux_i * 0,
                 }
             )
-            wl_lo, wl_hi = self[0].wavelength.value[0], self[0].wavelength.value[-1]
+            wl_lo, wl_hi = wl_i[0], wl_i[-1]
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
                 width=950,
@@ -205,7 +208,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     cds.data["flux"] = (
                         PrecomputedSpectrum(
                             spectral_axis=cds.data["wl"] * u.AA,
-                            flux=cds.data["native_flux"] * DV,
+                            flux=cds.data["nat_flux"] * DV,
                         )
                         .normalize(95)
                         .rotationally_broaden(smoothing_slider.value)
@@ -219,7 +222,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 """Callback that RV shifts the spectrum"""
                 cds.data["wl"] = (
                     PrecomputedSpectrum(
-                        spectral_axis=cds.data["native_wl"] * u.AA,
+                        spectral_axis=cds.data["nat_wl"] * u.AA,
                         flux=cds.data["flux"] * DV,
                     )
                     .rv_shift(new)
@@ -231,7 +234,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 spec = (
                     PrecomputedSpectrum(
                         spectral_axis=cds.data["wl"] * u.AA,
-                        flux=cds.data["native_flux"] * DV,
+                        flux=cds.data["nat_flux"] * DV,
                     )
                     .normalize(95)
                     .rotationally_broaden(new)
@@ -246,8 +249,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         teff=teff_slider.value,
                         logg=logg_slider.value,
                         Z=Z_slider.value,
-                        wl_lo=cds.data["native_wl"][0],
-                        wl_hi=cds.data["native_wl"][-1],
+                        wl_lo=cds.data["nat_wl"][0],
+                        wl_hi=cds.data["nat_wl"][-1],
                     )
                     .normalize(95)
                     .rv_shift(rv_slider.value)
@@ -260,6 +263,31 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 """Callback that scales the spectra"""
                 cds.data["flux"] *= new / old
 
+            def update_spot(attr, old, new):
+                """Callback that updates the starspot's temperature"""
+                spot_temp_slider.value = self.find_nearest_teff(new)
+                spot = PHOENIXSpectrum(
+                    teff=spot_temp_slider.value,
+                    logg=logg_slider.value,
+                    Z=Z_slider.value,
+                    wl_lo=cds.data["nat_wl"][0],
+                    wl_hi=cds.data["nat_wl"][-1],
+                ).normalize(95) * fill_factor_slider.value
+                spot.radial_velocity = rv_slider.value * u.km/u.s
+                cds.data["spot_nat"] = spot.flux.value
+                cds.data["spot_flux"] = spot.rotationally_broaden(
+                    smoothing_slider.value
+                ).flux.value
+                cds.data["nat_flux"] = cds.data["photo_nat"] + cds.data["spot_nat"]
+                spec = PrecomputedSpectrum(
+                    spectral_axis=cds.data["wl"] * u.AA, flux=(cds.data["spot_flux"] + cds.data["photo_flux"])* DV,
+                )
+                cds.data["flux"] = (
+                    spec.tilt_to_data(data).flux.value
+                    if continuum_toggle.active
+                    else spec.flux.value * scale_slider.value
+                )
+
             def update_native(attr, old, new):
                 """Callback that updates the intrinsic parameters behind the spectrum"""
                 teff_slider.value = self.find_nearest_teff(teff_slider.value)
@@ -269,8 +297,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     teff=teff_slider.value,
                     logg=logg_slider.value,
                     Z=Z_slider.value,
-                    wl_lo=cds.data["native_wl"][0],
-                    wl_hi=cds.data["native_wl"][-1],
+                    wl_lo=cds.data["nat_wl"][0],
+                    wl_hi=cds.data["nat_wl"][-1],
                 ).normalize(95).rv_shift(rv_slider.value).rotationally_broaden(
                     smoothing_slider.value
                 ).flux.value * (
@@ -282,8 +310,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         teff=spot_temp_slider.value,
                         logg=logg_slider.value,
                         Z=Z_slider.value,
-                        wl_lo=cds.data["native_wl"][0],
-                        wl_hi=cds.data["native_wl"][-1],
+                        wl_lo=cds.data["nat_wl"][0],
+                        wl_hi=cds.data["nat_wl"][-1],
                     )
                     .normalize(95)
                     .rv_shift(rv_slider.value)
@@ -292,10 +320,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     * fill_factor_slider.value
                 )
 
-                cds.data["native_flux"] = cds.data["photo_flux"] + cds.data["spot_flux"]
+                cds.data["nat_flux"] = cds.data["photo_flux"] + cds.data["spot_flux"]
                 final = PrecomputedSpectrum(
-                    spectral_axis=cds.data["wl"] * u.AA,
-                    flux=cds.data["native_flux"] * DV,
+                    spectral_axis=cds.data["wl"] * u.AA, flux=cds.data["nat_flux"] * DV,
                 )
                 cds.data["flux"] = (
                     final.tilt_to_data(data).flux.value
@@ -310,7 +337,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             teff_slider.on_change("value", update_native)
             logg_slider.on_change("value", update_native)
             Z_slider.on_change("value", update_native)
-            spot_temp_slider.on_change("value", update_native)
+            spot_temp_slider.on_change("value", update_spot)
             fill_factor_slider.on_change("value", update_native)
 
             sp = Spacer(width=20)
