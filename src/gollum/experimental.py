@@ -37,18 +37,19 @@ class ExpPHOENIXGrid(PHOENIXGrid):
         """
 
         def create_interact_ui(doc):
-            scale = np.percentile(self[0].flux.value, 95)
-            wl_i, flux_i = (self[0].wavelength.value, self[0].flux.value / scale)
+            self.cur_native = self[0]
+            self.cur_spot = self[0]
+            wl_i, flux_i = self[0].wavelength.value, self[0].normalize(95).flux.value
             cds = ColumnDataSource(
                 data={
                     "wl": wl_i,
+                    "nat_wl": wl_i,
                     "flux": flux_i,
                     "nat_flux": self[0].flux.value,
-                    "nat_wl": wl_i,
                     "photo_flux": flux_i,
                     "photo_nat": flux_i,
                     "spot_flux": flux_i * 0,
-                    "spot_nat": flux_i * 0,
+                    "spot_nat": flux_i,
                 }
             )
             wl_lo, wl_hi = wl_i[0], wl_i[-1]
@@ -110,7 +111,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 level="underlay",
             ).visible = False
 
-            smoothing_slider = Slider(
+            smooths = Slider(
                 start=0.1,
                 end=200,
                 value=0.1,
@@ -120,7 +121,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 format="0.f",
                 bar_color="blue",
             )
-            rv_slider = Slider(
+            rvs = Slider(
                 start=-200,
                 end=200,
                 value=0.00,
@@ -129,7 +130,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 width=460,
                 bar_color="blue",
             )
-            teff_slider = Slider(
+            teffs = Slider(
                 start=self.teff_points[0],
                 end=self.teff_points[-1],
                 value=self.teff_points[0],
@@ -139,7 +140,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="red",
                 margin=(0, 20, 0, 0),
             )
-            logg_slider = Slider(
+            loggs = Slider(
                 start=self.logg_points[0],
                 end=self.logg_points[-1],
                 value=self.logg_points[0],
@@ -149,7 +150,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="red",
                 margin=(0, 20, 0, 0),
             )
-            Z_slider = Slider(
+            Zs = Slider(
                 start=self.Z_points[0],
                 end=self.Z_points[-1],
                 value=self.Z_points[0],
@@ -159,7 +160,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="red",
                 margin=(0, 20, 0, 0),
             )
-            scale_slider = Slider(
+            scales = Slider(
                 start=0.1,
                 end=2.0,
                 value=1.0,
@@ -168,7 +169,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 width=460,
                 bar_color="black",
             )
-            spot_temp_slider = Slider(
+            spot_temps = Slider(
                 start=self.teff_points[0],
                 end=self.teff_points[-1],
                 value=self.teff_points[0],
@@ -178,7 +179,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="maroon",
                 margin=(0, 20, 0, 0),
             )
-            fill_factor_slider = Slider(
+            fill_factors = Slider(
                 start=0,
                 end=1,
                 value=0,
@@ -202,7 +203,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         .tilt_to_data(data)
                         .flux.value
                     )
-                    scale_slider.disabled = True
+                    scales.disabled = True
                     continuum_toggle.label = "Undo Continuum (enables scaling)"
                 else:
                     cds.data["flux"] = (
@@ -211,11 +212,11 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                             flux=cds.data["nat_flux"] * DV,
                         )
                         .normalize(95)
-                        .rotationally_broaden(smoothing_slider.value)
+                        .rotationally_broaden(smooths.value)
                         .flux.value
-                        * scale_slider.value
+                        * scales.value
                     )
-                    scale_slider.disabled = False
+                    scales.disabled = False
                     continuum_toggle.label = "Fit Continuum (disables scaling)"
 
             def update_rv(attr, old, new):
@@ -242,21 +243,21 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 cds.data["flux"] = (
                     spec.tilt_to_data(data).flux.value
                     if continuum_toggle.active
-                    else spec.flux.value * scale_slider.value
+                    else spec.flux.value * scales.value
                 )
                 cds.data["photo_flux"] = (
                     PHOENIXSpectrum(
-                        teff=teff_slider.value,
-                        logg=logg_slider.value,
-                        Z=Z_slider.value,
+                        teff=teffs.value,
+                        logg=loggs.value,
+                        Z=Zs.value,
                         wl_lo=cds.data["nat_wl"][0],
                         wl_hi=cds.data["nat_wl"][-1],
                     )
                     .normalize(95)
-                    .rv_shift(rv_slider.value)
+                    .rv_shift(rvs.value)
                     .rotationally_broaden(new)
                     .flux.value
-                ) * (1 - fill_factor_slider.value)
+                ) * (1 - fill_factors.value)
                 cds.data["spot_flux"] = spec.flux.value - cds.data["photo_flux"]
 
             def update_scale(attr, old, new):
@@ -265,21 +266,21 @@ class ExpPHOENIXGrid(PHOENIXGrid):
 
             def update_spot(attr, old, new):
                 """Callback that updates the starspot's temperature"""
-                spot_temp_slider.value = self.find_nearest_teff(new)
+                spot_temps.value = self.find_nearest_teff(new)
                 spot = (
                     PHOENIXSpectrum(
-                        teff=spot_temp_slider.value,
-                        logg=logg_slider.value,
-                        Z=Z_slider.value,
+                        teff=spot_temps.value,
+                        logg=loggs.value,
+                        Z=Zs.value,
                         wl_lo=cds.data["nat_wl"][0],
                         wl_hi=cds.data["nat_wl"][-1],
                     ).normalize(95)
-                    * fill_factor_slider.value
+                    * fill_factors.value
                 )
-                spot.radial_velocity = rv_slider.value * u.km / u.s
+                spot.radial_velocity = rvs.value * u.km / u.s
                 cds.data["spot_nat"] = spot.flux.value
                 cds.data["spot_flux"] = spot.rotationally_broaden(
-                    smoothing_slider.value
+                    smooths.value
                 ).flux.value
                 cds.data["nat_flux"] = cds.data["photo_nat"] + cds.data["spot_nat"]
                 spec = PrecomputedSpectrum(
@@ -289,39 +290,39 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 cds.data["flux"] = (
                     spec.tilt_to_data(data).flux.value
                     if continuum_toggle.active
-                    else spec.flux.value * scale_slider.value
+                    else spec.flux.value * scales.value
                 )
 
             def update_native(attr, old, new):
                 """Callback that updates the intrinsic parameters behind the spectrum"""
-                teff_slider.value = self.find_nearest_teff(teff_slider.value)
-                spot_temp_slider.value = self.find_nearest_teff(spot_temp_slider.value)
-                Z_slider.value = self.find_nearest_Z(Z_slider.value)
+                teffs.value = self.find_nearest_teff(teffs.value)
+                spot_temps.value = self.find_nearest_teff(spot_temps.value)
+                Zs.value = self.find_nearest_Z(Zs.value)
                 cds.data["photo_flux"] = PHOENIXSpectrum(
-                    teff=teff_slider.value,
-                    logg=logg_slider.value,
-                    Z=Z_slider.value,
+                    teff=teffs.value,
+                    logg=loggs.value,
+                    Z=Zs.value,
                     wl_lo=cds.data["nat_wl"][0],
                     wl_hi=cds.data["nat_wl"][-1],
-                ).normalize(95).rv_shift(rv_slider.value).rotationally_broaden(
-                    smoothing_slider.value
+                ).normalize(95).rv_shift(rvs.value).rotationally_broaden(
+                    smooths.value
                 ).flux.value * (
-                    1 - fill_factor_slider.value
+                    1 - fill_factors.value
                 )
 
                 cds.data["spot_flux"] = (
                     PHOENIXSpectrum(
-                        teff=spot_temp_slider.value,
-                        logg=logg_slider.value,
-                        Z=Z_slider.value,
+                        teff=spot_temps.value,
+                        logg=loggs.value,
+                        Z=Zs.value,
                         wl_lo=cds.data["nat_wl"][0],
                         wl_hi=cds.data["nat_wl"][-1],
                     )
                     .normalize(95)
-                    .rv_shift(rv_slider.value)
-                    .rotationally_broaden(smoothing_slider.value)
+                    .rv_shift(rvs.value)
+                    .rotationally_broaden(smooths.value)
                     .flux.value
-                    * fill_factor_slider.value
+                    * fill_factors.value
                 )
 
                 cds.data["nat_flux"] = cds.data["photo_flux"] + cds.data["spot_flux"]
@@ -331,28 +332,28 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 cds.data["flux"] = (
                     final.tilt_to_data(data).flux.value
                     if continuum_toggle.active
-                    else final.flux.value * scale_slider.value
+                    else final.flux.value * scales.value
                 )
 
             continuum_toggle.on_click(toggle_continuum)
-            rv_slider.on_change("value", update_rv)
-            smoothing_slider.on_change("value", update_smoothing)
-            scale_slider.on_change("value", update_scale)
-            teff_slider.on_change("value", update_native)
-            logg_slider.on_change("value", update_native)
-            Z_slider.on_change("value", update_native)
-            spot_temp_slider.on_change("value", update_spot)
-            fill_factor_slider.on_change("value", update_native)
+            rvs.on_change("value", update_rv)
+            smooths.on_change("value", update_smoothing)
+            scales.on_change("value", update_scale)
+            teffs.on_change("value", update_native)
+            loggs.on_change("value", update_native)
+            Zs.on_change("value", update_native)
+            spot_temps.on_change("value", update_spot)
+            fill_factors.on_change("value", update_native)
 
             sp = Spacer(width=20)
             doc.add_root(
                 layout(
                     [sp, fig],
                     [sp, continuum_toggle],
-                    [sp, teff_slider, smoothing_slider],
-                    [sp, logg_slider, rv_slider],
-                    [sp, Z_slider, scale_slider],
-                    [sp, spot_temp_slider, fill_factor_slider],
+                    [sp, teffs, smooths],
+                    [sp, loggs, rvs],
+                    [sp, Zs, scales],
+                    [sp, spot_temps, fill_factors],
                     background="whitesmoke",
                 )
             )
