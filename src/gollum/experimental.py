@@ -160,7 +160,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 end=2.0,
                 value=1.0,
                 step=0.005,
-                title="Normalization Scalar",
+                title="Scale Factor",
                 width=460,
                 bar_color="black",
             )
@@ -184,7 +184,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="maroon",
             )
             continuum_toggle = Toggle(
-                label="Fit Continuum (disables normalization)", button_type="success",
+                label="Fit Continuum (disables scaling)", button_type="success",
             )
 
             def toggle_continuum(active):
@@ -199,7 +199,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         .flux.value
                     )
                     scale_slider.disabled = True
-                    continuum_toggle.label = "Undo Continuum (enables normalization)"
+                    continuum_toggle.label = "Undo Continuum (enables scaling)"
                 else:
                     cds.data["flux"] = (
                         PrecomputedSpectrum(
@@ -211,7 +211,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                         * scale_slider.value
                     )
                     scale_slider.disabled = False
-                    continuum_toggle.label = "Fit Continuum (disables normalization)"
+                    continuum_toggle.label = "Fit Continuum (disables scaling)"
 
             def update_rv(attr, old, new):
                 """Callback that RV shifts the spectrum"""
