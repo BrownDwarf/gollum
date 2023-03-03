@@ -247,6 +247,21 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     else self.cur_total.tilt_to_data(data).flux.value
                 )
 
+            def update_fill_factor(attr, old, new):
+                if old not in (0, 1):
+                    cds.data["spot_flux"] *= new / old
+                    cds.data["photo_flux"] *= (1 - new) / (1 - old)
+                    self.cur_total = self[0]._copy(
+                        flux=(cds.data["photo_flux"] + cds.data["spot_flux"]) * DV
+                    )
+                    cds.data["flux"] = (
+                        self.cur_total.flux.value * scales.value
+                        if not continuum.active
+                        else self.cur_total.tilt_to_data(data).flux.value
+                    )
+                else:
+                    update_smoothing("value", 0, smooths.value)
+
             def update_native(attr, old, new):
                 """Callback that updates the intrinsic parameters behind the spectrum"""
                 teffs.value = self.find_nearest_teff(teffs.value)
@@ -295,7 +310,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             loggs.on_change("value", update_native)
             Zs.on_change("value", update_native)
             spot_temps.on_change("value", update_spot)
-            fills.on_change("value", update_native)
+            fills.on_change("value", update_fill_factor)
 
             sp = Spacer(width=20)
             doc.add_root(
