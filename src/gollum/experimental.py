@@ -37,8 +37,9 @@ class ExpPHOENIXGrid(PHOENIXGrid):
         """
 
         def create_interact_ui(doc):
-            self.cur_native = self[0]
+            self.cur_photo = self[0]
             self.cur_spot = self[0]
+            self.cur_total = self[0]
             wl_i, flux_i = self[0].wavelength.value, self[0].normalize(95).flux.value
             cds = ColumnDataSource(
                 data={
@@ -125,7 +126,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 start=-200,
                 end=200,
                 value=0.00,
-                step=0.05,
                 title="Radial Velocity [km/s]",
                 width=460,
                 bar_color="blue",
@@ -179,7 +179,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="maroon",
                 margin=(0, 20, 0, 0),
             )
-            fill_factors = Slider(
+            fills = Slider(
                 start=0,
                 end=1,
                 value=0,
@@ -188,77 +188,42 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 width=460,
                 bar_color="maroon",
             )
-            continuum_toggle = Toggle(
+            continuum = Toggle(
                 label="Fit Continuum (disables scaling)", button_type="success",
             )
 
             def toggle_continuum(active):
                 """Callback that toggles continuum auto-fit"""
                 if active:
-                    cds.data["flux"] = (
-                        PrecomputedSpectrum(
-                            spectral_axis=cds.data["wl"] * u.AA,
-                            flux=cds.data["flux"] * DV,
-                        )
-                        .tilt_to_data(data)
-                        .flux.value
-                    )
+                    cds.data["flux"] = self.cur_total.tilt_to_data(data).flux.value
                     scales.disabled = True
-                    continuum_toggle.label = "Undo Continuum (enables scaling)"
+                    continuum.label = "Undo Continuum (enables scaling)"
                 else:
-                    cds.data["flux"] = (
-                        PrecomputedSpectrum(
-                            spectral_axis=cds.data["wl"] * u.AA,
-                            flux=cds.data["nat_flux"] * DV,
-                        )
-                        .normalize(95)
-                        .rotationally_broaden(smooths.value)
-                        .flux.value
-                        * scales.value
-                    )
+                    cds.data["flux"] = self.cur_total.flux.value * scales.value
                     scales.disabled = False
-                    continuum_toggle.label = "Fit Continuum (disables scaling)"
+                    continuum.label = "Fit Continuum (disables scaling)"
 
             def update_rv(attr, old, new):
                 """Callback that RV shifts the spectrum"""
-                cds.data["wl"] = (
-                    PrecomputedSpectrum(
-                        spectral_axis=cds.data["nat_wl"] * u.AA,
-                        flux=cds.data["flux"] * DV,
-                    )
-                    .rv_shift(new)
-                    .wavelength.value
-                )
+                cds.data["wl"] = self[0].rv_shift(new).wavelength.value
 
             def update_smoothing(attr, old, new):
                 """Callback that rotationally broadens the spectrum"""
-                spec = (
-                    PrecomputedSpectrum(
-                        spectral_axis=cds.data["wl"] * u.AA,
-                        flux=cds.data["nat_flux"] * DV,
-                    )
-                    .normalize(95)
-                    .rotationally_broaden(new)
+                photo = self.cur_photo.rotationally_broaden(new)
+                spot = self.cur_spot.rotationally_broaden(new)
+                self.cur_total = (
+                    photo * (1 - fills.value) + spot * fills.value
+                ).normalize(95)
+
+                cds.data["photo_flux"] = photo.normalize(95).flux.value * (
+                    1 - fills.value
                 )
+                cds.data["spot_flux"] = spot.normalize(95).flux.value * fills.value
                 cds.data["flux"] = (
-                    spec.tilt_to_data(data).flux.value
-                    if continuum_toggle.active
-                    else spec.flux.value * scales.value
+                    self.cur_total.flux.value * scales.value
+                    if not continuum.active
+                    else self.cur_total.tilt_to_data(data).flux.value
                 )
-                cds.data["photo_flux"] = (
-                    PHOENIXSpectrum(
-                        teff=teffs.value,
-                        logg=loggs.value,
-                        Z=Zs.value,
-                        wl_lo=cds.data["nat_wl"][0],
-                        wl_hi=cds.data["nat_wl"][-1],
-                    )
-                    .normalize(95)
-                    .rv_shift(rvs.value)
-                    .rotationally_broaden(new)
-                    .flux.value
-                ) * (1 - fill_factors.value)
-                cds.data["spot_flux"] = spec.flux.value - cds.data["photo_flux"]
 
             def update_scale(attr, old, new):
                 """Callback that scales the spectra"""
@@ -267,30 +232,19 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             def update_spot(attr, old, new):
                 """Callback that updates the starspot's temperature"""
                 spot_temps.value = self.find_nearest_teff(new)
-                spot = (
-                    PHOENIXSpectrum(
-                        teff=spot_temps.value,
-                        logg=loggs.value,
-                        Z=Zs.value,
-                        wl_lo=cds.data["nat_wl"][0],
-                        wl_hi=cds.data["nat_wl"][-1],
-                    ).normalize(95)
-                    * fill_factors.value
-                )
-                spot.radial_velocity = rvs.value * u.km / u.s
-                cds.data["spot_nat"] = spot.flux.value
-                cds.data["spot_flux"] = spot.rotationally_broaden(
-                    smooths.value
-                ).flux.value
-                cds.data["nat_flux"] = cds.data["photo_nat"] + cds.data["spot_nat"]
-                spec = PrecomputedSpectrum(
-                    spectral_axis=cds.data["wl"] * u.AA,
-                    flux=(cds.data["spot_flux"] + cds.data["photo_flux"]) * DV,
-                )
+                self.cur_spot = self[self.get_index((new, loggs.value, Zs.value))]
+                spot = self.cur_spot.rotationally_broaden(smooths.value)
+                self.cur_total = (
+                    self.cur_photo.rotationally_broaden(smooths.value)
+                    * (1 - fills.value)
+                    + spot * fills.value
+                ).normalize(95)
+
+                cds.data["spot_flux"] = spot.normalize(95).flux.value * fills.value
                 cds.data["flux"] = (
-                    spec.tilt_to_data(data).flux.value
-                    if continuum_toggle.active
-                    else spec.flux.value * scales.value
+                    self.cur_total.flux.value * scales.value
+                    if not continuum.active
+                    else self.cur_total.tilt_to_data(data).flux.value
                 )
 
             def update_native(attr, old, new):
@@ -304,10 +258,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     Z=Zs.value,
                     wl_lo=cds.data["nat_wl"][0],
                     wl_hi=cds.data["nat_wl"][-1],
-                ).normalize(95).rv_shift(rvs.value).rotationally_broaden(
-                    smooths.value
-                ).flux.value * (
-                    1 - fill_factors.value
+                ).normalize(95).rotationally_broaden(smooths.value).flux.value * (
+                    1 - fills.value
                 )
 
                 cds.data["spot_flux"] = (
@@ -322,7 +274,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     .rv_shift(rvs.value)
                     .rotationally_broaden(smooths.value)
                     .flux.value
-                    * fill_factors.value
+                    * fills.value
                 )
 
                 cds.data["nat_flux"] = cds.data["photo_flux"] + cds.data["spot_flux"]
@@ -331,11 +283,11 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 )
                 cds.data["flux"] = (
                     final.tilt_to_data(data).flux.value
-                    if continuum_toggle.active
+                    if continuum.active
                     else final.flux.value * scales.value
                 )
 
-            continuum_toggle.on_click(toggle_continuum)
+            continuum.on_click(toggle_continuum)
             rvs.on_change("value", update_rv)
             smooths.on_change("value", update_smoothing)
             scales.on_change("value", update_scale)
@@ -343,17 +295,17 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             loggs.on_change("value", update_native)
             Zs.on_change("value", update_native)
             spot_temps.on_change("value", update_spot)
-            fill_factors.on_change("value", update_native)
+            fills.on_change("value", update_native)
 
             sp = Spacer(width=20)
             doc.add_root(
                 layout(
                     [sp, fig],
-                    [sp, continuum_toggle],
+                    [sp, continuum],
                     [sp, teffs, smooths],
                     [sp, loggs, rvs],
                     [sp, Zs, scales],
-                    [sp, spot_temps, fill_factors],
+                    [sp, spot_temps, fills],
                     background="whitesmoke",
                 )
             )
