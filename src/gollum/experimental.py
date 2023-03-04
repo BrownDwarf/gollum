@@ -253,20 +253,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 """Callback that updates the intrinsic parameters of the star"""
                 teffs.value = self.find_nearest_teff(teffs.value)
                 Zs.value = self.find_nearest_Z(Zs.value)
-                self.cur_photo = PHOENIXSpectrum(
-                    teff=teffs.value,
-                    logg=loggs.value,
-                    Z=Zs.value,
-                    wl_lo=self[0].wavelength.value[0],
-                    wl_hi=self[0].wavelength.value[-1],
-                )
-                self.cur_spot = PHOENIXSpectrum(
-                    teff=spot_temps.value,
-                    logg=loggs.value,
-                    Z=Zs.value,
-                    wl_lo=self[0].wavelength.value[0],
-                    wl_hi=self[0].wavelength.value[-1],
-                )
+                self.cur_photo = self[self.get_index((teffs.value, loggs.value, Zs.value))]
+                self.cur_spot = self[self.get_index((spot_temps.value, loggs.value, Zs.value))]
                 update_smoothing("value", 0, smooths.value)
 
             continuum.on_click(toggle_continuum)
