@@ -37,21 +37,10 @@ class ExpPHOENIXGrid(PHOENIXGrid):
         """
 
         def create_interact_ui(doc):
-            self.cur_photo = self[0]
-            self.cur_spot = self[0]
-            self.cur_total = self[0]
+            self.cur_photo = self.cur_spot = self.cur_total = self[0]
             wl_i, flux_i = self[0].wavelength.value, self[0].normalize(95).flux.value
             cds = ColumnDataSource(
-                data={
-                    "wl": wl_i,
-                    "nat_wl": wl_i,
-                    "flux": flux_i,
-                    "nat_flux": self[0].flux.value,
-                    "photo_flux": flux_i,
-                    "photo_nat": flux_i,
-                    "spot_flux": flux_i * 0,
-                    "spot_nat": flux_i,
-                }
+                data={"wl": wl_i, "flux": flux_i, "photo": flux_i, "spot": flux_i * 0,}
             )
             wl_lo, wl_hi = wl_i[0], wl_i[-1]
             fig = figure(
@@ -97,7 +86,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             )
             fig.step(
                 x="wl",
-                y="photo_flux",
+                y="photo",
                 color="violet",
                 source=cds,
                 legend_label="PHOENIX Model: Photosphere Flux",
@@ -105,7 +94,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             ).visible = False
             fig.step(
                 x="wl",
-                y="spot_flux",
+                y="spot",
                 color="lavender",
                 source=cds,
                 legend_label="PHOENIX Model: Starspot Flux",
@@ -215,10 +204,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     photo * (1 - fills.value) + spot * fills.value
                 ).normalize(95)
 
-                cds.data["photo_flux"] = photo.normalize(95).flux.value * (
-                    1 - fills.value
-                )
-                cds.data["spot_flux"] = spot.normalize(95).flux.value * fills.value
+                cds.data["photo"] = photo.normalize(95).flux.value * (1 - fills.value)
+                cds.data["spot"] = spot.normalize(95).flux.value * fills.value
                 cds.data["flux"] = (
                     self.cur_total.flux.value * scales.value
                     if not continuum.active
@@ -240,7 +227,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     + spot * fills.value
                 ).normalize(95)
 
-                cds.data["spot_flux"] = spot.normalize(95).flux.value * fills.value
+                cds.data["spot"] = spot.normalize(95).flux.value * fills.value
                 cds.data["flux"] = (
                     self.cur_total.flux.value * scales.value
                     if not continuum.active
@@ -249,10 +236,10 @@ class ExpPHOENIXGrid(PHOENIXGrid):
 
             def update_fill_factor(attr, old, new):
                 if old not in (0, 1):
-                    cds.data["spot_flux"] *= new / old
-                    cds.data["photo_flux"] *= (1 - new) / (1 - old)
+                    cds.data["spot"] *= new / old
+                    cds.data["photo"] *= (1 - new) / (1 - old)
                     self.cur_total = self[0]._copy(
-                        flux=(cds.data["photo_flux"] + cds.data["spot_flux"]) * DV
+                        flux=(cds.data["photo"] + cds.data["spot"]) * DV
                     )
                     cds.data["flux"] = (
                         self.cur_total.flux.value * scales.value
@@ -262,53 +249,33 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 else:
                     update_smoothing("value", 0, smooths.value)
 
-            def update_native(attr, old, new):
-                """Callback that updates the intrinsic parameters behind the spectrum"""
+            def update_photo(attr, old, new):
+                """Callback that updates the intrinsic parameters of the star"""
                 teffs.value = self.find_nearest_teff(teffs.value)
-                spot_temps.value = self.find_nearest_teff(spot_temps.value)
                 Zs.value = self.find_nearest_Z(Zs.value)
-                cds.data["photo_flux"] = PHOENIXSpectrum(
+                self.cur_photo = PHOENIXSpectrum(
                     teff=teffs.value,
                     logg=loggs.value,
                     Z=Zs.value,
-                    wl_lo=cds.data["nat_wl"][0],
-                    wl_hi=cds.data["nat_wl"][-1],
-                ).normalize(95).rotationally_broaden(smooths.value).flux.value * (
-                    1 - fills.value
+                    wl_lo=self[0].wavelength.value[0],
+                    wl_hi=self[0].wavelength.value[-1],
                 )
-
-                cds.data["spot_flux"] = (
-                    PHOENIXSpectrum(
-                        teff=spot_temps.value,
-                        logg=loggs.value,
-                        Z=Zs.value,
-                        wl_lo=cds.data["nat_wl"][0],
-                        wl_hi=cds.data["nat_wl"][-1],
-                    )
-                    .normalize(95)
-                    .rv_shift(rvs.value)
-                    .rotationally_broaden(smooths.value)
-                    .flux.value
-                    * fills.value
+                self.cur_spot = PHOENIXSpectrum(
+                    teff=spot_temps.value,
+                    logg=loggs.value,
+                    Z=Zs.value,
+                    wl_lo=self[0].wavelength.value[0],
+                    wl_hi=self[0].wavelength.value[-1],
                 )
-
-                cds.data["nat_flux"] = cds.data["photo_flux"] + cds.data["spot_flux"]
-                final = PrecomputedSpectrum(
-                    spectral_axis=cds.data["wl"] * u.AA, flux=cds.data["nat_flux"] * DV,
-                )
-                cds.data["flux"] = (
-                    final.tilt_to_data(data).flux.value
-                    if continuum.active
-                    else final.flux.value * scales.value
-                )
+                update_smoothing("value", 0, smooths.value)
 
             continuum.on_click(toggle_continuum)
             rvs.on_change("value", update_rv)
             smooths.on_change("value", update_smoothing)
             scales.on_change("value", update_scale)
-            teffs.on_change("value", update_native)
-            loggs.on_change("value", update_native)
-            Zs.on_change("value", update_native)
+            teffs.on_change("value", update_photo)
+            loggs.on_change("value", update_photo)
+            Zs.on_change("value", update_photo)
             spot_temps.on_change("value", update_spot)
             fills.on_change("value", update_fill_factor)
 
