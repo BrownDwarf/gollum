@@ -108,7 +108,6 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 step=1,
                 title="Rotational Broadening [km/s]",
                 width=460,
-                format="0.f",
                 bar_color="blue",
             )
             rvs = Slider(
