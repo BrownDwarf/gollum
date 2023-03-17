@@ -102,10 +102,10 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             ).visible = False
 
             smooths = Slider(
-                start=0.1,
+                start=0,
                 end=200,
-                value=0.1,
-                step=0.1,
+                value=0,
+                step=1,
                 title="Rotational Broadening [km/s]",
                 width=460,
                 format="0.f",
