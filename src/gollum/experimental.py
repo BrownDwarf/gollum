@@ -20,6 +20,18 @@ filterwarnings("ignore", category=RuntimeWarning)
 class ExpPHOENIXGrid(PHOENIXGrid):
     """A container for an experimental grid of PHOENIX precomputed synthetic spectra of stars."""
 
+    @property
+    def info(self):
+        print(
+            f"""\t    Type: {type(self).__name__}
+            Effective Temperature: {len(self.teff_points)} points
+            Surface Gravity: {len(self.logg_points)} points
+            Metallicity: {len(self.Z_points)} points
+            Grid Size: {len(self)} points
+            Wavelength Range: [{self[0].wavelength.value[0]}, {self[0].wavelength.value[-1]}]
+            Wavelength Unit: {self[0].wavelength.unit}"""
+        )
+
     def show_dashboard(self, data=None, url="localhost:8888"):  # pragma: no cover
         """Show an interactive dashboard for the experimental PHOENIX grid;
         heavily inspired by the lightkurve .interact() method
@@ -253,8 +265,12 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 """Callback that updates the intrinsic parameters of the star"""
                 teffs.value = self.find_nearest_teff(teffs.value)
                 Zs.value = self.find_nearest_Z(Zs.value)
-                self.cur_photo = self[self.get_index((teffs.value, loggs.value, Zs.value))]
-                self.cur_spot = self[self.get_index((spot_temps.value, loggs.value, Zs.value))]
+                self.cur_photo = self[
+                    self.get_index((teffs.value, loggs.value, Zs.value))
+                ]
+                self.cur_spot = self[
+                    self.get_index((spot_temps.value, loggs.value, Zs.value))
+                ]
                 update_smoothing("value", 0, smooths.value)
 
             continuum.on_click(toggle_continuum)
