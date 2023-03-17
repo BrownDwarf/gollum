@@ -235,6 +235,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 )
 
             def update_fill_factor(attr, old, new):
+                """Callback that updates the starspot's fill factor"""
                 if old not in (0, 1):
                     cds.data["spot"] *= new / old
                     cds.data["photo"] *= (1 - new) / (1 - old)
