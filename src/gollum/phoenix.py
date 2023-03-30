@@ -141,6 +141,7 @@ class PHOENIXGrid(SpectrumCollection):
         path="~/libraries/raw/PHOENIX/",
         wl_lo=8038,
         wl_hi=12849,
+        instrumental_resolution=None,
         download=False,
         experimental=False,
         **kwargs,
@@ -182,6 +183,8 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_hi=wl_hi,
                         download=download,
                     )
+                    if instrumental_resolution:
+                        spec = spec.instrumental_broaden(instrumental_resolution)
                     wavelengths.append(spec.wavelength)
                     fluxes.append(spec.flux)
                     grid_points.append((teff, logg, Z))

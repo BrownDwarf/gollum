@@ -94,14 +94,14 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 y="flux",
                 color="crimson",
                 source=cds,
-                legend_label="PHOENIX Model: Total Flux",
+                legend_label="Total Flux",
             )
             fig.step(
                 x="wl",
                 y="photo",
                 color="violet",
                 source=cds,
-                legend_label="PHOENIX Model: Photosphere Flux",
+                legend_label="Photosphere Flux",
                 level="underlay",
             ).visible = False
             fig.step(
@@ -109,7 +109,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 y="spot",
                 color="lavender",
                 source=cds,
-                legend_label="PHOENIX Model: Starspot Flux",
+                legend_label="Starspot Flux",
                 level="underlay",
             ).visible = False
 
