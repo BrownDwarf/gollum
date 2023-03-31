@@ -20,6 +20,7 @@ from specutils import Spectrum1D
 from specutils.manipulation import LinearInterpolatedResampler
 from specutils.fitting import fit_generic_continuum
 from astropy import units as u, constants as const
+from astropy.units import dimensionless_unscaled as DV
 from astropy.modeling.physical_models import BlackBody
 from astropy.utils.exceptions import AstropyDeprecationWarning
 
@@ -79,11 +80,10 @@ class PrecomputedSpectrum(Spectrum1D):
         normalized_spec : PrecomputedSpectrum
             Normalized spectrum
         """
-        spec = self._copy(
-            spectral_axis=self.wavelength.value * self.wavelength.unit, wcs=None
+        return self.divide(
+            np.nanpercentile(self.flux.value, percentile) * self.flux.unit,
+            handle_meta="first_found",
         )
-        scalar_flux = np.nanpercentile(spec.flux.value, percentile) * spec.flux.unit
-        return spec.divide(scalar_flux, handle_meta="first_found")
 
     def rotationally_broaden(self, vsini, u1=0.0, u2=0.0):
         r"""Rotationally broaden the spectrum for a given :math:`v\sin{i}`
@@ -169,11 +169,9 @@ class PrecomputedSpectrum(Spectrum1D):
         shifted_spec : PrecomputedSpectrum
             RV-Shifted Spectrum
         """
-        output = deepcopy(self)
-        output.radial_velocity = rv * u.km / u.s
-        return self._copy(
-            spectral_axis=output.wavelength.value * output.wavelength.unit, wcs=None
-        )
+        shifted_spec = deepcopy(self)
+        shifted_spec.radial_velocity = rv * u.km / u.s
+        return shifted_spec
 
     def resample(self, target_spectrum):
         """Resample spectrum at the wavelength points of another spectrum
@@ -287,7 +285,7 @@ class PrecomputedSpectrum(Spectrum1D):
 
         flux_unit = self.flux.unit
         normalize = False
-        if flux_unit == u.dimensionless_unscaled:
+        if flux_unit == DV:
             if "native_flux_unit" in self.meta:
                 flux_unit = self.meta["native_flux_unit"]
                 normalize = True

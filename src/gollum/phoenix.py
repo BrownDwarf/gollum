@@ -94,7 +94,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         fn = f"{base_path}/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
         flux_orig = fits.open(fn)[0].data.astype(np.float64)
         flux_native = flux_orig[mask]
-        native_flux_unit = u.erg / u.s / u.cm**2 / u.cm
+        native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
 
         super().__init__(
             spectral_axis=wl_out * u.AA,
@@ -141,6 +141,7 @@ class PHOENIXGrid(SpectrumCollection):
         path="~/libraries/raw/PHOENIX/",
         wl_lo=8038,
         wl_hi=12849,
+        instrumental_resolution=None,
         download=False,
         experimental=False,
         **kwargs,
@@ -182,6 +183,8 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_hi=wl_hi,
                         download=download,
                     )
+                    if instrumental_resolution:
+                        spec = spec.instrumental_broaden(instrumental_resolution)
                     wavelengths.append(spec.wavelength)
                     fluxes.append(spec.flux)
                     grid_points.append((teff, logg, Z))
@@ -283,8 +286,8 @@ class PHOENIXGrid(SpectrumCollection):
             )
             fig = figure(
                 title="PHOENIX Interactive Dashboard",
-                height=500,
                 width=950,
+                height=500,
                 tools="pan,wheel_zoom,box_zoom,tap,reset",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
@@ -317,7 +320,7 @@ class PHOENIXGrid(SpectrumCollection):
                     ),
                 )
 
-            fig.title.offset = 280
+            fig.title.align = "center"
             fig.title.text_font_size = "16pt"
             fig.yaxis.axis_label = "Normalized Flux"
             fig.xaxis.axis_label = "Wavelength (\u212B)"
@@ -325,6 +328,7 @@ class PHOENIXGrid(SpectrumCollection):
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
             fig.y_range = Range1d(start=0, end=1.5)
             fig.legend.location = "top_right"
+            fig.legend.click_policy = "hide"
             fig.step(
                 "wavelength",
                 "flux",
@@ -387,12 +391,12 @@ class PHOENIXGrid(SpectrumCollection):
                 end=2.0,
                 value=1.0,
                 step=0.005,
-                title="Normalization Scalar",
+                title="Scale Factor",
                 width=460,
                 bar_color="black",
             )
             continuum_toggle = Toggle(
-                label="Fit Continuum (disables normalization)", button_type="success"
+                label="Fit Continuum (disables scaling)", button_type="success"
             )
 
             def update_to_continuum(active):
@@ -400,23 +404,22 @@ class PHOENIXGrid(SpectrumCollection):
                 if active:
                     new_spec = PHOENIXSpectrum(
                         spectral_axis=spec_source.data["wavelength"] * u.AA,
-                        flux=spec_source.data["flux"] * u.dimensionless_unscaled,
+                        flux=spec_source.data["flux"] * DV,
                     ).tilt_to_data(data)
                     scale_slider.disabled = True
-                    continuum_toggle.label = "Undo Continuum (enables normalization)"
+                    continuum_toggle.label = "Undo Continuum (enables scaling)"
                 else:
                     new_spec = (
                         PHOENIXSpectrum(
                             spectral_axis=spec_source.data["native_wavelength"] * u.AA,
-                            flux=spec_source.data["native_flux"]
-                            * u.dimensionless_unscaled,
+                            flux=spec_source.data["native_flux"] * DV,
                         )
                         .rotationally_broaden(smoothing_slider.value)
-                        .multiply(scale_slider.value * u.dimensionless_unscaled)
+                        .multiply(scale_slider.value * DV)
                         .rv_shift(rv_slider.value)
                     )
                     scale_slider.disabled = False
-                    continuum_toggle.label = "Fit Continuum (disables normalization)"
+                    continuum_toggle.label = "Fit Continuum (disables scaling)"
 
                 spec_source.data["flux"] = new_spec.flux.value
 
@@ -425,10 +428,10 @@ class PHOENIXGrid(SpectrumCollection):
                 new_spec = (
                     PHOENIXSpectrum(
                         spectral_axis=spec_source.data["native_wavelength"] * u.AA,
-                        flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                        flux=spec_source.data["native_flux"] * DV,
                     )
                     .rotationally_broaden(smoothing_slider.value)
-                    .multiply(new * u.dimensionless_unscaled)
+                    .multiply(new * DV)
                     .rv_shift(rv_slider.value)
                 )
                 spec_source.data["flux"] = new_spec.flux.value
@@ -437,14 +440,12 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when smoothing slider changes"""
                 new_spec = PHOENIXSpectrum(
                     spectral_axis=spec_source.data["native_wavelength"] * u.AA,
-                    flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                    flux=spec_source.data["native_flux"] * DV,
                 ).rotationally_broaden(new)
                 new_spec = (
                     new_spec.tilt_to_data(data)
                     if continuum_toggle.active
-                    else new_spec.multiply(
-                        scale_slider.value * u.dimensionless_unscaled
-                    )
+                    else new_spec.multiply(scale_slider.value * DV)
                 )
 
                 spec_source.data["flux"] = new_spec.flux.value
@@ -453,7 +454,7 @@ class PHOENIXGrid(SpectrumCollection):
                 """Callback to take action when RV slider changes"""
                 new_spec = PHOENIXSpectrum(
                     spectral_axis=spec_source.data["native_wavelength"] * u.AA,
-                    flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
+                    flux=spec_source.data["native_flux"] * DV,
                 ).rv_shift(new)
                 spec_source.data["wavelength"] = new_spec.wavelength.value
 
@@ -470,9 +471,7 @@ class PHOENIXGrid(SpectrumCollection):
                     new_spec = (
                         new_spec.tilt_to_data(data)
                         if continuum_toggle.active
-                        else new_spec.multiply(
-                            scale_slider.value * u.dimensionless_unscaled
-                        )
+                        else new_spec.multiply(scale_slider.value * DV)
                     )
 
                     spec_source.data = {
@@ -496,9 +495,7 @@ class PHOENIXGrid(SpectrumCollection):
                     new_spec = (
                         new_spec.tilt_to_data(data)
                         if continuum_toggle.active
-                        else new_spec.multiply(
-                            scale_slider.value * u.dimensionless_unscaled
-                        )
+                        else new_spec.multiply(scale_slider.value * DV)
                     )
 
                     spec_source.data = {
@@ -520,9 +517,7 @@ class PHOENIXGrid(SpectrumCollection):
                 new_spec = (
                     new_spec.tilt_to_data(data)
                     if continuum_toggle.active
-                    else new_spec.multiply(
-                        scale_slider.value * u.dimensionless_unscaled
-                    )
+                    else new_spec.multiply(scale_slider.value * DV)
                 )
 
                 spec_source.data = {
