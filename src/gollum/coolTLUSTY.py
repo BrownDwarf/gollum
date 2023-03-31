@@ -55,7 +55,7 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
         teff=None,
         logg=None,
         z=None,
-        path="~/libraries/raw/coolTLUSTY/",
+        path="~/libraries/raw/coolTLUSTY/ClearEQ/",
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
@@ -73,19 +73,11 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
             assert logg in logg_points, "logg must be a point on the grid"
             assert z in z_points, "Fe/H must be a point on the grid"
 
-            Z_string = f"{metallicity:+0.1f}" if metallicity else "0.0.gz"
-            fn = "{}T{}g{:0.2f}Z{:0.3f}.21".format(base_path, teff, logg, z)
+            fn = "{}T{:3d}_g{:0.2f}_Z{:0.3f}.21".format(base_path, int(teff), logg, z)
 
-            df_native = (
-                read_csv(
-                    fn,
-                    skiprows=[0, 1],
-                    delim_whitespace=True,
-                    names=["wavelength_um", "flux"],
-                )
-                .sort_values("wavelength_um")
-                .reset_index(drop=True)
-            )
+            df_native = read_csv(fn, delim_whitespace=True, usecols=['LAMBDA(mic)', 'FLAM'])
+            df_native['wavelength_um'] = df_native['LAMBDA(mic)'].str.replace('D', 'e').astype(float)
+            df_native['flux'] = df_native['FLAM'].str.replace('D', 'e').astype(float)
 
             # convert to Angstroms
             df_native["wavelength"] = df_native["wavelength_um"] * 10000.0
@@ -94,7 +86,7 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
 
             super().__init__(
                 spectral_axis=df_trimmed.wavelength.values * u.AA,
-                flux=df_trimmed.flux.values * u.erg / u.s / u.cm**2 / u.Hz,
+                flux=df_trimmed.flux.values * u.erg / u.s / u.cm**2 / u.AA,
                 **kwargs,
             )
 
