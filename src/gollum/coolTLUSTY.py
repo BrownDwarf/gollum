@@ -43,7 +43,8 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
     logg : float
         The logg label of the coolTLUSTY model to read in.  Must be on the coolTLUSTY grid.
     path : str
-        The path to your local coolTLUSTY grid library.  You must have the coolTLUSTY grid downloaded locally.  Default: "~/libraries/raw/coolTLUSTY/"
+        The path to your local coolTLUSTY grid library.  You must have the coolTLUSTY grid downloaded locally.  
+        Default: "~/libraries/raw/coolTLUSTY/YDwarfModels/LacyBurrows2023/Structures/"
     wl_lo : float
         The shortest wavelength of the models to keep (Angstroms)
     wl_hi : float
@@ -56,9 +57,9 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
         teff=None,
         logg=None,
         z=None,
-        path="~/libraries/raw/coolTLUSTY/YDwarfModels/LacyBurrows2023/ClearEQ/",
-        wl_lo=8038,
-        wl_hi=12849,
+        path="~/libraries/raw/coolTLUSTY/YDwarfModels/LacyBurrows2023/ClearNEQ/",
+        wl_lo=10_000,
+        wl_hi=50_000,
         **kwargs,
     ):
 
@@ -74,7 +75,7 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
             assert logg in logg_points, "logg must be a point on the grid"
             assert z in z_points, "Fe/H must be a point on the grid"
 
-            fn = "{}T{:3d}_g{:0.2f}_Z{:0.3f}.21".format(base_path, int(teff), logg, z)
+            fn = "{}T{:3d}_g{:0.2f}_Z{:0.3f}_CDIFF1e6.21".format(base_path, int(teff), logg, z)
 
             df_native = read_csv(fn, delim_whitespace=True, usecols=['LAMBDA(mic)', 'FLAM'])
             df_native['wavelength_um'] = df_native['LAMBDA(mic)'].str.replace('D', 'e').astype(float)
@@ -85,9 +86,21 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
             mask = (df_native.wavelength > wl_lo) & (df_native.wavelength < wl_hi)
             df_trimmed = df_native[mask].reset_index(drop=True)
 
+            # Read in the structure files
+            fn_struct = fn[:-1]+'0'
+            fn_struct = fn_struct.replace('ClearNEQ', 'Structures')
+            usecols = ['DM', 'TEMP']
+            df_struct = read_csv(fn_struct, delim_whitespace=True, skiprows=[0,1], usecols=usecols)
+            df_struct['pressure_mb'] = df_struct['DM'].str.replace('D', 'e').astype(float)
+            df_struct['temp_K'] = df_struct['TEMP'].str.replace('D', 'e').astype(float)
+
+            #self.structure = df_struct
+            meta_out = {'struct':df_struct}
+
             super().__init__(
                 spectral_axis=df_trimmed.wavelength.values * u.AA,
                 flux=df_trimmed.flux.values * u.erg / u.s / u.cm**2 / u.AA,
+                meta=meta_out,
                 **kwargs,
             )
 
@@ -146,6 +159,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 metallicity_points = metallicity_points[subset]
 
             wavelengths, fluxes, grid_points, missing = [], [], [], 0
+            structures = []
             pbar = tqdm(
                 product(teff_points, logg_points, metallicity_points),
                 total=len(teff_points) * len(logg_points) * len(metallicity_points),
@@ -165,6 +179,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
                     wavelengths.append(spec.wavelength.value)
                     fluxes.append(spec.flux.value)
                     grid_points.append((teff, logg, Z))
+                    structures.append(spec.meta['struct'])
                 except FileNotFoundError:
                     log.info(f"No file for Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}")
                     missing += 1
@@ -184,6 +199,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
                     "teff_points": teff_points,
                     "logg_points": logg_points,
                     "metallicity_points": metallicity_points,
+                    "structures":structures,
                     "grid_labels": ("T_eff", "log(g)", "Z"),
                     "n_spectra": len(grid_points),
                     "grid_points": grid_points,
@@ -321,6 +337,13 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 }
             )
 
+            struct_source = ColumnDataSource(
+                data={
+                    "pressure": self.meta['structures'][0]['pressure_mb'].values,
+                    "temperature": self.meta['structures'][0]['temp_K'].values
+                }
+            )
+
             fig = figure(
                 title="coolTLUSTY Interactive Dashboard",
                 plot_height=340,
@@ -338,6 +361,29 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 self[0].wavelength.value.min(),
                 self[0].wavelength.value.max(),
             )
+
+            fig2 = figure(
+                title="Structure",
+                plot_height=340,
+                plot_width=300,
+                y_axis_type="log",
+                tools="pan,wheel_zoom,box_zoom,reset,save",
+                toolbar_location="below",
+                border_fill_color="whitesmoke",
+            )
+
+            fig2.step(
+                "temperature",
+                "pressure",
+                line_width=2,
+                color="Red",
+                source=struct_source,
+                nonselection_line_color="DarkOrange",
+                nonselection_line_alpha=1.0,
+            )
+            p_lo, p_hi = (1e-2,1e7,)
+            fig2.y_range = Range1d(start=p_hi, end=p_lo)
+            fig2.x_range = Range1d(start=0, end=4000)
 
             instrumental_resolution = 2000
             if data:
@@ -482,6 +528,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 )
                 spec_source.data["flux"] = new_spec.flux.value
 
+
             def update_upon_smooth(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
                 new_spec = (
@@ -534,6 +581,13 @@ class CoolTLUSTYGrid(SpectrumCollection):
                         "wavelength": new_spec.wavelength.value,
                         "flux": new_spec.flux.value,
                     }
+
+                    ind = self.get_index(new_grid_point)
+                    struct_source.data = {
+                        "pressure": self.meta['structures'][ind]['pressure_mb'].values,
+                        "temperature": self.meta['structures'][ind]['temp_K'].values
+                    }
+
                 else:
                     pass
 
@@ -603,6 +657,12 @@ class CoolTLUSTYGrid(SpectrumCollection):
                         "wavelength": new_spec.wavelength.value,
                         "flux": new_spec.flux.value,
                     }
+
+                    ind = self.get_index(new_grid_point)
+                    struct_source.data = {
+                        "pressure": self.meta['structures'][ind]['pressure_mb'].values,
+                        "temperature": self.meta['structures'][ind]['temp_K'].values
+                    }
                 else:
                     pass
 
@@ -638,7 +698,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
             )
 
             widgets_and_figures = layout(
-                [fig],
+                [fig, fig2],
                 [l_button, sp1, r_button, sp2, teff_slider, sp5, teff_message],
                 [sp4, logg_slider, sp3, logg_message],
                 [sp4, metallicity_slider, sp3, metallicity_message],
