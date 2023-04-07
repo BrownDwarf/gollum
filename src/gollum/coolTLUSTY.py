@@ -290,7 +290,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
 
 
     def show_dashboard(
-        self, data=None, notebook_url="localhost:8888", show_telluric=True
+        self, data=None, notebook_url="localhost:8888", show_telluric=False
     ):  # pragma: no cover
         """Show an interactive dashboard for the Sonora grid;
         heavily inspired by the lightkurve .interact() method.
@@ -451,7 +451,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 start=min(self.metallicity_points),
                 end=max(self.metallicity_points),
                 value=1.0,
-                step=0.5,
+                step=0.7,
                 title="Metallicity: Metallicity [Fe/H]",
                 width=490,
             )
