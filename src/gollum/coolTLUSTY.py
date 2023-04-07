@@ -181,8 +181,8 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 flux=np.array(fluxes) * spec.flux.unit,
                 spectral_axis=np.array(wavelengths) * spec.wavelength.unit,
                 meta={
-                    "teff_points": np.array(fluxes),
-                    "logg_points": np.array(wavelengths),
+                    "teff_points": teff_points,
+                    "logg_points": logg_points,
                     "metallicity_points": metallicity_points,
                     "grid_labels": ("T_eff", "log(g)", "Z"),
                     "n_spectra": len(grid_points),
@@ -397,7 +397,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 line_width=2,
                 color="Red",
                 source=spec_source,
-                legend_label="Sonora Model",
+                legend_label="coolTLUSTY Model",
                 nonselection_line_color="DarkOrange",
                 nonselection_line_alpha=1.0,
             )
@@ -407,11 +407,11 @@ class CoolTLUSTYGrid(SpectrumCollection):
 
             # Slider to decimate the data
             smoothing_slider = Slider(
-                start=0.1,
-                end=40,
-                value=0.1,
-                step=0.1,
-                title="Rotational Broadening: v sin(i) [km/s]",
+                start=100,
+                end=5000,
+                value=5000,
+                step=100,
+                title="Instrumental resolution: R",
                 width=490,
             )
 
@@ -428,7 +428,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
             teff_slider = Slider(
                 start=min(self.teff_points),
                 end=max(self.teff_points),
-                value=1000,
+                value=250,
                 step=25,
                 title="Effective Temperature: T_eff [Kelvin]",
                 width=490,
@@ -439,7 +439,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
             logg_slider = Slider(
                 start=min(self.logg_points),
                 end=max(self.logg_points),
-                value=5.0,
+                value=4.0,
                 step=0.25,
                 title="Surface Gravity: log(g) [cm/s^2]",
                 width=490,
@@ -476,7 +476,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
                         spectral_axis=spec_source.data["native_wavelength"] * u.AA,
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                     )
-                    .rotationally_broaden(smoothing_slider.value)
+                    .instrumental_broaden(smoothing_slider.value)
                     .multiply(new * u.dimensionless_unscaled)
                     .rv_shift(vz_slider.value)
                 )
@@ -489,7 +489,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
                         spectral_axis=spec_source.data["native_wavelength"] * u.AA,
                         flux=spec_source.data["native_flux"] * u.dimensionless_unscaled,
                     )
-                    .rotationally_broaden(new)
+                    .instrumental_broaden(new)
                     .multiply(scale_slider.value * u.dimensionless_unscaled)
                     .rv_shift(vz_slider.value)
                 )
@@ -523,7 +523,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
 
                     native_spec = self[index].normalize(percentile=95)
                     new_spec = (
-                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        native_spec.instrumental_broaden(smoothing_slider.value)
                         .multiply(scale_slider.value * u.dimensionless_unscaled)
                         .rv_shift(vz_slider.value)
                     )
@@ -557,7 +557,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
 
                     native_spec = self[index].normalize(percentile=95)
                     new_spec = (
-                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        native_spec.instrumental_broaden(smoothing_slider.value)
                         .multiply(scale_slider.value * u.dimensionless_unscaled)
                         .rv_shift(vz_slider.value)
                     )
@@ -592,7 +592,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
 
                     native_spec = self[index].normalize(percentile=95)
                     new_spec = (
-                        native_spec.rotationally_broaden(smoothing_slider.value)
+                        native_spec.instrumental_broaden(smoothing_slider.value)
                         .multiply(scale_slider.value * u.dimensionless_unscaled)
                         .rv_shift(vz_slider.value)
                     )
