@@ -20,6 +20,7 @@ from specutils import SpectrumCollection
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d
+from specutils.manipulation import LinearInterpolatedResampler
 from bokeh.layouts import layout, Spacer
 from bokeh.models.widgets import Button, Div
 
@@ -111,10 +112,6 @@ class CoolTLUSTYGrid(SpectrumCollection):
         The metallicity limits of the Sonora model to read in
     path : str
         The path to your locally downloaded Sonora grid library. Default: "~/libraries/rawcoolTLUSTY/YDwarfModels/LacyBurrows2023/ClearEQ/"
-    wl_lo : float
-        The shortest wavelength of the models to keep (Angstrom)
-    wl_hi : float
-        The longest wavelength of the models to keep (Angstrom)
     """
 
     def __init__(
@@ -123,8 +120,6 @@ class CoolTLUSTYGrid(SpectrumCollection):
         logg_range=None,
         metallicity_range=None,
         path="~/libraries/raw/coolTLUSTY/YDwarfModels/LacyBurrows2023/ClearEQ/",
-        wl_lo=8038,
-        wl_hi=12849,
         **kwargs,
     ):
 
@@ -164,11 +159,11 @@ class CoolTLUSTYGrid(SpectrumCollection):
                         logg=logg,
                         z=Z,
                         path=path,
-                        wl_lo=wl_lo,
-                        wl_hi=wl_hi
+                        wl_lo=-1,
+                        wl_hi=1e9
                     )
-                    wavelengths.append(spec.wavelength)
-                    fluxes.append(spec.flux)
+                    wavelengths.append(spec.wavelength.value)
+                    fluxes.append(spec.flux.value)
                     grid_points.append((teff, logg, Z))
                 except FileNotFoundError:
                     log.info(f"No file for Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}")
@@ -179,12 +174,15 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 f"{missing} files not found; grid may not cover given parameter ranges fully"
             ) if missing else None
 
+            #self.grid_flux = fluxes
+            #self.grid_wave = wavelengths
+
             super().__init__(
-                flux=np.array(fluxes) * fluxes[0].unit,
-                spectral_axis=np.array(wavelengths) * wavelengths[0].unit,
+                flux=np.array(fluxes) * spec.flux.unit,
+                spectral_axis=np.array(wavelengths) * spec.wavelength.unit,
                 meta={
-                    "teff_points": teff_points,
-                    "logg_points": logg_points,
+                    "teff_points": np.array(fluxes),
+                    "logg_points": np.array(wavelengths),
                     "metallicity_points": metallicity_points,
                     "grid_labels": ("T_eff", "log(g)", "Z"),
                     "n_spectra": len(grid_points),
@@ -251,7 +249,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
             fluxes.append(newspec.flux.value)
             wavelengths.append(newspec.wavelength.value)
 
-        output = coolTLUSTYSpectrum(
+        output = self.__class__(
             flux=np.array(fluxes) * newspec.flux.unit,
             spectral_axis=np.array(wavelengths) * newspec.wavelength.unit,
             meta=self.meta,
@@ -272,6 +270,24 @@ class CoolTLUSTYGrid(SpectrumCollection):
     def find_nearest_teff(self, value):
         idx = (np.abs(self.teff_points - value)).argmin()
         return self.teff_points[idx]
+
+    def uniformize_axes(self):
+        '''Make the spectral axes possess uniform coordinates'''
+        linear = LinearInterpolatedResampler(extrapolation_treatment='zero_fill')
+        new_axis = new_axis = np.sort(np.unique(self.wavelength))
+        new_flux = [linear(spec, new_axis).flux for spec in self]
+        new_axes = [new_axis for spec in self]
+
+        new_flux = np.array(new_flux) * 1.0*self[0].flux.unit
+        new_axes = np.array(new_axes) * 1.0*self[0].wavelength.unit
+
+        output = self.__class__(
+            flux=new_flux,
+            spectral_axis=new_axes,
+            meta=self.meta,
+        )
+        return output
+
 
     def show_dashboard(
         self, data=None, notebook_url="localhost:8888", show_telluric=True
