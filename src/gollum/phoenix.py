@@ -141,7 +141,6 @@ class PHOENIXGrid(SpectrumCollection):
         path="~/libraries/raw/PHOENIX/",
         wl_lo=8038,
         wl_hi=12849,
-        instrumental_resolution=None,
         download=False,
         experimental=False,
         **kwargs,
@@ -183,8 +182,6 @@ class PHOENIXGrid(SpectrumCollection):
                         wl_hi=wl_hi,
                         download=download,
                     )
-                    if instrumental_resolution:
-                        spec = spec.instrumental_broaden(instrumental_resolution)
                     wavelengths.append(spec.wavelength)
                     fluxes.append(spec.flux)
                     grid_points.append((teff, logg, Z))
@@ -207,6 +204,9 @@ class PHOENIXGrid(SpectrumCollection):
                 from gollum.experimental import ExpPHOENIXGrid
 
                 self.__class__ = ExpPHOENIXGrid
+
+    def __setitem__(self, key, spec):
+        setattr(self, str(key), spec)
 
     def __getitem__(self, key):
         flux = self.flux[key]
@@ -245,6 +245,31 @@ class PHOENIXGrid(SpectrumCollection):
         idx = np.abs(self.Z_points - value).argmin()
         return self.Z_points[idx]
 
+    def find_nearest_logg(self, value):
+        idx = np.abs(self.logg_points - value).argmin()
+        return self.logg_points[idx]
+
+    def find_nearest_grid_point(self, teff, logg, metallicity):
+        current = np.array((teff, logg, metallicity))
+        mindist = np.Inf
+        for point in map(np.array, self.grid_points):
+            if (current_dist := np.linalg.norm(current - point)) < mindist:
+                mindist, minpoint = current_dist, point
+        return tuple(minpoint)
+
+    def instrumental_broaden(self, R):
+        """Broaden the grid by a given resolution.
+        
+        Parameters
+        ----------
+        R : int
+            The resolution to broaden the grid to.
+        """
+        grid = deepcopy(self)
+        for i, spec in enumerate(self):
+            grid[i] = spec.instrumental_broaden(R)
+        return grid
+
     def show_dashboard(
         self, data=None, notebook_url="localhost:8888"
     ):  # pragma: no cover
@@ -257,9 +282,9 @@ class PHOENIXGrid(SpectrumCollection):
 
         Parameters
         ----------
-        data: Spectrum1D-like
+        data : Spectrum1D-like
             A normalized data spectrum over which to plot the models
-        notebook_url: str
+        notebook_url : str
             Location of the Jupyter notebook page (default: "localhost:8888")
             When showing Bokeh applications, the Bokeh server must be
             explicitly configured to allow connections originating from
