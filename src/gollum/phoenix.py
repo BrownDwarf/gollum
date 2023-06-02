@@ -352,8 +352,6 @@ class PHOENIXGrid(SpectrumCollection):
             fig.axis.axis_label_text_font_style = "bold"
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
             fig.y_range = Range1d(start=0, end=1.5)
-            fig.legend.location = "top_right"
-            fig.legend.click_policy = "hide"
             fig.step(
                 "wavelength",
                 "flux",
@@ -364,6 +362,8 @@ class PHOENIXGrid(SpectrumCollection):
                 nonselection_line_alpha=1.0,
                 legend_label="PHOENIX Model",
             )
+            fig.legend.location = "top_right"
+            fig.legend.click_policy = "hide"
 
             smoothing_slider = Slider(
                 start=0.1,
