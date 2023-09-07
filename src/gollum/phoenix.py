@@ -208,6 +208,9 @@ class PHOENIXGrid(SpectrumCollection):
 
                 self.__class__ = ExpPHOENIXGrid
 
+    def __setitem__(self, key, spec):
+        setattr(self, str(key), spec)
+
     def __getitem__(self, key):
         flux = self.flux[key]
         if flux.ndim != 1:
@@ -233,7 +236,7 @@ class PHOENIXGrid(SpectrumCollection):
     grid_labels = property(lambda self: self.meta["grid_labels"])
     n_spectra = property(lambda self: self.meta["n_spectra"])
     lookup_dict = property(lambda self: self.meta["lookup_dict"])
-
+    
     truncate = _truncate
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
@@ -244,6 +247,31 @@ class PHOENIXGrid(SpectrumCollection):
     def find_nearest_Z(self, value):
         idx = np.abs(self.Z_points - value).argmin()
         return self.Z_points[idx]
+
+    def find_nearest_logg(self, value):
+        idx = np.abs(self.logg_points - value).argmin()
+        return self.logg_points[idx]
+
+    def find_nearest_grid_point(self, teff, logg, metallicity):
+        current = np.array((teff, logg, metallicity))
+        mindist = np.Inf
+        for point in map(np.array, self.grid_points):
+            if (current_dist := np.linalg.norm(current - point)) < mindist:
+                mindist, minpoint = current_dist, point
+        return tuple(minpoint)
+
+    def instrumental_broaden(self, R):
+        """Broaden the grid by a given resolution.
+        
+        Parameters
+        ----------
+        R : int
+            The resolution to broaden the grid to.
+        """
+        grid = deepcopy(self)
+        for i, spec in enumerate(self):
+            grid[i] = spec.instrumental_broaden(R)
+        return grid
 
     def show_dashboard(
         self, data=None, notebook_url="localhost:8888"
@@ -257,9 +285,9 @@ class PHOENIXGrid(SpectrumCollection):
 
         Parameters
         ----------
-        data: Spectrum1D-like
+        data : Spectrum1D-like
             A normalized data spectrum over which to plot the models
-        notebook_url: str
+        notebook_url : str
             Location of the Jupyter notebook page (default: "localhost:8888")
             When showing Bokeh applications, the Bokeh server must be
             explicitly configured to allow connections originating from
@@ -327,8 +355,7 @@ class PHOENIXGrid(SpectrumCollection):
             fig.axis.axis_label_text_font_style = "bold"
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
             fig.y_range = Range1d(start=0, end=1.5)
-            fig.legend.location = "top_right"
-            fig.legend.click_policy = "hide"
+
             fig.step(
                 "wavelength",
                 "flux",
@@ -339,6 +366,8 @@ class PHOENIXGrid(SpectrumCollection):
                 nonselection_line_alpha=1.0,
                 legend_label="PHOENIX Model",
             )
+            fig.legend.location = "top_right"
+            fig.legend.click_policy = "hide"
 
             smoothing_slider = Slider(
                 start=0.1,
