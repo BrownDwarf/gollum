@@ -233,6 +233,7 @@ class PHOENIXGrid(SpectrumCollection):
     grid_labels = property(lambda self: self.meta["grid_labels"])
     n_spectra = property(lambda self: self.meta["n_spectra"])
     lookup_dict = property(lambda self: self.meta["lookup_dict"])
+    data = property(lambda self: (self.wavelength.value, self.flux.value))
 
     truncate = _truncate
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
