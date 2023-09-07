@@ -392,13 +392,17 @@ class PrecomputedSpectrum(Spectrum1D):
             }
         )
 
-    def plot(self, ax=None, ylo=0.6, yhi=1.2, figsize=(10, 4), **kwargs):
+    def plot(self, ax=None, xlo=None, xhi=None, ylo=0, yhi=1.2, figsize=(10, 4), **kwargs):
         """Plot a quick look of the spectrum"
 
         Parameters
         ----------
         ax : `~matplotlib.axes.Axes`
             A matplotlib axes object to plot into. If no axes is provided, a new one will be generated.
+        xlo : float
+            X-axis lower bound
+        xhi : float
+            X-axis upper bound
         ylo : float
             Y-axis lower bound
         yhi : float
@@ -415,9 +419,11 @@ class PrecomputedSpectrum(Spectrum1D):
         """
         if not ax:
             ax = plt.subplots(1, figsize=figsize)[1]
+            ax.set_xlim(xlo, xhi) if xlo and xhi else None
             ax.set_ylim(ylo, yhi)
             ax.set_xlabel(r"$\lambda \;(\AA)$")
             ax.set_ylabel("Flux")
-
-        ax.step(self.wavelength, self.flux, where="mid", **kwargs)
+        
+        spec = self.normalize(95)
+        ax.step(spec.wavelength, spec.flux, where="mid", linewidth=1, **kwargs)
         return ax
