@@ -87,6 +87,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             fig.axis.axis_label_text_font_style = "bold"
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
             fig.y_range = Range1d(start=0, end=1.5)
+
             fig.step(
                 x="wl",
                 y="flux",
@@ -110,7 +111,7 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 legend_label="Starspot Flux",
                 level="underlay",
             ).visible = False
-            
+
             fig.legend.location = "top_right"
             fig.legend.click_policy = "hide"
 
