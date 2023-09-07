@@ -19,7 +19,7 @@ setuptools.setup(
         "pandas",
         "matplotlib",
         "tqdm",
-        "bokeh<=2.4.3",
+        "bokeh",
     ],
     packages=setuptools.find_packages(where="src"),
     package_dir={"": "src"},
