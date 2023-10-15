@@ -59,7 +59,6 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
         wl_hi=12849,
         **kwargs,
     ):
-
         teff_points = np.hstack(
             (
                 np.arange(500, 600, 25),
@@ -107,7 +106,7 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
 
             super().__init__(
                 spectral_axis=df_trimmed.wavelength.values * u.AA,
-                flux=df_trimmed.flux.values * u.erg / u.s / u.cm ** 2 / u.Hz,
+                flux=df_trimmed.flux.values * u.erg / u.s / u.cm**2 / u.Hz,
                 **kwargs,
             )
 
@@ -147,7 +146,6 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
         wl_hi=12849,
         **kwargs,
     ):
-
         teff_points = np.hstack(
             (
                 np.arange(500, 600, 25),
@@ -202,7 +200,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
 
             super().__init__(
                 spectral_axis=df_trimmed.wavelength.values * u.AA,
-                flux=df_trimmed.flux.values * u.erg / u.s / u.cm ** 2 / u.Hz,
+                flux=df_trimmed.flux.values * u.erg / u.s / u.cm**2 / u.Hz,
                 **kwargs,
             )
 
@@ -244,7 +242,6 @@ class SonoraGrid(SpectrumCollection):
         wl_hi=12849,
         **kwargs,
     ):
-
         if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
             super().__init__(**kwargs)
         else:
@@ -461,7 +458,10 @@ class SonoraGrid(SpectrumCollection):
                 wl_lo, wl_hi = new_lo, new_hi
 
                 data_source = ColumnDataSource(
-                    data=dict(wavelength=data.wavelength.value, flux=data.flux.value,)
+                    data=dict(
+                        wavelength=data.wavelength.value,
+                        flux=data.flux.value,
+                    )
                 )
                 fig.step(
                     "wavelength",

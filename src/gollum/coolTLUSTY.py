@@ -61,11 +61,9 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
         wl_hi=12849,
         **kwargs,
     ):
-
         teff_points = np.arange(250, 601, 25)
         logg_points = np.arange(3.5, 5.01, 0.25)
-        z_points = np.array([0.316,1.000, 3.160])
-
+        z_points = np.array([0.316, 1.000, 3.160])
 
         if teff and logg:
             base_path = os.path.expanduser(path)
@@ -76,9 +74,13 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
 
             fn = "{}T{:3d}_g{:0.2f}_Z{:0.3f}.21".format(base_path, int(teff), logg, z)
 
-            df_native = read_csv(fn, delim_whitespace=True, usecols=['LAMBDA(mic)', 'FLAM'])
-            df_native['wavelength_um'] = df_native['LAMBDA(mic)'].str.replace('D', 'e').astype(float)
-            df_native['flux'] = df_native['FLAM'].str.replace('D', 'e').astype(float)
+            df_native = read_csv(
+                fn, delim_whitespace=True, usecols=["LAMBDA(mic)", "FLAM"]
+            )
+            df_native["wavelength_um"] = (
+                df_native["LAMBDA(mic)"].str.replace("D", "e").astype(float)
+            )
+            df_native["flux"] = df_native["FLAM"].str.replace("D", "e").astype(float)
 
             # convert to Angstroms
             df_native["wavelength"] = df_native["wavelength_um"] * 10000.0
@@ -93,8 +95,6 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
 
         else:
             super().__init__(*args, **kwargs)
-
-
 
 
 class CoolTLUSTYGrid(SpectrumCollection):
@@ -122,13 +122,12 @@ class CoolTLUSTYGrid(SpectrumCollection):
         path="~/libraries/raw/coolTLUSTY/YDwarfModels/LacyBurrows2023/ClearEQ/",
         **kwargs,
     ):
-
         if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
             super().__init__(**kwargs)
         else:
             teff_points = np.arange(250, 601, 25)
             logg_points = np.arange(3.5, 5.01, 0.25)
-            z_points = np.array([0.316,1.000, 3.160])
+            z_points = np.array([0.316, 1.000, 3.160])
             metallicity_points = z_points
 
             if teff_range:
@@ -155,12 +154,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 pbar.desc = f"Processing Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}"
                 try:
                     spec = coolTLUSTYSpectrum(
-                        teff=teff,
-                        logg=logg,
-                        z=Z,
-                        path=path,
-                        wl_lo=-1,
-                        wl_hi=1e9
+                        teff=teff, logg=logg, z=Z, path=path, wl_lo=-1, wl_hi=1e9
                     )
                     wavelengths.append(spec.wavelength.value)
                     fluxes.append(spec.flux.value)
@@ -174,8 +168,8 @@ class CoolTLUSTYGrid(SpectrumCollection):
                 f"{missing} files not found; grid may not cover given parameter ranges fully"
             ) if missing else None
 
-            #self.grid_flux = fluxes
-            #self.grid_wave = wavelengths
+            # self.grid_flux = fluxes
+            # self.grid_wave = wavelengths
 
             super().__init__(
                 flux=np.array(fluxes) * spec.flux.unit,
@@ -272,14 +266,14 @@ class CoolTLUSTYGrid(SpectrumCollection):
         return self.teff_points[idx]
 
     def uniformize_axes(self):
-        '''Make the spectral axes possess uniform coordinates'''
-        linear = LinearInterpolatedResampler(extrapolation_treatment='zero_fill')
+        """Make the spectral axes possess uniform coordinates"""
+        linear = LinearInterpolatedResampler(extrapolation_treatment="zero_fill")
         new_axis = new_axis = np.sort(np.unique(self.wavelength))
         new_flux = [linear(spec, new_axis).flux for spec in self]
         new_axes = [new_axis for spec in self]
 
-        new_flux = np.array(new_flux) * 1.0*self[0].flux.unit
-        new_axes = np.array(new_axes) * 1.0*self[0].wavelength.unit
+        new_flux = np.array(new_flux) * 1.0 * self[0].flux.unit
+        new_axes = np.array(new_axes) * 1.0 * self[0].wavelength.unit
 
         output = self.__class__(
             flux=new_flux,
@@ -287,7 +281,6 @@ class CoolTLUSTYGrid(SpectrumCollection):
             meta=self.meta,
         )
         return output
-
 
     def show_dashboard(
         self, data=None, notebook_url="localhost:8888", show_telluric=False

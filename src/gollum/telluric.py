@@ -46,7 +46,6 @@ class TelluricSpectrum(PrecomputedSpectrum):
         wl_hi=12849,
         **kwargs,
     ):
-
         if path:
             # Units: nm, transmittance
             df_native = (
@@ -89,7 +88,6 @@ class TelFitSpectrum(PrecomputedSpectrum):
     """
 
     def __init__(self, *args, path=None, **kwargs):
-
         if path:
             names = ["wavelength_nm", "transmission", "continuum", "err"]
             df_native = read_csv(

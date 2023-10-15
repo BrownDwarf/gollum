@@ -52,7 +52,12 @@ class ExpPHOENIXGrid(PHOENIXGrid):
             self.cur_photo = self.cur_spot = self.cur_total = self[0]
             wl_i, flux_i = self[0].wavelength.value, self[0].normalize(95).flux.value
             cds = ColumnDataSource(
-                data={"wl": wl_i, "flux": flux_i, "photo": flux_i, "spot": flux_i * 0,}
+                data={
+                    "wl": wl_i,
+                    "flux": flux_i,
+                    "photo": flux_i,
+                    "spot": flux_i * 0,
+                }
             )
             wl_lo, wl_hi = wl_i[0], wl_i[-1]
             fig = figure(
@@ -77,7 +82,10 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                     color="black",
                     legend_label=data.meta.get("header").get("OBJECT"),
                     source=ColumnDataSource(
-                        data={"wl": data.wavelength.value, "flux": data.flux.value,}
+                        data={
+                            "wl": data.wavelength.value,
+                            "flux": data.flux.value,
+                        }
                     ),
                 )
             fig.title.align = "center"
@@ -191,7 +199,8 @@ class ExpPHOENIXGrid(PHOENIXGrid):
                 bar_color="maroon",
             )
             continuum = Toggle(
-                label="Fit Continuum (disables scaling)", button_type="success",
+                label="Fit Continuum (disables scaling)",
+                button_type="success",
             )
 
             def toggle_continuum(active):

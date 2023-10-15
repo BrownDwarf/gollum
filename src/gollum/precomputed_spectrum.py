@@ -392,7 +392,9 @@ class PrecomputedSpectrum(Spectrum1D):
             }
         )
 
-    def plot(self, ax=None, xlo=None, xhi=None, ylo=0, yhi=1.2, figsize=(10, 4), **kwargs):
+    def plot(
+        self, ax=None, xlo=None, xhi=None, ylo=0, yhi=1.2, figsize=(10, 4), **kwargs
+    ):
         """Plot a quick look of the spectrum"
 
         Parameters
@@ -423,7 +425,7 @@ class PrecomputedSpectrum(Spectrum1D):
             ax.set_ylim(ylo, yhi)
             ax.set_xlabel(r"$\lambda \;(\AA)$")
             ax.set_ylabel("Flux")
-        
+
         spec = self.normalize(95)
         ax.step(spec.wavelength, spec.flux, where="mid", linewidth=1, **kwargs)
         return ax

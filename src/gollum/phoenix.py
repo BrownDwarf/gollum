@@ -94,7 +94,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         fn = f"{base_path}/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
         flux_orig = fits.open(fn)[0].data.astype(np.float64)
         flux_native = flux_orig[mask]
-        native_flux_unit = u.erg / u.s / u.cm ** 2 / u.cm
+        native_flux_unit = u.erg / u.s / u.cm**2 / u.cm
 
         super().__init__(
             spectral_axis=wl_out * u.AA,
@@ -149,7 +149,6 @@ class PHOENIXGrid(SpectrumCollection):
         if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
             super().__init__(**kwargs)
         else:
-
             teff_points = np.hstack(
                 (np.arange(2300, 7000, 100), np.arange(7000, 12001, 200))
             )
@@ -236,7 +235,7 @@ class PHOENIXGrid(SpectrumCollection):
     grid_labels = property(lambda self: self.meta["grid_labels"])
     n_spectra = property(lambda self: self.meta["n_spectra"])
     lookup_dict = property(lambda self: self.meta["lookup_dict"])
-    
+
     truncate = _truncate
     get_index = lambda self, grid_point: self.lookup_dict[grid_point]
 
@@ -262,7 +261,7 @@ class PHOENIXGrid(SpectrumCollection):
 
     def instrumental_broaden(self, R):
         """Broaden the grid by a given resolution.
-        
+
         Parameters
         ----------
         R : int
@@ -331,15 +330,20 @@ class PHOENIXGrid(SpectrumCollection):
                 )
                 assert (
                     wl_lo < new_lo < new_hi < wl_hi
-                ), "Data should overlap the models, double check your wavelength limits."
+                ), "Data wavelength range should lie within that of the models', double check your wavelength limits."
                 wl_lo, wl_hi = new_lo, new_hi
+
+                try:
+                    obj_name = data.meta["header"]["OBJECT"]
+                except KeyError:
+                    obj_name = "Object"
 
                 fig.step(
                     "wavelength",
                     "flux",
                     line_width=1,
                     color="black",
-                    legend_label=data.meta["header"]["OBJECT"],
+                    legend_label=obj_name,
                     source=ColumnDataSource(
                         data={
                             "wavelength": data.wavelength.value,
