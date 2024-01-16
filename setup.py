@@ -7,7 +7,7 @@ setuptools.setup(
     author="gully",
     author_email="igully@gmail.com",
     description="A Python package for working with precomputed synthetic spectral models",
-    long_description="A Python package for working with precomputed synthetic spectral models such as PHOENIX and Sonora-Bobcat",
+    long_description="A Python package for working with precomputed synthetic spectral model grids such as PHOENIX and Sonora",
     long_description_content_type="text/markdown",
     url="https://github.com/BrownDwarf/gollum",
     install_requires=[
