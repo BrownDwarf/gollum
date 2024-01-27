@@ -1,8 +1,10 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from dataclasses import dataclass
 from numpy.typing import ArrayLike
+from scipy.interpolate import PchipInterpolator
 from scipy.ndimage import gaussian_filter1d
 from typing import Self
 
@@ -14,9 +16,9 @@ class SimpleSpectrum:
     Parameters
     ----------
     wavelength: ArrayLike
-        The spectral axis. Must be in nm.
+        The spectral axis.
     flux: ArrayLike
-        The spectral flux density. Must be in W/m^2/nm.
+        The spectral flux density.
     '''
     wavelength: ArrayLike
     flux: ArrayLike
@@ -98,4 +100,69 @@ class SimpleSpectrum:
                                  flux=gaussian_filter1d(self.flux, np.median(self.wavelength) / 
                                                         (2.355 * R * np.median(np.diff(self.wavelength)))))
     
+    def shift(self, rv: float):
+        '''
+        [TRANSFORM] Apply a non-relativistic Doppler shift to the spectrum.
+        
+        Parameters
+        ----------
+        rv: float
+            The radial velocity in km/s.
+        '''
+        return self.__class__(wavelength=self.wavelength * (1 + rv / 299792), flux=self.flux)
+
+    def resample(self, spectral_axis: ArrayLike):
+        '''
+        [TRANSFORM] Resample the spectrum onto a new spectral axis.
+
+        Parameters
+        ----------
+        spectral_axis: ArrayLike
+            The new spectral axis in Angstroms.
+        '''
+        return SimpleSpectrum(spectral_axis, PchipInterpolator(self.wavelength, self.flux)(spectral_axis))
+
+    def view(self, **kwargs):
+        '''
+        [VISUALIZE] Plot a quick view of the spectrum.
+        
+        Parameters
+        ----------
+        **kwargs
+            Passthrough for matplotlib.pyplot.plot.
+        '''
+
+        plt.figure(figsize=(12, 6))
+        plt.plot(self.wavelength, self.flux, **kwargs)
+        plt.xlabel('Wavelength')
+        plt.ylabel('Spectral Flux Density')
+        plt.tight_layout()
+        plt.show()
     
+    @staticmethod
+    def blackbody(spectral_axis: ArrayLike, T: float):
+        '''
+        [ACCESS] Create a blackbody spectrum at a given temperature with units of W/m^2/nm.
+
+        Parameters
+        ----------
+        spectral_axis: ArrayLike
+            The spectral axis in Angstroms.
+        T: float
+            The temperature of the blackbody in K.
+        '''
+        return SimpleSpectrum(spectral_axis, 1.191043E25 / (spectral_axis**5 * (np.exp(1.43877688E8 / (T * spectral_axis)) - 1)))
+
+
+def test():
+    from gollum.phoenix import PHOENIXSpectrum
+
+    spec = PHOENIXSpectrum(teff=6000, logg=4, Z=0.5, download=True, wl_lo=500, wl_hi=55000)
+    spec = SimpleSpectrum(spec.wavelength, spec.flux)
+    plt.figure(figsize=(12, 6))
+    plt.plot(spec.wavelength, spec.flux)
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == '__main__':
+    test()

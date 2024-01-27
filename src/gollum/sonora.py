@@ -71,7 +71,7 @@ class Sonora2024Spectrum(PrecomputedSpectrum):
         logg_par_dict = {3.5: "31", 4.0: "100", 4.5: "316", 5.0: "1000", 5.5: "3160"}
 
         metallicity_points = np.arange(-0.5, 0.51, 0.5)
-        fsed_points = [1, 2, 3, 4, 8]
+        fsed_points = [0, 1, 2, 3, 4, 8]
 
         if teff and logg:
             base_path = os.path.expanduser(path)
@@ -83,7 +83,7 @@ class Sonora2024Spectrum(PrecomputedSpectrum):
 
             fsed_string = f"f{fsed}" if fsed != 0 else "nc"
             Z_string = f"{Z:+0.1f}" if Z else "0.0"
-            fn = f"t{teff}g{logg_par_dict[logg]}{fsed_string}_m{Z_string}_co1.0_std.spec"
+            fn = f"{base_path}diamondback_beta_spectra_m{Z_string}/t{teff}g{logg_par_dict[logg]}{fsed_string}_m{Z_string}_co1.0_std.spec"
 
             df_native = (
                 read_csv(
@@ -875,7 +875,7 @@ class Sonora2024Grid(SpectrumCollection):
             teff_points = np.arange(900, 2401, 100)
             logg_points = np.arange(3.5, 5.51, 0.5)
             metallicity_points = np.arange(-0.5, 0.51, 0.5)
-            fsed_points = np.array([1, 2, 3, 4, 8])
+            fsed_points = np.array([0, 1, 2, 3, 4, 8])
 
             if teff_range:
                 subset = (teff_points >= teff_range[0]) & (teff_points <= teff_range[1])
@@ -1024,7 +1024,7 @@ class Sonora2024Grid(SpectrumCollection):
         return self.teff_points[idx]
 
     def show_dashboard(
-        self, data=None, notebook_url="localhost:8888", show_telluric=True
+        self, data=None, notebook_url="localhost:8888"
     ):  # pragma: no cover
         """Show an interactive dashboard for the Sonora grid;
         heavily inspired by the lightkurve .interact() method.
@@ -1054,12 +1054,15 @@ class Sonora2024Grid(SpectrumCollection):
                     "native_wavelength": self[0].wavelength.value,
                 }
             )
-
+            wl_lo, wl_hi = (
+                self[0].wavelength.value.min(),
+                self[0].wavelength.value.max(),
+            )
             fig = figure(
-                title="Sonora Bobcat Interactive Dashboard",
-                height=340,
-                width=600,
-                tools="pan,wheel_zoom,box_zoom,reset,save",
+                title="Sonora Diamondback Interactive Dashboard",
+                height=500,
+                width=950,
+                tools="pan,wheel_zoom,box_zoom,reset",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
             )
@@ -1068,12 +1071,6 @@ class Sonora2024Grid(SpectrumCollection):
             fig.xaxis.axis_label = "Wavelength (Angstrom)"
             fig.y_range = Range1d(start=0, end=1.9)
 
-            wl_lo, wl_hi = (
-                self[0].wavelength.value.min(),
-                self[0].wavelength.value.max(),
-            )
-
-            instrumental_resolution = 100000
             if data:
                 assert isinstance(
                     data, Spectrum1D
@@ -1082,48 +1079,25 @@ class Sonora2024Grid(SpectrumCollection):
                     data.wavelength.value.min(),
                     data.wavelength.value.max(),
                 )
-                assert (new_lo < wl_hi) & (
-                    new_hi > wl_lo
-                ), "Data should overlap the models, double check your wavelength limits."
+                assert (
+                    wl_lo < new_lo < new_hi < wl_hi
+                ), "Data wavelength range should lie within that of the models', double check your wavelength limits."
                 wl_lo, wl_hi = new_lo, new_hi
 
-                data_source = ColumnDataSource(
-                    data=dict(
-                        wavelength=data.wavelength.value,
-                        flux=data.flux.value,
-                    )
-                )
                 fig.step(
                     "wavelength",
                     "flux",
                     line_width=2,
                     legend_label="data",
-                    source=data_source,
+                    source=ColumnDataSource(
+                        data={
+                            "wavelength": data.wavelength.value,
+                            "flux": data.flux.value,
+                        }
+                    ),
                 )
-                if hasattr(data, "instrumental_resolution"):
-                    instrumental_resolution = data.instrumental_resolution
 
             fig.x_range = Range1d(start=wl_lo, end=wl_hi)
-
-            if show_telluric:
-                tell_spec = TelluricSpectrum(
-                    path="default", wl_lo=wl_lo, wl_hi=wl_hi
-                ).instrumental_broaden(instrumental_resolution * 2)
-                tell_source = ColumnDataSource(
-                    data=dict(
-                        wavelength=tell_spec.wavelength.value,
-                        flux=tell_spec.flux.value,
-                    )
-                )
-                out_glyph = fig.step(
-                    "wavelength",
-                    "flux",
-                    line_width=2,
-                    color="#bdc3c7",
-                    legend_label="Telluric",
-                    source=tell_source,
-                )
-                out_glyph.level = "underlay"
 
             fig.step(
                 "wavelength",
@@ -1146,7 +1120,7 @@ class Sonora2024Grid(SpectrumCollection):
                 value=0.1,
                 step=0.1,
                 title="Rotational Broadening: v sin(i) [km/s]",
-                width=490,
+                width=460,
             )
 
             vz_slider = Slider(
@@ -1155,7 +1129,7 @@ class Sonora2024Grid(SpectrumCollection):
                 value=0.00,
                 step=0.05,
                 title="Radial Velocity: RV [km/s]",
-                width=490,
+                width=460,
                 format="0.000f",
             )
 
@@ -1165,10 +1139,7 @@ class Sonora2024Grid(SpectrumCollection):
                 value=1000,
                 step=25,
                 title="Effective Temperature: T_eff [Kelvin]",
-                width=490,
-            )
-            teff_message = Div(
-                text="Closest T_eff point: {}".format(1000), width=100, height=10
+                width=460,
             )
             logg_slider = Slider(
                 start=min(self.logg_points),
@@ -1176,10 +1147,7 @@ class Sonora2024Grid(SpectrumCollection):
                 value=5.0,
                 step=0.25,
                 title="Surface Gravity: log(g) [cm/s^2]",
-                width=490,
-            )
-            logg_message = Div(
-                text="Closest log(g) point: {}".format(1000), width=100, height=10
+                width=460,
             )
             metallicity_slider = Slider(
                 start=min(self.metallicity_points),
@@ -1187,21 +1155,15 @@ class Sonora2024Grid(SpectrumCollection):
                 value=0.0,
                 step=0.5,
                 title="Metallicity: Metallicity [Fe/H]",
-                width=490,
-            )
-            metallicity_message = Div(
-                text="Closest Metallicity point: {}".format(1000), width=100, height=10
+                width=460,
             )
             fsed_slider = Slider(
                 start=min(self.fsed_points),
                 end=max(self.fsed_points),
-                value=1,
+                value=0,
                 step=1,
                 title="Fsed: Fsed",
-                width=490,
-            )
-            fsed_message = Div(
-                text="Closest Fsed point: {}".format(1000), width=100, height=10
+                width=460,
             )
             scale_slider = Slider(
                 start=0.1,
@@ -1209,10 +1171,8 @@ class Sonora2024Grid(SpectrumCollection):
                 value=1.0,
                 step=0.005,
                 title="Normalization Scalar",
-                width=490,
+                width=460,
             )
-            r_button = Button(label=">", button_type="default", width=30)
-            l_button = Button(label="<", button_type="default", width=30)
 
             def update_upon_scale(attr, old, new):
                 """Callback to take action when smoothing slider changes"""
@@ -1261,14 +1221,6 @@ class Sonora2024Grid(SpectrumCollection):
                     metallicity = new_grid_point[2]
                     fsed = new_grid_point[3]
 
-                    teff_message.text = "Closest T_eff point: {}".format(teff)
-                    logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(
-                        metallicity
-                    )
-                    fsed_message.text = "Closest Fsed point: {}".format(
-                        fsed
-                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -1300,14 +1252,6 @@ class Sonora2024Grid(SpectrumCollection):
                     metallicity = new_grid_point[2]
                     fsed = new_grid_point[3]
 
-                    teff_message.text = "Closest T_eff point: {}".format(teff)
-                    logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(
-                        metallicity
-                    )
-                    fsed_message.text = "Closest Fsed point: {}".format(
-                        fsed
-                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -1340,14 +1284,6 @@ class Sonora2024Grid(SpectrumCollection):
                     metallicity = new_grid_point[2]
                     fsed = new_grid_point[3]
 
-                    teff_message.text = "Closest T_eff point: {}".format(teff)
-                    logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(
-                        metallicity
-                    )
-                    fsed_message.text = "Closest Fsed point: {}".format(
-                        fsed
-                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -1379,14 +1315,6 @@ class Sonora2024Grid(SpectrumCollection):
                     metallicity = new_grid_point[2]
                     fsed = new_grid_point[3]
 
-                    teff_message.text = "Closest T_eff point: {}".format(teff)
-                    logg_message.text = "Closest log(g) point: {}".format(logg)
-                    metallicity_message.text = "Closest Metallicity point: {}".format(
-                        metallicity
-                    )
-                    fsed_message.text = "Closest Fsed point: {}".format(
-                        fsed
-                    )
                     index = self.get_index(new_grid_point)
 
                     native_spec = self[index].normalize(percentile=95)
@@ -1405,22 +1333,6 @@ class Sonora2024Grid(SpectrumCollection):
                 else:
                     pass
 
-            def go_right_by_one():
-                """Step forward in time by a single cadence"""
-                current_index = np.abs(self.teff_points - teff_slider.value).argmin()
-                new_index = current_index + 1
-                if new_index <= (len(self.teff_points) - 1):
-                    teff_slider.value = self.teff_points[new_index]
-
-            def go_left_by_one():
-                """Step back in time by a single cadence"""
-                current_index = np.abs(self.teff_points - teff_slider.value).argmin()
-                new_index = current_index - 1
-                if new_index >= 0:
-                    teff_slider.value = self.teff_points[new_index]
-
-            r_button.on_click(go_right_by_one)
-            l_button.on_click(go_left_by_one)
             smoothing_slider.on_change("value", update_upon_smooth)
             vz_slider.on_change("value", update_upon_vz)
             teff_slider.on_change("value", update_upon_teff_selection)
@@ -1429,23 +1341,15 @@ class Sonora2024Grid(SpectrumCollection):
             fsed_slider.on_change("value", update_upon_fsed_selection)
             scale_slider.on_change("value", update_upon_scale)
 
-            sp1, sp2, sp3, sp4, sp5 = (
-                Spacer(width=5),
-                Spacer(width=10),
-                Spacer(width=20),
-                Spacer(width=100),
-                Spacer(width=25),
-            )
+            sp = Spacer(width=20)
 
             widgets_and_figures = layout(
                 [fig],
-                [l_button, sp1, r_button, sp2, teff_slider, sp5, teff_message],
-                [sp4, logg_slider, sp3, logg_message],
-                [sp4, metallicity_slider, sp3, metallicity_message],
-                [sp4, fsed_slider, sp3, fsed_message],
-                [sp4, smoothing_slider],
-                [sp4, vz_slider],
-                [sp4, scale_slider],
+                [teff_slider, sp, smoothing_slider],
+                [logg_slider, sp, vz_slider],
+                [metallicity_slider, sp, scale_slider],
+                [fsed_slider],
+                background="whitesmoke",
             )
             doc.add_root(widgets_and_figures)
 
