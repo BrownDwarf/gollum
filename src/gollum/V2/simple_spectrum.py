@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from dotenv import set_key
+from inspect import getfile
 from numpy.typing import ArrayLike
+from pathlib import Path
 from scipy.interpolate import PchipInterpolator
 from scipy.ndimage import gaussian_filter1d
 from typing import Self
@@ -15,9 +17,9 @@ class SimpleSpectrum:
     
     Parameters
     ----------
-    wavelength: ArrayLike
+    `wavelength: ArrayLike`
         The spectral axis.
-    flux: ArrayLike
+    `flux: ArrayLike`
         The spectral flux density.
     '''
     wavelength: ArrayLike
@@ -30,16 +32,16 @@ class SimpleSpectrum:
         self.flux = np.array(flux, dtype=np.float64)
     
     def __add__(self, other: Self):
-        return self.__class__(self.wavelength, self.flux + other.flux)
+        return replace(self, flux=self.flux + other.flux)
     
     def __sub__(self, other: Self):
-        return self.__class__(self.wavelength, self.flux - other.flux)
+        return replace(self, flux=self.flux - other.flux)
     
     def __mul__(self, other: Self):
-        return self.__class__(self.wavelength, self.flux * other.flux)
+        return replace(self, flux=self.flux * other.flux)
     
     def __truediv__(self, other: Self):
-        return self.__class__(self.wavelength, self.flux / other.flux)
+        return replace(self, flux=self.flux / other.flux)
     
     def __iadd__(self, other: Self):
         self.flux += other.flux
@@ -57,20 +59,16 @@ class SimpleSpectrum:
         self.flux /= other.flux
         return self
     
-    def __eq__(self, other: Self):
-        return np.allclose(self.flux, other.flux)
-    
     def normalize(self, percentile: float):
         '''
         [TRANSFORM] Normalize flux to a given percentile.
         
         Parameters
         ----------
-        percentile: float
+        `percentile: float`
             The percentile at which the normalized flux is to equal 1.
         '''
-        return self.__class__(wavelength=self.wavelength, 
-                                 flux=self.flux/np.percentile(self.flux, percentile))
+        return replace(self, flux=self.flux/np.percentile(self.flux, percentile))
     
     def rsmooth(self, vsini: float):
         '''
@@ -78,14 +76,13 @@ class SimpleSpectrum:
         
         Parameters
         ----------
-        vsini: float
+        `vsini: float`
             The projected rotational velocity in km/s.
         '''
         mid = np.median(self.wavelength)
         x = 299792 * (self.wavelength - mid) / (mid * vsini)
         conv = np.nan_to_num(np.sqrt(1 - x*x))
-        return self.__class__(wavelength=self.wavelength, 
-                                 flux=np.convolve(self.flux, conv[conv > 0]/conv.sum(), mode='same'))
+        return replace(self, flux=np.convolve(self.flux, conv[conv > 0]/conv.sum(), mode='same'))
     
     def ismooth(self, R: int):
         '''
@@ -93,12 +90,10 @@ class SimpleSpectrum:
         
         Parameters
         ----------
-        R: int
+        `R: int`
             The resolving power of the instrument.
         '''
-        return self.__class__(wavelength=self.wavelength, 
-                                 flux=gaussian_filter1d(self.flux, np.median(self.wavelength) / 
-                                                        (2.355 * R * np.median(np.diff(self.wavelength)))))
+        return replace(self, flux=gaussian_filter1d(self.flux, np.median(self.wavelength) / (2.355 * R * np.median(np.diff(self.wavelength)))))
     
     def shift(self, rv: float):
         '''
@@ -106,10 +101,10 @@ class SimpleSpectrum:
         
         Parameters
         ----------
-        rv: float
+        `rv: float`
             The radial velocity in km/s.
         '''
-        return self.__class__(wavelength=self.wavelength * (1 + rv / 299792), flux=self.flux)
+        return replace(self, wavelength=self.wavelength * (1 + rv / 299792))
 
     def resample(self, spectral_axis: ArrayLike):
         '''
@@ -117,10 +112,10 @@ class SimpleSpectrum:
 
         Parameters
         ----------
-        spectral_axis: ArrayLike
+        `spectral_axis: ArrayLike`
             The new spectral axis in Angstroms.
         '''
-        return SimpleSpectrum(spectral_axis, PchipInterpolator(self.wavelength, self.flux)(spectral_axis))
+        return replace(self, wavelength=spectral_axis, flux=PchipInterpolator(self.wavelength, self.flux)(spectral_axis))
 
     def view(self, **kwargs):
         '''
@@ -128,7 +123,7 @@ class SimpleSpectrum:
         
         Parameters
         ----------
-        **kwargs
+        `**kwargs`
             Passthrough for matplotlib.pyplot.plot.
         '''
 
@@ -146,23 +141,28 @@ class SimpleSpectrum:
 
         Parameters
         ----------
-        spectral_axis: ArrayLike
+        `spectral_axis: ArrayLike`
             The spectral axis in Angstroms.
-        T: float
+        `T: float`
             The temperature of the blackbody in K.
         '''
         return SimpleSpectrum(spectral_axis, 1.191043E25 / (spectral_axis**5 * (np.exp(1.43877688E8 / (T * spectral_axis)) - 1)))
+    
+    @staticmethod
+    def _env():
+        '''
+        [ACCESS] The path to gollum's environment file.
+        '''
+        return Path(getfile(SimpleSpectrum)).parent / '.env'
+    
+    @classmethod
+    def configure(cls, data_path: str):
+        '''
+        [SETUP] Configure gollum's environment for a model grid.
 
-
-def test():
-    from gollum.phoenix import PHOENIXSpectrum
-
-    spec = PHOENIXSpectrum(teff=6000, logg=4, Z=0.5, download=True, wl_lo=500, wl_hi=55000)
-    spec = SimpleSpectrum(spec.wavelength, spec.flux)
-    plt.figure(figsize=(12, 6))
-    plt.plot(spec.wavelength, spec.flux)
-    plt.tight_layout()
-    plt.show()
-
-if __name__ == '__main__':
-    test()
+        Parameters
+        ----------
+        `data_path: str`
+            The path to the data directory.
+        '''
+        set_key(cls._env(), cls.__name__.replace('Spectrum', '_PATH'), str(Path(data_path).expanduser().resolve()))
