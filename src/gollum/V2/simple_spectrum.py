@@ -151,14 +151,14 @@ class SimpleSpectrum:
     @staticmethod
     def _env():
         '''
-        [ACCESS] The path to gollum's environment file.
+        [ACCESS] The path to `gollum`'s environment file.
         '''
         return Path(getfile(SimpleSpectrum)).parent / '.env'
     
     @classmethod
-    def configure(cls, data_path: str):
+    def _configure(cls, data_path: str):
         '''
-        [SETUP] Configure gollum's environment for a model grid.
+        [SETUP] Configure `gollum`'s environment for a model grid.
 
         Parameters
         ----------
@@ -166,3 +166,5 @@ class SimpleSpectrum:
             The path to the data directory.
         '''
         set_key(cls._env(), cls.__name__.replace('Spectrum', '_PATH'), str(Path(data_path).expanduser().resolve()))
+
+SimpleSpectrum._env().touch()
