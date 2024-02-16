@@ -50,7 +50,7 @@ The spectra of stars, brown dwarfs, and planets are complex and information-rich
 
 # Acknowledgements
 
-This research has made use of NASA's Astrophysics Data System Bibliographic Services. This material is based upon work supported by the National Aeronautics and Space Administration under Grant Numbers 80NSSC21K0650 for the NNH20ZDA001N-ADAP:D.2 program,
-and 80NSSC20K0257 for the XRP program issued through the Science Mission Directorate. S.S. acknowledges the National Science Foundation, which supported the work presented here under grant AST-1908892. 
+This research has made use of NASA's Astrophysics Data System Bibliographic Services. This material is based upon work supported by the National Aeronautics and Space Administration under grant numbers 80NSSC21K0650 for the NNH20ZDA001N-ADAP:D.2 program,
+and 80NSSC20K0257 for the XRP program issued through the Science Mission Directorate. S.S. acknowledges the National Science Foundation, which supported the work presented here under grant number 1908892. C.V.M., K.K-S., and D.G-A. acknowledge the National Science Foundation, which supported the work presented here under grant number 1910969.
 
 # References
