@@ -39,12 +39,3 @@ class PHOENIXSpectrum(SimpleSpectrum):
         path = get_key(self._env(), 'PHOENIX_PATH') or 'zenodo link'
         df = read_parquet(path, 'pyarrow', [str(point)], filters=[('wavelength', '>=', extent[0]), ('wavelength', '<=', extent[1])] if extent else None)
         super(PHOENIXSpectrum, self).__init__(df.index, df[str(point)])
-
-
-import pandas as pd
-#df = pd.DataFrame(index=[1, 2, 3], data={'(6000, 4.5, 0.0, 0.0)': [4, 5, 6]}).rename_axis('wavelength')
-#df.to_parquet('test.parquet.gz', compression='gzip')
-
-x = PHOENIXSpectrum(6000, 4.5, 0, 0)
-print(x)
-

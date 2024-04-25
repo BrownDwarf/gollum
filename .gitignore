@@ -137,6 +137,7 @@ notebooks/
 
 # ignore data files
 data/
+*.parquet.gz
 
 # ignore vscode settings
 .vscode/settings.json
