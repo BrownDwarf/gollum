@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gollum"
+version = "0.3.0"
+authors = [
+    { name="Sujay Shankar", email="sujays2001@gmail.com" },
+    { name="Michael Gully-Santiago", email="igully@gmail.com" },
+    { name="Caroline Morley", email="cmorley@utexas.edu" },
+    { name="Jiayi Cao", email="jiayicao@utexas.edu" },
+]
+maintainers = [{ name="Sujay Shankar", email="sujays2001@gmail.com" }]
+description = "An intuitive programmatic and visual interface for precomputed synthetic spectral model grids"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "astropy",
+    "specutils",
+    "tqdm",
+    "pandas",
+    "bokeh",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+license = {file = "LICENSE"}
+
+[project.urls]
+Homepage = "https://github.com/BrownDwarf/gollum"
+Issues = "https://github.com/BrownDwarf/gollum/issues"

@@ -1,0 +1,28 @@
+python>=3.8
+numpy
+scipy
+matplotlib
+astropy
+astroquery
+specutils
+tqdm
+pandas
+bokeh
+jupyter
+ipython
+seaborn
+importlib_resources
+h5py 
+pytest
+build
+sphinx # for documentation and testing
+nbsphinx # for documentation and testing
+numpydoc # for documentation and testing
+sphinx-automodapi # for documentation and testing
+black
+isort
+tox
+coverage
+coveralls
+twine
+pip

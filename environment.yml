@@ -1,15 +1,15 @@
 name: gollum_dev
 channels:
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
-  - python=3.8
+  - python>=3.8
   - numpy
   - scipy
   - matplotlib
-  - astropy>=4.1
+  - astropy
   - astroquery
-  - specutils>=1.2
+  - specutils
   - tqdm
   - pandas
   - bokeh
@@ -19,6 +19,7 @@ dependencies:
   - importlib_resources
   - h5py 
   - pytest
+  - build
   - sphinx # for documentation and testing
   - nbsphinx # for documentation and testing
   - numpydoc # for documentation and testing
