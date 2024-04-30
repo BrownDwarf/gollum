@@ -1,12 +1,15 @@
+from warnings import filterwarnings
+filterwarnings("ignore", category=DeprecationWarning)
 from gollum.phoenix import PrecomputedSpectrum, PHOENIXSpectrum
 from specutils import Spectrum1D
 from pandas import DataFrame
+from astropy.utils.exceptions import AstropyUserWarning
 import numpy as np
 import astropy.units as u
 
-
 def test_basic():
     """Do the basic methods work?"""
+    filterwarnings("ignore", category=AstropyUserWarning)
     assert PrecomputedSpectrum(
         spectral_axis=np.ones(5) * u.AA, flux=np.ones(5) * u.dimensionless_unscaled
     )
