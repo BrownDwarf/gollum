@@ -19,6 +19,7 @@ nbsphinx # for documentation and testing
 numpydoc # for documentation and testing
 sphinx-automodapi # for documentation and testing
 sphinx-gallery # for documentation and testing
+sphinx-material # for documentation and testing
 black
 isort
 tox
