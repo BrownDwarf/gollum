@@ -32,5 +32,6 @@ dependencies:
   - twine
   - pip
   - pip:
+      - python-dotenv
       - sphinx-material
       - celerite2

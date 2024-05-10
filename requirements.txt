@@ -27,3 +27,4 @@ coverage
 coveralls
 twine
 pip
+python-dotenv

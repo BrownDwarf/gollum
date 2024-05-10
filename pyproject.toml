@@ -24,6 +24,7 @@ dependencies = [
     "tqdm",
     "pandas",
     "bokeh",
+    "python-dotenv",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
