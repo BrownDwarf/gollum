@@ -13,3 +13,4 @@ importlib_resources
 ipykernel
 sphinx-gallery
 numpydoc
+python-dotenv
