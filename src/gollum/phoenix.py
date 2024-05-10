@@ -33,6 +33,7 @@ filterwarnings("ignore", category=AstropyWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
 
+local_path = get_key(Path(__file__).parent / "config.env", "PHOENIX")
 
 class PHOENIXSpectrum(PrecomputedSpectrum):
     """
@@ -62,7 +63,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         teff=None,
         logg=None,
         Z=0.0,  # solar by default
-        path="~/libraries/raw/PHOENIX/",
+        path=local_path,
         download=False,
         wl_lo=8038,
         wl_hi=12849,
@@ -138,7 +139,7 @@ class PHOENIXGrid(SpectrumCollection):
         teff_range=None,
         logg_range=None,
         Z_range=None,
-        path="~/libraries/raw/PHOENIX/",
+        path=local_path,
         wl_lo=8038,
         wl_hi=12849,
         instrumental_resolution=None,

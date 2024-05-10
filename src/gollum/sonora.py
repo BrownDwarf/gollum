@@ -30,6 +30,9 @@ filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
 
+d_path = get_key(Path(__file__).parent / "config.env", "SonoraD")
+b_path = get_key(Path(__file__).parent / "config.env", "SonoraB")
+
 class Sonora2024Spectrum(PrecomputedSpectrum):
     """
     A container for Sonora 2024 spectra
@@ -59,7 +62,7 @@ class Sonora2024Spectrum(PrecomputedSpectrum):
             logg=None,
             Z=0,
             fsed=0,
-            path="~/libraries/raw/SonoraDiamondback/",
+            path=d_path,
             wl_lo=8038,
             wl_hi=12849,
             **kwargs,
@@ -221,7 +224,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
         teff=None,
         logg=None,
         metallicity=0.0,
-        path="~/libraries/raw/SonoraBobcat2021/",
+        path=b_path,
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
@@ -317,7 +320,7 @@ class SonoraGrid(SpectrumCollection):
         teff_range=None,
         logg_range=None,
         metallicity_range=None,
-        path="~/libraries/raw/SonoraBobcat2021/",
+        path=b_path,
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
@@ -864,7 +867,7 @@ class Sonora2024Grid(SpectrumCollection):
         logg_range=None,
         metallicity_range=None,
         fsed_range=None,
-        path="~/libraries/raw/SonoraBobcat2021/",
+        path=d_path,
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,

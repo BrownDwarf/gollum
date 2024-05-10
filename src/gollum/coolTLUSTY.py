@@ -31,6 +31,7 @@ filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
 
+local_path = get_key(Path(__file__).parent / "config.env", "coolTLUSTY")
 
 class coolTLUSTYSpectrum(PrecomputedSpectrum):
     """
@@ -56,7 +57,7 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
         teff=None,
         logg=None,
         z=None,
-        path="~/libraries/raw/coolTLUSTY/YDwarfModels/LacyBurrows2023/ClearEQ/",
+        path=local_path,
         wl_lo=8038,
         wl_hi=12849,
         **kwargs,
@@ -119,7 +120,7 @@ class CoolTLUSTYGrid(SpectrumCollection):
         teff_range=None,
         logg_range=None,
         metallicity_range=None,
-        path="~/libraries/raw/coolTLUSTY/YDwarfModels/LacyBurrows2023/ClearEQ/",
+        path=local_path,
         **kwargs,
     ):
         if set(("flux", "spectral_axis", "meta")).issubset(kwargs):
