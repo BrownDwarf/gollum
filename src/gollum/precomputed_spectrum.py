@@ -9,6 +9,7 @@ PrecomputedSpectrum
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import shutil
 
 from copy import deepcopy
 from dotenv import get_key
@@ -32,6 +33,9 @@ log = getLogger(__name__)
 filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
+
+if not (cfg := Path(__file__).parent / "config.env").exists():
+    shutil.copy(cfg.parent / "config_template.env", cfg)
 
 
 class PrecomputedSpectrum(Spectrum1D):
