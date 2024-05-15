@@ -68,7 +68,8 @@ def test_resample():
 def test_grid():
     """Testing the PHOENIXGrid methods"""
 
-    with catch_warnings(action='ignore', category=DeprecationWarning):
+    with catch_warnings():
+        filterwarnings("ignore", category=DeprecationWarning)
         grid = PHOENIXGrid(
             teff_range=(5000, 5100), logg_range=(2, 2.5), Z_range=(0, 0.5), experimental=True, download=True
         )

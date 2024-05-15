@@ -115,7 +115,8 @@ class PrecomputedSpectrum(Spectrum1D):
         """
         lam0 = np.median(self.wavelength.value)
         x2 = (299792.458 * (self.wavelength.value - lam0) / (lam0 * vsini)) ** 2
-        with catch_warnings(action="ignore", category=RuntimeWarning):
+        with catch_warnings():
+            filterwarnings("ignore", category=RuntimeWarning)
             kernel = np.where(
                 x2 < 1,
                 np.pi / 2 * u1 * (1 - x2)
