@@ -1,11 +1,7 @@
 r"""
-PHOENIX Spectrum
+**PHOENIX**
 -----------------
-
-A container for a single Phoenix grid-point spectrum of wavelength and flux :math:`F(\lambda)`.
-
-PHOENIXSpectrum
-###############
+Functionality pertaining to the PHOENIX model grid (Husser et al. 2013).
 """
 
 import os
