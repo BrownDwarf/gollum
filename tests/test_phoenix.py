@@ -1,13 +1,16 @@
+from warnings import filterwarnings, catch_warnings
+filterwarnings("ignore", category=DeprecationWarning)
 from gollum.phoenix import PHOENIXSpectrum, PHOENIXGrid
 from pytest import raises
 from urllib.error import URLError
 from specutils import Spectrum1D
 import numpy as np
 import astropy.units as u
-
+from astropy.utils.exceptions import AstropyDeprecationWarning
 
 def test_spectrum():
     """Testing the PHOENIXSpectrum class"""
+    filterwarnings("ignore", category=AstropyDeprecationWarning)
     with raises(URLError):
         PHOENIXSpectrum(teff=5, logg=2, Z=2.0, download=True)
 
@@ -65,9 +68,10 @@ def test_resample():
 def test_grid():
     """Testing the PHOENIXGrid methods"""
 
-    grid = PHOENIXGrid(
-        teff_range=(5000, 5100), logg_range=(2, 2.5), Z_range=(0, 0.5), experimental=True, download=True
-    )
+    with catch_warnings(action='ignore', category=DeprecationWarning):
+        grid = PHOENIXGrid(
+            teff_range=(5000, 5100), logg_range=(2, 2.5), Z_range=(0, 0.5), experimental=True, download=True
+        )
     assert grid
     assert len(grid)
     assert isinstance(grid[0], PHOENIXSpectrum)
