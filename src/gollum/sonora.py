@@ -1,11 +1,7 @@
 r"""
-Sonora Spectrum
+**Sonora**
 -----------------
-
-A container for a single grid-point of the Sonora precomputed synthetic model spectrum of brown dwarfs and free-floating Gas Giant planets.  The spectrum is a vector with coordinates wavelength and flux :math:`F(\lambda)`.
-
-SonoraSpectrum
-###############
+Functionality pertaining to the Sonora series of substellar model grids (Marley et al. 2021, Morley et al. 2024)
 """
 
 import os

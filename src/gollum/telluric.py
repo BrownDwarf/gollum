@@ -1,11 +1,7 @@
 r"""
-Telluric Spectrum
+**Telluric**
 -----------------
-
-An experimental container for a single grid-point of a pre-computed telluric atmosphere model.  The spectrum is a vector with coordinates wavelength and flux :math:`F(\lambda)`.
-
-TelluricSpectrum
-################
+Functionality pertaining to telluric synthetic spectra from skycalc (Noll et al. 2012, Jones et al. 2013) and TelFit (Gullikson et al. 2014).
 """
 
 from warnings import filterwarnings
