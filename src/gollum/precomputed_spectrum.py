@@ -434,6 +434,5 @@ class PrecomputedSpectrum(Spectrum1D):
             ax.set_xlabel(r"$\lambda \;(\AA)$")
             ax.set_ylabel("Flux")
 
-        spec = self.normalize(95)
-        ax.step(spec.wavelength, spec.flux, where="mid", linewidth=1, **kwargs)
+        ax.step(self.wavelength, self.flux, where="mid", linewidth=1, **kwargs)
         return ax
