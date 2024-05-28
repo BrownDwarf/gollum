@@ -1,7 +1,7 @@
 sphinx>=3.2.1
 numpy
 astropy>=4.1
-specutils>=1.2
+specutils>=1.8
 sphinx-material
 scipy
 pandas

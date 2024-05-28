@@ -14,7 +14,7 @@ setuptools.setup(
         "numpy",
         "scipy",
         "astropy",
-        "specutils>=1.6",
+        "specutils>=1.8",
         "importlib_resources",
         "pandas",
         "matplotlib",
