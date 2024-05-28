@@ -39,7 +39,7 @@ You can get all of the PHOENIX models in one-fell-swoop from the command line if
     cd ~/Downloads
     wget -r -l 0 ftp://phoenix.astro.physik.uni-goettingen.de/HiResFITS/
 
-If you don't have ``wget`` on your computer, please help the ``gollum`` grow by filing a GitHub Issue with how you resolved the problem, or what problems you are encountering.
+If you don't have ``wget`` on your computer, please help ``gollum`` grow by filing a GitHub Issue with how you resolved the problem, or what problems you are encountering.
 
 As noted, this process will take a while as each individual file is painstakingly downloaded from a single German computer.  The commandline script, as written, will preserve the directory structure--- that's good! The ``gollum code`` demands that the directory structure is preserved.  Once it's all downloaded it should look like this ::
 
