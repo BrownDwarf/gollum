@@ -506,8 +506,8 @@ class SonoraGrid(SpectrumCollection):
 
             fig = figure(
                 title="Sonora Bobcat Interactive Dashboard",
-                plot_height=340,
-                plot_width=600,
+                height=340,
+                width=600,
                 tools="pan,wheel_zoom,box_zoom,reset,save",
                 toolbar_location="below",
                 border_fill_color="whitesmoke",
