@@ -80,7 +80,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
             log.info("[WIP]Downloading PHOENIX models from the internet...")
             log.info(f"We are using this FTP site: {site}")
             wl_file = f"{site}WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
-            base_path = f"{site}PHOENIX-ACES-AGSS-COND-2011/"
+            base_path = site
 
         Z_string = f"{Z:+0.1f}" if Z else "-0.0"
 
