@@ -44,8 +44,8 @@ jobs:
       - name: Test Precomputed
         uses: nick-fields/retry@v3
         with:
-          timeout_seconds: 60
-          max_attempts: 10
+          timeout_minutes: 2
+          max_attempts: 5
           retry_on: error
           warning_on_retry: false
           command: pytest tests/test_precomputed.py
