@@ -38,7 +38,7 @@ Eventually you can run the tests in the `tests/` directory to double-check that 
     py.test -vs test_phoenix.py # requires local PHOENIX models
     py.test -vs test_sonora.py # requires local Sonora models
 
-
+Note: Certain scenarios, such as running in an environment created with `uv` and using IPython, may throw errors when trying to render `matplotlib` figures. If you encounter such errors, you can try installing `pyqt5` into the environment.
 
 
 
