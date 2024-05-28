@@ -88,7 +88,7 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
         mask = (wl_orig >= wl_lo) & (wl_orig <= wl_hi)
         wl_out = wl_orig[mask]
 
-        fn = f"{base_path}/PHOENIX-ACES-AGSS-COND-2011/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
+        fn = f"{base_path}PHOENIX-ACES-AGSS-COND-2011/Z{Z_string}/lte{teff:05d}-{logg:0.2f}{Z_string}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
         flux_orig = fits.open(fn)[0].data.astype(np.float64)
         flux_native = flux_orig[mask]
         native_flux_unit = u.erg / u.s / u.cm**2 / u.cm
