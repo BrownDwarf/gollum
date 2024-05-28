@@ -88,7 +88,7 @@ class Sonora2024Spectrum(PrecomputedSpectrum):
                 read_csv(
                     fn,
                     skiprows=[0, 1, 2],
-                    delim_whitespace=True,
+                    sep=r"\s+",
                     names=["wavelength_um", "flux"],
                 )
                 .sort_values("wavelength_um")
@@ -170,7 +170,7 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
                 read_csv(
                     fn,
                     skiprows=[0, 1],
-                    delim_whitespace=True,
+                    sep=r"\s+",
                     compression="gzip",
                     names=["wavelength_um", "flux"],
                 )
@@ -265,7 +265,7 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
                 read_csv(
                     fn,
                     skiprows=[0, 1],
-                    delim_whitespace=True,
+                    sep=r"\s+",
                     names=["wavelength_um", "flux"],
                 )
                 .sort_values("wavelength_um")

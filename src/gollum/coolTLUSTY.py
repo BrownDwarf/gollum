@@ -76,7 +76,7 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
             fn = "{}T{:3d}_g{:0.2f}_Z{:0.3f}.21".format(base_path, int(teff), logg, z)
 
             df_native = read_csv(
-                fn, delim_whitespace=True, usecols=["LAMBDA(mic)", "FLAM"]
+                fn, sep=r"\s+", usecols=["LAMBDA(mic)", "FLAM"]
             )
             df_native["wavelength_um"] = (
                 df_native["LAMBDA(mic)"].str.replace("D", "e").astype(float)

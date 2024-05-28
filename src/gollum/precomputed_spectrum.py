@@ -178,7 +178,7 @@ class PrecomputedSpectrum(Spectrum1D):
             RV-Shifted Spectrum
         """
         shifted_spec = deepcopy(self)
-        shifted_spec.radial_velocity = rv * u.km / u.s
+        shifted_spec.shift_spectrum_to(radial_velocity=rv*u.km/u.s)
         return shifted_spec
 
     def resample(self, target_spectrum):

@@ -47,7 +47,7 @@ class TelluricSpectrum(PrecomputedSpectrum):
             df_native = (
                 read_csv(
                     path,
-                    delim_whitespace=True,
+                    sep=r"\s+",
                     names=["wavelength_nm", "transmittance"],
                 )
                 .sort_values("wavelength_nm")
@@ -88,7 +88,7 @@ class TelFitSpectrum(PrecomputedSpectrum):
             names = ["wavelength_nm", "transmission", "continuum", "err"]
             df_native = read_csv(
                 path,
-                delim_whitespace=True,
+                sep=r"\s+",
                 names=names,
                 usecols=names[0:2],
                 encoding="unicode_escape",  # or UTF-8?
