@@ -1,6 +1,6 @@
 # gollum
 
-`v0.2.1`
+`v0.3.0`
 
 <a href="https://gollum-astro.readthedocs.io/en/latest/"><img src="https://img.shields.io/badge/Read-the%20docs-blue"></a>
 <a href="https://pypi.org/project/gollum/"><img src="https://img.shields.io/badge/pip_install-gollum-yellow"></a>
@@ -26,4 +26,4 @@ There is some latency in the updating of the model's graph when the user moves c
 
 
 
-The package is under active development. Please contribute by commenting on the Issues, providing Pull Requests, and starring the GitHub repo.
+The package is under active development. Feel free to contibute by either raising issues here in GitHub or by submitting pull requests. If you have questions or need help, please also use GitHub issues to reach out to the development team and we will do our best to assist you.
