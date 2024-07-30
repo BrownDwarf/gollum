@@ -1,6 +1,6 @@
 # gollum
 
-`v0.3.0`
+`v0.4.0`
 
 <a href="https://gollum-astro.readthedocs.io/en/latest/"><img src="https://img.shields.io/badge/Read-the%20docs-blue"></a>
 <a href="https://pypi.org/project/gollum/"><img src="https://img.shields.io/badge/pip_install-gollum-yellow"></a>
