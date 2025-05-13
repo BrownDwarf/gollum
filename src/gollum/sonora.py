@@ -82,7 +82,7 @@ class Sonora2024Spectrum(PrecomputedSpectrum):
 
             fsed_string = f"f{fsed}" if fsed != 0 else "nc"
             Z_string = f"{Z:+0.1f}" if Z else "0.0"
-            fn = f"{base_path}diamondback_beta_spectra_m{Z_string}/t{teff}g{logg_par_dict[logg]}{fsed_string}_m{Z_string}_co1.0_std.spec"
+            fn = f"{base_path}t{teff}g{logg_par_dict[logg]}{fsed_string}_m{Z_string}_co1.0_std.spec"
 
             df_native = (
                 read_csv(
