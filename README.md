@@ -1,11 +1,11 @@
-# gollum
-
-`v0.4.1`
+# gollum 
+### Version 0.4.1
 
 <a href="https://gollum-astro.readthedocs.io/en/latest/"><img src="https://img.shields.io/badge/Read-the%20docs-blue"></a>
 <a href="https://pypi.org/project/gollum/"><img src="https://img.shields.io/badge/pip_install-gollum-yellow"></a>
 <a href="https://ui.adsabs.harvard.edu/abs/2013A%26A...553A...6H/abstract"><img src="https://img.shields.io/badge/Works_with-PHOENIX-brightgreen"></a>
 <a href="https://zenodo.org/record/1309035#.YL_SQoRKiV4"><img src="https://img.shields.io/badge/Works_with-Sonora_Bobcat-brightgreen"></a>
+<a href="https://ascl.net/2503.015"><img src="https://img.shields.io/badge/ascl-2503.015-blue.svg?colorB=262255" alt="ascl:2503.015" /></a>
 
 A microservice for programmatic access to precomputed synthetic spectral model grids in astronomy.
 
@@ -23,7 +23,24 @@ This dashboard allows users to control sliders correlating with intrinsic proper
 
 There is some latency in the updating of the model's graph when the user moves certain sliders too quickly. This latency comes from the large amount of data points and the effect of the curse of dimensionality when it comes to the search for the nearest grid point based on intrinsic values that the dashboard must do with each update of the sliders. This latency mostly only applies when the user moves the sliders very quickly, however. More gradual movement of the sliders allows for relatively smooth updating of the model spectrum with minimal latency.
 
-
+Cite this software:
+```
+@ARTICLE{gollum,
+       author = {{Shankar}, Sujay and {Gully-Santiago}, Michael and {Morley}, Caroline and {Cao}, Jiayi and {Kaplan}, Kyle and {Kimani-Stewart}, Karina and {Gonzalez-Arg{\'u}eta}, Diana},
+        title = "{<code>gollum</code>: An intuitive programmatic and visual interface for precomputed synthetic spectral model grids}",
+      journal = {The Journal of Open Source Software},
+     keywords = {astronomy, spectroscopy, stars, echelle, Jupyter Notebook, Python},
+         year = 2024,
+        month = aug,
+       volume = {9},
+       number = {100},
+          eid = {6601},
+        pages = {6601},
+          doi = {10.21105/joss.06601},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2024JOSS....9.6601S},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
 
 
 The package is under active development. Feel free to contibute by either raising issues here in GitHub or by submitting pull requests. If you have questions or need help, please also use GitHub issues to reach out to the development team and we will do our best to assist you.
