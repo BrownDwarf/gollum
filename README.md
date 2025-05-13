@@ -27,7 +27,7 @@ Cite this software:
 ```
 @ARTICLE{gollum,
        author = {{Shankar}, Sujay and {Gully-Santiago}, Michael and {Morley}, Caroline and {Cao}, Jiayi and {Kaplan}, Kyle and {Kimani-Stewart}, Karina and {Gonzalez-Arg{\'u}eta}, Diana},
-        title = "{<code>gollum</code>: An intuitive programmatic and visual interface for precomputed synthetic spectral model grids}",
+        title = "{gollum: An intuitive programmatic and visual interface for precomputed synthetic spectral model grids}",
       journal = {The Journal of Open Source Software},
      keywords = {astronomy, spectroscopy, stars, echelle, Jupyter Notebook, Python},
          year = 2024,
