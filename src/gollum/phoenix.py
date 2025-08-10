@@ -250,7 +250,7 @@ class PHOENIXGrid(SpectrumCollection):
 
     def find_nearest_grid_point(self, teff, logg, metallicity):
         current = np.array((teff, logg, metallicity))
-        mindist = np.Inf
+        mindist = np.inf
         for point in map(np.array, self.grid_points):
             if (current_dist := np.linalg.norm(current - point)) < mindist:
                 mindist, minpoint = current_dist, point

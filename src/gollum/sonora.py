@@ -462,7 +462,7 @@ class SonoraGrid(SpectrumCollection):
 
     def find_nearest_grid_point(self, teff, logg, metallicity):
         current = np.array((teff, logg, metallicity))
-        mindist = np.Inf
+        mindist = np.inf
         for point in map(np.array, self.grid_points):
             if (current_dist := np.linalg.norm(current - point)) < mindist:
                 mindist, minpoint = current_dist, point
@@ -1012,7 +1012,7 @@ class Sonora2024Grid(SpectrumCollection):
 
     def find_nearest_grid_point(self, teff, logg, metallicity, fsed):
         current = np.array((teff, logg, metallicity, fsed))
-        mindist = np.Inf
+        mindist = np.inf
         for point in map(np.array, self.grid_points):
             if (current_dist := np.linalg.norm(current - point)) < mindist:
                 mindist, minpoint = current_dist, point
