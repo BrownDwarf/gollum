@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gollum"
-version = "0.4.1"
+version = "0.4.2"
 authors = [
     { name="Sujay Shankar", email="sujays2001@gmail.com" },
     { name="Michael Gully-Santiago", email="igully@gmail.com" },
