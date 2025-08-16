@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
     name="gollum",
-    version="0.4.1",
+    version="0.4.2",
     author="gully",
     author_email="igully@gmail.com",
     description="A Python package for working with precomputed synthetic spectral models",
