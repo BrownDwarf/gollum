@@ -1,5 +1,5 @@
 # gollum 
-### Version 0.4.2
+### Version 0.4.3
 
 <a href="https://gollum-astro.readthedocs.io/en/latest/"><img src="https://img.shields.io/badge/Read-the%20docs-blue"></a>
 <a href="https://pypi.org/project/gollum/"><img src="https://img.shields.io/badge/pip_install-gollum-yellow"></a>
