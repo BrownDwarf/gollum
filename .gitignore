@@ -144,3 +144,6 @@ data/
 
 # ignore vscode settings
 .vscode/settings.json
+
+# uv lock file
+uv.lock

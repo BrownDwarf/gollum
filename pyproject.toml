@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -14,13 +14,13 @@ authors = [
 maintainers = [{ name="Sujay Shankar", email="sujays2001@gmail.com" }]
 description = "An intuitive programmatic and visual interface for precomputed synthetic spectral model grids"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "numpy",
     "scipy",
     "matplotlib",
     "astropy",
-    "specutils",
+    "specutils>=1.8",
     "tqdm",
     "pandas",
     "bokeh",
@@ -28,11 +28,47 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-license = {file = "LICENSE"}
+license = {text = "MIT"}
 
 [project.urls]
 Homepage = "https://github.com/BrownDwarf/gollum"
 Issues = "https://github.com/BrownDwarf/gollum/issues"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+docs = [
+    "sphinx>=3.2.1",
+    "nbsphinx",
+    "numpydoc",
+    "sphinx-gallery",
+    "sphinx-material",
+    "ipykernel",
+]
+dev = [
+    "astroquery",
+    "black",
+    "build",
+    "coverage",
+    "h5py",
+    "ipython",
+    "isort",
+    "jupyter",
+    "seaborn",
+    "tox",
+    "twine",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+gollum = ["*.csv", "config_template.env"]

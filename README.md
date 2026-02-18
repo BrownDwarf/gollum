@@ -44,3 +44,6 @@ Cite this software:
 
 
 The package is under active development. Feel free to contibute by either raising issues here in GitHub or by submitting pull requests. If you have questions or need help, please also use GitHub issues to reach out to the development team and we will do our best to assist you.
+
+## Project Status
+We welcome Pull Requests and Issue reports! We will be adding `uv` support in 2026, and a few small maintenance projects.  Stay tuned for more updates.
