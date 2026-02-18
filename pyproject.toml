@@ -72,3 +72,8 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 gollum = ["*.csv", "config_template.env"]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests that require network access or external model data",
+]

@@ -3,7 +3,10 @@ from gollum.sonora import SonoraGrid, SonoraSpectrum
 from specutils import Spectrum1D
 import numpy as np
 import astropy.units as u
+import pytest
 from specutils.spectra.spectrum_collection import SpectrumCollection
+
+pytestmark = pytest.mark.integration
 
 
 def test_basic():
