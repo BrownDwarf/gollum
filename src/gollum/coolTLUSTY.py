@@ -31,7 +31,9 @@ filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
 
-local_path = get_key(Path(__file__).parent / "config.env", "coolTLUSTY")
+local_path = get_config_value(
+    "coolTLUSTY", "~/libraries/raw/coolTLUSTY/YDwarfModels/LacyBurrows2023/ClearEQ/"
+)
 
 class coolTLUSTYSpectrum(PrecomputedSpectrum):
     """

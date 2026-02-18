@@ -29,7 +29,7 @@ filterwarnings("ignore", category=AstropyWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
 
-local_path = get_key(Path(__file__).parent / "config.env", "PHOENIX")
+local_path = get_config_value("PHOENIX", "~/libraries/raw/PHOENIX/")
 
 class PHOENIXSpectrum(PrecomputedSpectrum):
     """

@@ -34,8 +34,30 @@ filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
 
-if not (cfg := Path(__file__).parent / "config.env").exists():
-    shutil.copy(cfg.parent / "config_template.env", cfg)
+CONFIG_ENV_PATH = Path(__file__).parent / "config.env"
+CONFIG_TEMPLATE_PATH = Path(__file__).parent / "config_template.env"
+
+
+def initialize_config_env(force=False):
+    """Create ``config.env`` from ``config_template.env``.
+
+    This function is intentionally explicit. Importing ``gollum`` should not
+    mutate files on disk.
+    """
+    if CONFIG_ENV_PATH.exists() and not force:
+        return CONFIG_ENV_PATH
+    shutil.copy(CONFIG_TEMPLATE_PATH, CONFIG_ENV_PATH)
+    return CONFIG_ENV_PATH
+
+
+def get_config_value(key, default=None):
+    """Read a config value from ``config.env`` with template fallback."""
+    for config_path in (CONFIG_ENV_PATH, CONFIG_TEMPLATE_PATH):
+        if config_path.exists():
+            value = get_key(config_path, key)
+            if value:
+                return value
+    return default
 
 
 class PrecomputedSpectrum(Spectrum1D):
