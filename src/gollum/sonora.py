@@ -26,8 +26,8 @@ filterwarnings("ignore", category=AstropyDeprecationWarning)
 # See Issue: https://github.com/astropy/specutils/issues/800
 filterwarnings("ignore", category=RuntimeWarning)
 
-d_path = get_key(Path(__file__).parent / "config.env", "SonoraD")
-b_path = get_key(Path(__file__).parent / "config.env", "SonoraB")
+d_path = get_config_value("SonoraD", "~/libraries/raw/SonoraDiamondback/")
+b_path = get_config_value("SonoraB", "~/libraries/raw/SonoraBobcat2021/")
 
 class Sonora2024Spectrum(PrecomputedSpectrum):
     """
