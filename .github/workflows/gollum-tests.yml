@@ -32,7 +32,7 @@ jobs:
           uv run --with flake8 --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
             flake8 src tests setup.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-      - name: Test PHOENIX
+      - name: Run Unit Tests
         run: |
           uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
             python -c "import sys; print(f'Python version: {sys.version}')"
@@ -41,12 +41,4 @@ jobs:
           uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
             python -c "import astropy; print(f'astropy version: {astropy.__version__}')"
           uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
-            pytest tests/test_phoenix.py
-      - name: Test Precomputed
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 2
-          max_attempts: 5
-          retry_on: error
-          warning_on_retry: false
-          command: uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs pytest tests/test_precomputed.py
+            pytest -m "not integration" tests

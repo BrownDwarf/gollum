@@ -2,11 +2,14 @@ from warnings import filterwarnings, catch_warnings
 filterwarnings("ignore", category=DeprecationWarning)
 from gollum.phoenix import PHOENIXSpectrum, PHOENIXGrid
 from pytest import raises
+import pytest
 from urllib.error import URLError
 from specutils import Spectrum1D
 import numpy as np
 import astropy.units as u
 from astropy.utils.exceptions import AstropyDeprecationWarning
+
+pytestmark = pytest.mark.integration
 
 def test_spectrum():
     """Testing the PHOENIXSpectrum class"""

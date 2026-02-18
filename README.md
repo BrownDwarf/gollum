@@ -47,3 +47,17 @@ The package is under active development. Feel free to contibute by either raisin
 
 ## Project Status
 We welcome Pull Requests and Issue reports! We will be adding `uv` support in 2026, and a few small maintenance projects.  Stay tuned for more updates.
+
+## Testing
+
+By default, run only deterministic/offline unit tests:
+
+```bash
+uv run --extra test pytest -m "not integration" tests
+```
+
+Run integration tests (network/external model data required) explicitly:
+
+```bash
+uv run --extra test pytest -m "integration" tests
+```

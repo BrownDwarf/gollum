@@ -6,7 +6,9 @@ from pandas import DataFrame
 from astropy.utils.exceptions import AstropyUserWarning
 import numpy as np
 import astropy.units as u
+import pytest
 
+@pytest.mark.integration
 def test_basic():
     """Do the basic methods work?"""
     filterwarnings("ignore", category=AstropyUserWarning)
