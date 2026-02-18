@@ -4,15 +4,22 @@ from specutils import Spectrum1D
 import numpy as np
 import astropy.units as u
 import pytest
+import os
 from specutils.spectra.spectrum_collection import SpectrumCollection
 
 pytestmark = pytest.mark.integration
+
+_sonora_b_path = os.getenv("GOLLUM_SONORA_B_PATH")
+
+
+def _sonora_kwargs():
+    return {"path": _sonora_b_path} if _sonora_b_path else {}
 
 
 def test_basic():
     """Do the basic methods work?"""
 
-    spec = SonoraSpectrum(teff=1200, logg=4.5)
+    spec = SonoraSpectrum(teff=1200, logg=4.5, **_sonora_kwargs())
 
     assert spec
     assert isinstance(spec, Spectrum1D)
@@ -43,7 +50,7 @@ def test_basic():
 def test_resample():
     """Do the basic methods work?"""
 
-    spec = SonoraSpectrum(teff=850, logg=4.25)
+    spec = SonoraSpectrum(teff=850, logg=4.25, **_sonora_kwargs())
 
     assert spec
 
@@ -68,6 +75,7 @@ def test_grid():
         teff_range=(950, 1020),
         logg_range=(4.25, 4.75),
         metallicity_range=(0.0, 0.5),
+        **_sonora_kwargs(),
     )
 
     assert grid
@@ -102,6 +110,7 @@ def test_nearest_gridpoint():
         teff_range=(950, 1200),
         logg_range=(4.25, 4.75),
         metallicity_range=(0.0, 0.5),
+        **_sonora_kwargs(),
     )
 
     assert grid

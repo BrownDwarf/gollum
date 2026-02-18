@@ -33,6 +33,17 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Set up uv
         uses: astral-sh/setup-uv@v4
+      - name: Locate Sonora Bobcat test data
+        run: |
+          SONORA_B_PATH="$(find "$GITHUB_WORKSPACE/tests/data" -type d -name 'SonoraBobcat2021' -print -quit)"
+          if [ -z "$SONORA_B_PATH" ]; then
+            echo "Could not find SonoraBobcat2021 directory under tests/data" >&2
+            exit 1
+          fi
+          echo "GOLLUM_SONORA_B_PATH=$SONORA_B_PATH" >> "$GITHUB_ENV"
+      - name: Show Resolved Sonora Path
+        run: |
+          echo "Resolved GOLLUM_SONORA_B_PATH=$GOLLUM_SONORA_B_PATH"
       - name: Run Integration Tests
         run: |
           uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
