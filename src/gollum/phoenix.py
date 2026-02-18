@@ -71,10 +71,12 @@ class PHOENIXSpectrum(PrecomputedSpectrum):
 
         if not download:
             base_path = os.path.expanduser(path)
-            assert os.path.exists(base_path), "Given path does not exist."
+            if not os.path.exists(base_path):
+                raise FileNotFoundError(f"Given path does not exist: {base_path}")
 
             wl_file = f"{base_path}/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
-            assert os.path.exists(wl_file), f"PHOENIX models must be in {base_path}"
+            if not os.path.exists(wl_file):
+                raise FileNotFoundError(f"PHOENIX models must be in {base_path}")
         else:
             site = "ftp://phoenix.astro.physik.uni-goettingen.de/v2.0/HiResFITS/"
             log.info("[WIP]Downloading PHOENIX models from the internet...")
@@ -185,7 +187,8 @@ class PHOENIXGrid(SpectrumCollection):
                     fluxes.append(spec.flux)
                     grid_points.append((teff, logg, Z))
 
-            assert grid_points != [], "Empty grid; parameter limits out of range"
+            if not grid_points:
+                raise ValueError("Empty grid; parameter limits out of range")
             super().__init__(
                 flux=np.array(fluxes) * fluxes[0].unit,
                 spectral_axis=np.array(wavelengths) * wavelengths[0].unit,
@@ -318,16 +321,16 @@ class PHOENIXGrid(SpectrumCollection):
             )
 
             if data:
-                assert isinstance(
-                    data, Spectrum1D
-                ), "The data spectrum must be Spectrum1D-like"
+                if not isinstance(data, Spectrum1D):
+                    raise TypeError("The data spectrum must be Spectrum1D-like")
                 new_lo, new_hi = (
                     data.wavelength.value.min(),
                     data.wavelength.value.max(),
                 )
-                assert (
-                    wl_lo < new_lo < new_hi < wl_hi
-                ), "Data wavelength range should lie within that of the models', double check your wavelength limits."
+                if not (wl_lo < new_lo < new_hi < wl_hi):
+                    raise ValueError(
+                        "Data wavelength range should lie within that of the models', double check your wavelength limits."
+                    )
                 wl_lo, wl_hi = new_lo, new_hi
 
                 try:

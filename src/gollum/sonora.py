@@ -74,11 +74,16 @@ class Sonora2024Spectrum(PrecomputedSpectrum):
 
         if teff and logg:
             base_path = os.path.expanduser(path)
-            assert os.path.exists(base_path), "Given path does not exist."
-            assert teff in teff_points, "teff must be a point on the grid"
-            assert logg in logg_points, "logg must be a point on the grid"
-            assert Z in metallicity_points, "Fe/H must be a point on the grid"
-            assert fsed in fsed_points, "fsed must be a point on the grid"
+            if not os.path.exists(base_path):
+                raise FileNotFoundError(f"Given path does not exist: {base_path}")
+            if teff not in teff_points:
+                raise ValueError("teff must be a point on the grid")
+            if logg not in logg_points:
+                raise ValueError("logg must be a point on the grid")
+            if Z not in metallicity_points:
+                raise ValueError("Fe/H must be a point on the grid")
+            if fsed not in fsed_points:
+                raise ValueError("fsed must be a point on the grid")
 
             fsed_string = f"f{fsed}" if fsed != 0 else "nc"
             Z_string = f"{Z:+0.1f}" if Z else "0.0"
@@ -160,9 +165,12 @@ class Sonora2017Spectrum(PrecomputedSpectrum):
 
         if teff and logg:
             base_path = os.path.expanduser(path)
-            assert os.path.exists(base_path), "Given path does not exist."
-            assert teff in teff_points, "teff must be a point on the grid"
-            assert logg in logg_points, "logg must be a point on the grid"
+            if not os.path.exists(base_path):
+                raise FileNotFoundError(f"Given path does not exist: {base_path}")
+            if teff not in teff_points:
+                raise ValueError("teff must be a point on the grid")
+            if logg not in logg_points:
+                raise ValueError("logg must be a point on the grid")
 
             fn = f"{base_path}/sp_t{teff}g{logg_par_dict[logg]}nc_m0.0.gz"
 
@@ -253,10 +261,14 @@ class Sonora2021Spectrum(PrecomputedSpectrum):
 
         if teff and logg:
             base_path = os.path.expanduser(path)
-            assert os.path.exists(base_path), "Given path does not exist."
-            assert teff in teff_points, "teff must be a point on the grid"
-            assert logg in logg_points, "logg must be a point on the grid"
-            assert metallicity in metallicity_points, "Fe/H must be a point on the grid"
+            if not os.path.exists(base_path):
+                raise FileNotFoundError(f"Given path does not exist: {base_path}")
+            if teff not in teff_points:
+                raise ValueError("teff must be a point on the grid")
+            if logg not in logg_points:
+                raise ValueError("logg must be a point on the grid")
+            if metallicity not in metallicity_points:
+                raise ValueError("Fe/H must be a point on the grid")
 
             Z_string = f"{metallicity:+0.1f}" if metallicity else "0.0.gz"
             fn = f"{base_path}sp_t{teff}g{logg_par_dict[logg]}nc_m{Z_string}"
@@ -373,7 +385,8 @@ class SonoraGrid(SpectrumCollection):
                     log.info(f"No file for Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}")
                     missing += 1
 
-            assert grid_points != [], "Empty grid; parameter limits out of range"
+            if not grid_points:
+                raise ValueError("Empty grid; parameter limits out of range")
             print(
                 f"{missing} files not found; grid may not cover given parameter ranges fully"
             ) if missing else None
@@ -524,16 +537,16 @@ class SonoraGrid(SpectrumCollection):
 
             instrumental_resolution = 100000
             if data:
-                assert isinstance(
-                    data, Spectrum1D
-                ), "The data spectrum must be Spectrum1D-like"
+                if not isinstance(data, Spectrum1D):
+                    raise TypeError("The data spectrum must be Spectrum1D-like")
                 new_lo, new_hi = (
                     data.wavelength.value.min(),
                     data.wavelength.value.max(),
                 )
-                assert (new_lo < wl_hi) & (
-                    new_hi > wl_lo
-                ), "Data should overlap the models, double check your wavelength limits."
+                if not ((new_lo < wl_hi) & (new_hi > wl_lo)):
+                    raise ValueError(
+                        "Data should overlap the models, double check your wavelength limits."
+                    )
                 wl_lo, wl_hi = new_lo, new_hi
 
                 data_source = ColumnDataSource(
@@ -921,7 +934,8 @@ class Sonora2024Grid(SpectrumCollection):
                     log.info(f"No file for Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}|fsed={fsed}")
                     missing += 1
 
-            assert grid_points != [], "Empty grid; parameter limits out of range"
+            if not grid_points:
+                raise ValueError("Empty grid; parameter limits out of range")
             print(
                 f"{missing} files not found; grid may not cover given parameter ranges fully"
             ) if missing else None
@@ -1071,16 +1085,16 @@ class Sonora2024Grid(SpectrumCollection):
             fig.y_range = Range1d(start=0, end=1.9)
 
             if data:
-                assert isinstance(
-                    data, Spectrum1D
-                ), "The data spectrum must be Spectrum1D-like"
+                if not isinstance(data, Spectrum1D):
+                    raise TypeError("The data spectrum must be Spectrum1D-like")
                 new_lo, new_hi = (
                     data.wavelength.value.min(),
                     data.wavelength.value.max(),
                 )
-                assert (
-                    wl_lo < new_lo < new_hi < wl_hi
-                ), "Data wavelength range should lie within that of the models', double check your wavelength limits."
+                if not (wl_lo < new_lo < new_hi < wl_hi):
+                    raise ValueError(
+                        "Data wavelength range should lie within that of the models', double check your wavelength limits."
+                    )
                 wl_lo, wl_hi = new_lo, new_hi
 
                 fig.step(

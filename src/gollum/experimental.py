@@ -71,9 +71,10 @@ class ExpPHOENIXGrid(PHOENIXGrid):
 
             if data:
                 new_lo, new_hi = data.wavelength.value[0], data.wavelength.value[-1]
-                assert (
-                    wl_lo < new_lo < new_hi < wl_hi
-                ), "Data must overlap models, expand your wavelength range."
+                if not (wl_lo < new_lo < new_hi < wl_hi):
+                    raise ValueError(
+                        "Data must overlap models, expand your wavelength range."
+                    )
                 wl_lo, wl_hi = new_lo, new_hi
 
                 fig.step(

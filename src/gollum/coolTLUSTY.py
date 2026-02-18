@@ -68,10 +68,14 @@ class coolTLUSTYSpectrum(PrecomputedSpectrum):
 
         if teff and logg:
             base_path = os.path.expanduser(path)
-            assert os.path.exists(base_path), "Given path does not exist."
-            assert teff in teff_points, "teff must be a point on the grid"
-            assert logg in logg_points, "logg must be a point on the grid"
-            assert z in z_points, "Fe/H must be a point on the grid"
+            if not os.path.exists(base_path):
+                raise FileNotFoundError(f"Given path does not exist: {base_path}")
+            if teff not in teff_points:
+                raise ValueError("teff must be a point on the grid")
+            if logg not in logg_points:
+                raise ValueError("logg must be a point on the grid")
+            if z not in z_points:
+                raise ValueError("Fe/H must be a point on the grid")
 
             fn = "{}T{:3d}_g{:0.2f}_Z{:0.3f}.21".format(base_path, int(teff), logg, z)
 
@@ -164,7 +168,8 @@ class CoolTLUSTYGrid(SpectrumCollection):
                     log.info(f"No file for Teff={teff}K|logg={logg:0.2f}|Z={Z:0.1f}")
                     missing += 1
 
-            assert grid_points != [], "Empty grid; parameter limits out of range"
+            if not grid_points:
+                raise ValueError("Empty grid; parameter limits out of range")
             print(
                 f"{missing} files not found; grid may not cover given parameter ranges fully"
             ) if missing else None
@@ -335,16 +340,16 @@ class CoolTLUSTYGrid(SpectrumCollection):
 
             instrumental_resolution = 2000
             if data:
-                assert isinstance(
-                    data, Spectrum1D
-                ), "The data spectrum must be Spectrum1D-like"
+                if not isinstance(data, Spectrum1D):
+                    raise TypeError("The data spectrum must be Spectrum1D-like")
                 new_lo, new_hi = (
                     data.wavelength.value.min(),
                     data.wavelength.value.max(),
                 )
-                assert (new_lo < wl_hi) & (
-                    new_hi > wl_lo
-                ), "Data should overlap the models, double check your wavelength limits."
+                if not ((new_lo < wl_hi) & (new_hi > wl_lo)):
+                    raise ValueError(
+                        "Data should overlap the models, double check your wavelength limits."
+                    )
                 wl_lo, wl_hi = new_lo, new_hi
 
                 data_source = ColumnDataSource(
