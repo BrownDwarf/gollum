@@ -14,27 +14,20 @@ from numpy.ma import compressed, masked_outside
 import numpy as np
 from gollum.utilities import _truncate
 from gollum.precomputed_spectrum import PrecomputedSpectrum, get_config_value
+from gollum.warnings_policy import apply_gollum_warning_filters
 from astropy import units as u
 from astropy.units import dimensionless_unscaled as DV
-from astropy.utils.exceptions import AstropyWarning
-from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.io import fits
 from specutils import Spectrum1D, SpectrumCollection
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d, Toggle
 from bokeh.layouts import layout, Spacer
-from warnings import filterwarnings
 from copy import deepcopy
 from logging import getLogger
 
 log = getLogger(__name__)
-
-#  See Issue: https://github.com/astropy/specutils/issues/779
-filterwarnings("ignore", category=AstropyDeprecationWarning)
-filterwarnings("ignore", category=AstropyWarning)
-# See Issue: https://github.com/astropy/specutils/issues/800
-filterwarnings("ignore", category=RuntimeWarning)
+apply_gollum_warning_filters()
 
 local_path = get_config_value("PHOENIX", "~/libraries/raw/PHOENIX/")
 

@@ -15,8 +15,8 @@ from copy import deepcopy
 from dotenv import get_key
 from logging import getLogger
 from pathlib import Path
-from warnings import filterwarnings, catch_warnings
 from gollum.utilities import apply_numpy_mask
+from gollum.warnings_policy import apply_gollum_warning_filters
 from scipy.ndimage import gaussian_filter1d
 from scipy.signal import find_peaks
 from specutils import Spectrum1D
@@ -25,14 +25,9 @@ from specutils.fitting import fit_generic_continuum
 from astropy import units as u, constants as const
 from astropy.units import dimensionless_unscaled as DV
 from astropy.modeling.physical_models import BlackBody
-from astropy.utils.exceptions import AstropyDeprecationWarning
 
 log = getLogger(__name__)
-
-#  See Issue: https://github.com/astropy/specutils/issues/779
-filterwarnings("ignore", category=AstropyDeprecationWarning)
-# See Issue: https://github.com/astropy/specutils/issues/800
-filterwarnings("ignore", category=RuntimeWarning)
+apply_gollum_warning_filters()
 
 CONFIG_ENV_PATH = Path(__file__).parent / "config.env"
 CONFIG_TEMPLATE_PATH = Path(__file__).parent / "config_template.env"
@@ -137,14 +132,13 @@ class PrecomputedSpectrum(Spectrum1D):
         """
         lam0 = np.median(self.wavelength.value)
         x2 = (299792.458 * (self.wavelength.value - lam0) / (lam0 * vsini)) ** 2
-        with catch_warnings():
-            filterwarnings("ignore", category=RuntimeWarning)
-            kernel = np.where(
-                x2 < 1,
-                np.pi / 2 * u1 * (1 - x2)
-                + np.sqrt(1 - x2) * (2 - 2 * u1 - 4 / 3 * u2 * u2 * x2),
-                0,
-            )
+        kernel = np.zeros_like(x2)
+        valid = x2 < 1
+        x2_valid = x2[valid]
+        kernel[valid] = (
+            np.pi / 2 * u1 * (1 - x2_valid)
+            + np.sqrt(1 - x2_valid) * (2 - 2 * u1 - 4 / 3 * u2 * u2 * x2_valid)
+        )
         kernel, positive_elements = kernel / np.sum(kernel, axis=0), kernel > 0
         return (
             self._copy(

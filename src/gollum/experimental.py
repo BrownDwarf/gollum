@@ -8,21 +8,17 @@ ExpPHOENIXSpectrum
 ###############
 """
 
-from warnings import filterwarnings
 from logging import getLogger
 from astropy.units import dimensionless_unscaled as DV
-from astropy.utils.exceptions import AstropyDeprecationWarning, AstropyWarning
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d, Toggle
 from bokeh.layouts import layout, Spacer
 from gollum.phoenix import PHOENIXGrid
+from gollum.warnings_policy import apply_gollum_warning_filters
 
 log = getLogger(__name__)
-
-filterwarnings("ignore", category=AstropyDeprecationWarning)
-filterwarnings("ignore", category=AstropyWarning)
-filterwarnings("ignore", category=RuntimeWarning)
+apply_gollum_warning_filters()
 
 
 class ExpPHOENIXGrid(PHOENIXGrid):

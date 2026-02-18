@@ -4,19 +4,15 @@ r"""
 Functionality pertaining to telluric synthetic spectra from skycalc (Noll et al. 2012, Jones et al. 2013) and TelFit (Gullikson et al. 2014).
 """
 
-from warnings import filterwarnings
 from logging import getLogger
 from gollum.precomputed_spectrum import PrecomputedSpectrum
-from astropy.utils.exceptions import AstropyDeprecationWarning
+from gollum.warnings_policy import apply_gollum_warning_filters
 from astropy import units as u
 from pandas import read_csv, to_numeric
 
 log = getLogger(__name__)
 
-#  See Issue: https://github.com/astropy/specutils/issues/779
-filterwarnings("ignore", category=AstropyDeprecationWarning)
-# See Issue: https://github.com/astropy/specutils/issues/800
-filterwarnings("ignore", category=RuntimeWarning)
+apply_gollum_warning_filters()
 
 
 ## TODO: rename this to SkyCalc??

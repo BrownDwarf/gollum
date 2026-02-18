@@ -11,6 +11,7 @@ from tqdm import tqdm
 import numpy as np
 from gollum.utilities import _truncate
 from gollum.precomputed_spectrum import PrecomputedSpectrum, get_config_value
+from gollum.warnings_policy import apply_gollum_warning_filters
 from gollum.telluric import TelluricSpectrum
 from pandas import read_csv
 from specutils import Spectrum1D, SpectrumCollection
@@ -21,16 +22,10 @@ from bokeh.layouts import layout, Spacer
 from bokeh.models.widgets import Button, Div
 from scipy.ndimage import gaussian_filter1d
 from astropy import units as u
-from warnings import filterwarnings
 from logging import getLogger
-from astropy.utils.exceptions import AstropyDeprecationWarning
 
 log = getLogger(__name__)
-
-#  See Issue: https://github.com/astropy/specutils/issues/779
-filterwarnings("ignore", category=AstropyDeprecationWarning)
-# See Issue: https://github.com/astropy/specutils/issues/800
-filterwarnings("ignore", category=RuntimeWarning)
+apply_gollum_warning_filters()
 
 d_path = get_config_value("SonoraD", "~/libraries/raw/SonoraDiamondback/")
 b_path = get_config_value("SonoraB", "~/libraries/raw/SonoraBobcat2021/")
