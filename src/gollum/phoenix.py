@@ -11,15 +11,22 @@ from tqdm import tqdm
 from urllib.error import URLError
 from contextlib import suppress
 from numpy.ma import compressed, masked_outside
+import numpy as np
 from gollum.utilities import _truncate
-from gollum.precomputed_spectrum import *
+from gollum.precomputed_spectrum import PrecomputedSpectrum, get_config_value
+from astropy import units as u
+from astropy.units import dimensionless_unscaled as DV
 from astropy.utils.exceptions import AstropyWarning
+from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.io import fits
-from specutils import SpectrumCollection
+from specutils import Spectrum1D, SpectrumCollection
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d, Toggle
 from bokeh.layouts import layout, Spacer
+from warnings import filterwarnings
+from copy import deepcopy
+from logging import getLogger
 
 log = getLogger(__name__)
 
