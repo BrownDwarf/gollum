@@ -14,7 +14,7 @@ authors = [
 maintainers = [{ name="Sujay Shankar", email="sujays2001@gmail.com" }]
 description = "An intuitive programmatic and visual interface for precomputed synthetic spectral model grids"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "numpy",
     "scipy",
@@ -25,13 +25,12 @@ dependencies = [
     "pandas",
     "bokeh",
     "python-dotenv",
-    "importlib_resources; python_version < '3.9'",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-license = "MIT"
+license = {text = "MIT"}
 
 [project.urls]
 Homepage = "https://github.com/BrownDwarf/gollum"

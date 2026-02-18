@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.8, 3.9, 3.10.9, 3.11]
+        python-version: [3.9, 3.10.9, 3.11]
         specutils-version: [1.8, 1.11, 1.14]
 
     steps:
@@ -27,10 +27,10 @@ jobs:
       - name: Lint with flake8
         run: |
           uv run --with flake8 --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
-            flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+            flake8 src tests setup.py --count --select=E9,F63,F7,F82 --show-source --statistics
           # stop the build if there are Python syntax errors or undefined names
           uv run --with flake8 --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
-            flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+            flake8 src tests setup.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
       - name: Test PHOENIX
         run: |
