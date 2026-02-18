@@ -19,8 +19,10 @@ def apply_numpy_mask(spec, mask):
         The spectrum with the mask applied
     """
 
-    assert isinstance(spec, Spectrum1D), "Input must be a specutils Spectrum1D object"
-    assert mask.any(), "The masked spectrum must have at least one pixel remaining"
+    if not isinstance(spec, Spectrum1D):
+        raise TypeError("Input must be a specutils Spectrum1D object")
+    if not mask.any():
+        raise ValueError("The masked spectrum must have at least one pixel remaining")
 
     if (mask_length := len(mask)) != (npx := len(spec.spectral_axis.value)):
         raise IndexError(
@@ -52,9 +54,10 @@ def _truncate(grid, wavelength_range=None, data=None):
     truncated_spectrum: Spectrum1D-like
         The spectrum after being truncated to the given wavelength range
     """
-    assert (
-        bool(data) + bool(wavelength_range) == 1
-    ), "Please provide only one of the following: data OR wavelength_range"
+    if bool(data) + bool(wavelength_range) != 1:
+        raise ValueError(
+            "Please provide only one of the following: data OR wavelength_range"
+        )
     wl_lo, wl_hi = (
         (floor(data.wavelength.min()), ceil(data.wavelength.max()))
         if data
@@ -67,7 +70,8 @@ def _truncate(grid, wavelength_range=None, data=None):
         wavelengths.append(spec.wavelength.value[mask])
         fluxes.append(spec.flux.value[mask])
 
-    assert fluxes and wavelengths
+    if not (fluxes and wavelengths):
+        raise ValueError("Unable to truncate grid: no spectra overlap requested range")
     return grid.__class__(
         flux=array(fluxes) * grid[0].flux.unit,
         spectral_axis=array(wavelengths) * grid[0].wavelength.unit,
