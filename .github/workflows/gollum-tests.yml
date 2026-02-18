@@ -1,10 +1,35 @@
 name: gollumtests
 
-on: [push]
+on:
+  push:
+  pull_request:
 
 jobs:
-  build:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.9, 3.10.9, 3.11]
+        specutils-version: [1.8, 1.11, 1.14]
 
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+      - name: Lint with flake8
+        run: |
+          uv run --with flake8 --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
+            flake8 src tests setup.py --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          uv run --with flake8 --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
+            flake8 src tests setup.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  unit:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -24,21 +49,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Set up uv
         uses: astral-sh/setup-uv@v4
-      - name: Lint with flake8
-        run: |
-          uv run --with flake8 --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
-            flake8 src tests setup.py --count --select=E9,F63,F7,F82 --show-source --statistics
-          # stop the build if there are Python syntax errors or undefined names
-          uv run --with flake8 --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
-            flake8 src tests setup.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-      - name: Run Unit Tests
+      - name: Run Unit Tests with Coverage
         run: |
           uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
-            python -c "import sys; print(f'Python version: {sys.version}')"
-          uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
-            python -c "import specutils; print(f'specutils version: {specutils.__version__}')"
-          uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
-            python -c "import astropy; print(f'astropy version: {astropy.__version__}')"
-          uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
-            pytest -m "not integration" tests
+            pytest -m "not integration" --cov=src/gollum --cov-report=term-missing --cov-fail-under=30 tests
