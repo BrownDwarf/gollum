@@ -8,16 +8,22 @@ import os
 
 from itertools import product
 from tqdm import tqdm
+import numpy as np
 from gollum.utilities import _truncate
-from gollum.precomputed_spectrum import *
+from gollum.precomputed_spectrum import PrecomputedSpectrum, get_config_value
 from gollum.telluric import TelluricSpectrum
 from pandas import read_csv
-from specutils import SpectrumCollection
+from specutils import Spectrum1D, SpectrumCollection
 from bokeh.io import show, output_notebook
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import Slider, Range1d
 from bokeh.layouts import layout, Spacer
 from bokeh.models.widgets import Button, Div
+from scipy.ndimage import gaussian_filter1d
+from astropy import units as u
+from warnings import filterwarnings
+from logging import getLogger
+from astropy.utils.exceptions import AstropyDeprecationWarning
 
 log = getLogger(__name__)
 

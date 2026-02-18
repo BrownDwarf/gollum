@@ -8,7 +8,15 @@ ExpPHOENIXSpectrum
 ###############
 """
 
-from gollum.phoenix import *
+from warnings import filterwarnings
+from logging import getLogger
+from astropy.units import dimensionless_unscaled as DV
+from astropy.utils.exceptions import AstropyDeprecationWarning, AstropyWarning
+from bokeh.io import show, output_notebook
+from bokeh.plotting import figure, ColumnDataSource
+from bokeh.models import Slider, Range1d, Toggle
+from bokeh.layouts import layout, Spacer
+from gollum.phoenix import PHOENIXGrid
 
 log = getLogger(__name__)
 
