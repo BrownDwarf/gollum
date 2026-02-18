@@ -1,0 +1,39 @@
+name: gollum-integration-tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+
+jobs:
+  integration:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/') ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[integration]'))
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.9, 3.10.9, 3.11]
+        specutils-version: [1.8, 1.11, 1.14]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: OttoStruve/muler_example_data
+          path: tests/data
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+      - name: Run Integration Tests
+        run: |
+          uv run --with specutils==${{ matrix.specutils-version }} --extra test --extra docs \
+            pytest -m "integration" tests
