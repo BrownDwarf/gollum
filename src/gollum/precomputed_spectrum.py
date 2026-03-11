@@ -18,7 +18,7 @@ from pathlib import Path
 from gollum.utilities import apply_numpy_mask
 from gollum.warnings_policy import apply_gollum_warning_filters
 from scipy.ndimage import gaussian_filter1d
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, convolve
 from specutils import Spectrum1D
 from specutils.manipulation import LinearInterpolatedResampler
 from specutils.fitting import fit_generic_continuum
@@ -142,7 +142,7 @@ class PrecomputedSpectrum(Spectrum1D):
         kernel, positive_elements = kernel / np.sum(kernel, axis=0), kernel > 0
         return (
             self._copy(
-                flux=np.convolve(
+                flux=convolve(
                     self.flux.value, kernel[positive_elements], mode="same"
                 )
                 * self.flux.unit
